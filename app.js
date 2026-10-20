@@ -509,7 +509,10 @@
       clearErr(input);
       renderSummary();
     });
-    $("form").addEventListener("input", function (e) { clearErr(e.target); });
+    $("form").addEventListener("input", function (e) {
+      if (e.target.name === "phone") e.target.value = phoneFmt(e.target.value);
+      clearErr(e.target);
+    });
     $("form").addEventListener("change", function (e) { clearErr(e.target); });
     $("form").addEventListener("submit", function (e) { e.preventDefault(); submit(); });
 
@@ -529,9 +532,22 @@
     });
   }
 
+  // 입력하는 대로 010-1234-5678 형태로 하이픈을 붙인다 (10자리 번호는 011-123-4567)
+  function phoneFmt(v) {
+    var d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return d.slice(0, 3) + "-" + d.slice(3);
+    if (d.length === 10 && d.indexOf("010") !== 0) return d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6);
+    return d.slice(0, 3) + "-" + d.slice(3, 7) + "-" + d.slice(7);
+  }
+
   /* ---------- 주소 검색 (다음 우편번호) ---------- */
   function openPost() {
     var form = $("form");
+    // 파일을 더블클릭해 열면(file://) 검색 결과를 눌러도 값이 넘어오지 않는다 — 미리보기.bat으로 열어야 함
+    if (location.protocol === "file:") {
+      toast("파일로 열면 주소 검색이 동작하지 않습니다. 폴더의 '미리보기.bat'으로 열어 주세요.");
+    }
     if (!window.daum || !window.daum.Postcode) {
       // 검색 창을 못 불러오면 직접 입력할 수 있게 연다
       form.elements.addr1.readOnly = false;
@@ -564,7 +580,7 @@
     var sel = $("form").elements.target;
     (C.TARGETS || []).forEach(function (t) { sel.add(new Option(t, t)); });
     if (C.CONTACT_URL) {
-      $("contactTop").href = $("contactSide").href = C.CONTACT_URL;
+      $("contactTop").href = $("contactSide").href = $("contactFoot").href = C.CONTACT_URL;
       $("contactTop").hidden = false;
       $("helpCard").hidden = false;
     }

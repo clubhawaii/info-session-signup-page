@@ -320,3 +320,6 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .post-wrap { height: calc(100dvh - 120px); }
   .policy-box { padding: 16px; }
 }
+.foot-contact { color: var(--ink-60); text-decoration: none; }
+.foot-contact[href] { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.foot-contact b { color: var(--ink); font-weight: 700; }

@@ -3,7 +3,7 @@ window.APP_CONFIG = {
   // Google Apps Script 웹앱 주소 (README 3단계). 비워 두면 예시 데이터로 보여 주고, 신청은 저장되지 않습니다(시험 모드).
   APPS_SCRIPT_URL: "",
 
-  // 문의 버튼 링크 (카카오톡 채널 등). 비워 두면 문의 버튼이 숨겨집니다.
+  // 카카오톡 「클럽하와이cs」 채널 주소 (예: https://pf.kakao.com/_xxxxx). 비워 두면 문구만 보이고 버튼은 숨겨집니다.
   CONTACT_URL: "",
 
   // 개인정보 보관 기간 (회사 기준으로 확정 후 입력)

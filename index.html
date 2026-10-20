@@ -14,7 +14,7 @@
   <header class="top">
     <div class="top-in">
       <a class="brand" href="./">클럽하와이 <span>설명회 신청</span></a>
-      <a class="top-link" id="contactTop" href="#" target="_blank" rel="noopener" hidden>문의하기</a>
+      <a class="top-link" id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
     </div>
   </header>
 
@@ -91,7 +91,7 @@
             <div class="fields">
               <label class="field"><span>학원명</span><input name="academy" required autocomplete="organization" placeholder="예) 클럽하와이"></label>
               <label class="field"><span>원장님 성함</span><input name="director" required autocomplete="name"></label>
-              <label class="field"><span>휴대폰 번호</span><input name="phone" required inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
+              <label class="field"><span>휴대폰 번호</span><input name="phone" required inputmode="numeric" autocomplete="tel" maxlength="13" placeholder="010-0000-0000"></label>
               <div class="field">
                 <span>클럽하와이 회원 여부</span>
                 <div class="seg seg-full" id="memberSeg">
@@ -181,7 +181,7 @@
         <div class="card help" id="helpCard" hidden>
           <strong>도움이 필요하신가요?</strong>
           <p>설명회 진행이 처음이시면 편하게 물어보세요.</p>
-          <a class="btn ghost sm" id="contactSide" href="#" target="_blank" rel="noopener">문의하기</a>
+          <a class="btn ghost sm" id="contactSide" href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>
         </div>
       </aside>
     </div>
@@ -196,7 +196,7 @@
   <footer class="foot">
     <button type="button" class="link" data-open="policy">취소·환불 규정</button>
     <span>·</span>
-    <span>문의: 클럽하와이</span>
+    <a class="foot-contact" id="contactFoot" target="_blank" rel="noopener">문의: 카카오톡 <b>클럽하와이cs</b> 채널</a>
   </footer>
 
   <!-- 소장님 자세히 보기 -->
