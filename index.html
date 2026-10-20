@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>소장님 설명회 신청</title>
-  <meta name="description" content="소장님을 고르고 희망 날짜 3개를 알려 주시면, 소장님이 날짜를 확정해 드립니다.">
+  <title>강연자 설명회 신청</title>
+  <meta name="description" content="강연자를 고르고 희망 날짜 3개를 알려 주시면, 강연자가 날짜를 확정해 드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -20,10 +20,10 @@
 
   <main class="wrap">
     <div class="head" id="pageHead">
-      <h1>소장님 설명회 신청</h1>
-      <p>소장님을 고르고 희망 날짜 3개를 알려 주세요. 소장님이 그중 하루를 확정해 드립니다.</p>
+      <h1>강연자 설명회 신청</h1>
+      <p>강연자를 고르고 희망 날짜 3개를 알려 주세요. 강연자가 그중 하루를 확정해 드립니다.</p>
       <ol class="steps" id="steps">
-        <li data-step="1"><b>1</b>소장님 선택</li>
+        <li data-step="1"><b>1</b>강연자 선택</li>
         <li data-step="2"><b>2</b>희망 날짜</li>
         <li data-step="3"><b>3</b>신청 정보</li>
       </ol>
@@ -34,19 +34,19 @@
 
         <!-- 1. 소장님 선택 -->
         <section class="panel" id="step1">
-          <h2>어떤 소장님과 진행할까요?</h2>
+          <h2>어떤 강연자와 진행할까요?</h2>
           <div class="search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input id="q" type="search" placeholder="소장님 이름 검색" autocomplete="off">
+            <input id="q" type="search" placeholder="강연자 이름 검색" autocomplete="off">
           </div>
           <div class="chips" id="filters"></div>
           <div class="coach-list" id="coachList"></div>
-          <p class="empty" id="coachEmpty" hidden>조건에 맞는 소장님이 없습니다.</p>
+          <p class="empty" id="coachEmpty" hidden>조건에 맞는 강연자가 없습니다.</p>
         </section>
 
         <!-- 2. 희망 날짜 -->
         <section class="panel" id="step2" hidden>
-          <button class="back" type="button" data-go="1">← 소장님 다시 고르기</button>
+          <button class="back" type="button" data-go="1">← 강연자 다시 고르기</button>
           <h2>희망 날짜 3개를 골라 주세요</h2>
           <p class="sub">설명회는 진행일 최소 2주 전까지 신청할 수 있습니다. 학부모 모집을 위해 3~4주 전 신청을 권장합니다.</p>
 
@@ -100,8 +100,16 @@
                 </div>
                 <input type="hidden" name="member" required>
               </div>
-              <label class="field wide"><span>학원 주소</span><input name="address" required autocomplete="street-address" placeholder="시·구·동과 상세주소까지">
-                <small>학원 위치에 따라 출장비가 추가될 수 있으며, 결제 전에 확정해 안내드립니다.</small></label>
+              <div class="field wide addr">
+                <span>학원 주소</span>
+                <div class="addr-row">
+                  <input name="zip" readonly placeholder="우편번호" tabindex="-1" data-addr>
+                  <button type="button" class="btn outline sm" data-addr>주소 검색</button>
+                </div>
+                <input name="addr1" readonly placeholder="주소 검색을 눌러 주세요" data-addr>
+                <input name="addr2" placeholder="상세 주소를 입력해 주세요" autocomplete="address-line2">
+                <small>학원 위치에 따라 출장비가 추가될 수 있으며, 결제 전에 확정해 안내드립니다.</small>
+              </div>
               <label class="field"><span>설명회 대상</span>
                 <select name="target" required><option value="">선택해 주세요</option></select></label>
               <label class="field"><span>예상 참석 인원 <em>선택</em></span><input name="attendees" inputmode="numeric" placeholder="예) 30"></label>
@@ -112,12 +120,29 @@
               <label class="check"><input type="checkbox" name="agreePrivacy" required><span>개인정보 수집·이용에 동의합니다 <em>필수</em></span></label>
               <details class="fold">
                 <summary>내용 보기</summary>
-                <p>수집 항목: 학원명, 원장님 성함, 휴대폰 번호, 학원 주소, 회원 여부, 설명회 대상, 예상 참석 인원, 요청사항<br>
+                <p>수집 항목: 학원명, 원장님 성함, 휴대폰 번호, 학원 주소(우편번호·상세 주소 포함), 회원 여부, 설명회 대상, 예상 참석 인원, 요청사항<br>
                 이용 목적: 설명회 일정 조율, 알림톡 안내, 결제 안내<br>
                 보관 기간: <span id="retention"></span></p>
               </details>
-              <label class="check"><input type="checkbox" name="agreePolicy" required><span>취소·환불 규정을 확인했습니다 <em>필수</em></span></label>
-              <button type="button" class="link small" data-open="policy">규정 보기</button>
+              <div class="policy-box" id="policyInline">
+                <h3>신청 기한 · 취소·환불 규정</h3>
+                <p class="sub">설명회 진행일(달력 날짜) 기준이며, 결제 금액(출장비 포함)에 똑같이 적용됩니다.</p>
+                <table class="policy">
+                  <tr><th>결제 전</th><td>비용 없음</td></tr>
+                  <tr><th>진행일 15일 전까지</th><td>100% 환불</td></tr>
+                  <tr><th>진행일 14일 ~ 8일 전</th><td>70% 환불</td></tr>
+                  <tr><th>진행일 7일 ~ 4일 전</th><td>50% 환불</td></tr>
+                  <tr><th>진행일 3일 전 ~ 당일</th><td><b>환불 불가</b></td></tr>
+                </table>
+                <ul class="dots">
+                  <li>설명회는 진행일 최소 2주 전까지 신청할 수 있습니다.</li>
+                  <li>강연자는 확정 이후 자료 제작과 준비를 시작하므로, 진행일이 가까울수록 환불 비율이 낮아집니다.</li>
+                  <li>결제 안내 때 구간별 환불 날짜를 함께 알려 드립니다.</li>
+                  <li>일정 변경은 진행일 15일 전까지 1회 가능합니다. (강연자 일정이 가능한 경우)</li>
+                  <li>강연자 사정으로 진행이 어려우면 전액 환불하거나 다른 날짜로 조정해 드립니다.</li>
+                </ul>
+              </div>
+              <label class="check"><input type="checkbox" name="agreePolicy" required><span>위 취소·환불 규정을 확인했습니다 <em>필수</em></span></label>
               <p class="hint">결제 전에는 언제든 비용 없이 취소할 수 있으며, 환불 규정은 결제 이후부터 적용됩니다.</p>
             </div>
           </form>
@@ -131,7 +156,7 @@
           <dl class="done-sum" id="doneSum"></dl>
           <ol class="flow">
             <li class="on"><b>신청 완료</b><span>알림톡으로 신청 내용을 보내 드렸어요</span></li>
-            <li><b>소장님 날짜 확정</b><span>3일 안에 희망 날짜 중 하루를 정해요</span></li>
+            <li><b>강연자 날짜 및 주제 확정</b><span>3일 안에 희망 날짜 중 하루를 정해요</span></li>
             <li><b>담당자 연락 · 결제 안내</b><span>출장비 포함 금액을 안내드려요</span></li>
             <li><b>설명회 진행</b></li>
           </ol>
@@ -143,7 +168,7 @@
       <aside class="side" id="side">
         <div class="card sum">
           <h3>신청 내역</h3>
-          <div class="sum-coach" id="sumCoach"><span class="muted">소장님을 골라 주세요</span></div>
+          <div class="sum-coach" id="sumCoach"><span class="muted">강연자를 골라 주세요</span></div>
           <ul class="sum-dates" id="sumDates"></ul>
           <div class="sum-price">
             <span>예상 금액</span>
@@ -179,7 +204,7 @@
     <div class="modal-box">
       <button type="button" class="close" data-close aria-label="닫기">×</button>
       <div class="modal-body" id="coachDetail"></div>
-      <div class="modal-foot"><button type="button" class="btn primary" id="pickCoach">이 소장님으로 신청</button></div>
+      <div class="modal-foot"><button type="button" class="btn primary" id="pickCoach">이 강연자로 신청</button></div>
     </div>
   </dialog>
 
@@ -187,29 +212,25 @@
   <dialog class="modal" id="policyModal">
     <div class="modal-box">
       <button type="button" class="close" data-close aria-label="닫기">×</button>
-      <div class="modal-body">
-        <h3>신청 기한 · 취소·환불 규정</h3>
-        <p class="sub">설명회 진행일(달력 날짜) 기준이며, 결제 금액(출장비 포함)에 똑같이 적용됩니다.</p>
-        <table class="policy">
-          <tr><th>결제 전</th><td>비용 없음</td></tr>
-          <tr><th>진행일 15일 전까지</th><td>100% 환불</td></tr>
-          <tr><th>진행일 14일 ~ 8일 전</th><td>70% 환불</td></tr>
-          <tr><th>진행일 7일 ~ 4일 전</th><td>50% 환불</td></tr>
-          <tr><th>진행일 3일 전 ~ 당일</th><td><b>환불 불가</b></td></tr>
-        </table>
-        <ul class="dots">
-          <li>설명회는 진행일 최소 2주 전까지 신청할 수 있습니다.</li>
-          <li>소장님은 확정 이후 자료 제작과 준비를 시작하므로, 진행일이 가까울수록 환불 비율이 낮아집니다.</li>
-          <li>결제 안내 때 구간별 환불 날짜를 함께 알려 드립니다.</li>
-          <li>일정 변경은 진행일 15일 전까지 1회 가능합니다. (소장님 일정이 가능한 경우)</li>
-          <li>소장님 사정으로 진행이 어려우면 전액 환불하거나 다른 날짜로 조정해 드립니다.</li>
-        </ul>
+      <!-- 내용은 3단계의 규정(#policyInline)을 그대로 복사해 씀 -->
+      <div class="modal-body" id="policyModalBody"></div>
+    </div>
+  </dialog>
+
+  <!-- 주소 검색 (다음 우편번호 서비스) -->
+  <dialog class="modal" id="postModal">
+    <div class="modal-box">
+      <button type="button" class="close" data-close aria-label="닫기">×</button>
+      <div class="modal-body post-body">
+        <h3>주소 검색</h3>
+        <div class="post-wrap" id="postWrap"></div>
       </div>
     </div>
   </dialog>
 
   <div class="toast" id="toast" role="status"></div>
 
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script src="config.js"></script>
   <script src="sample-data.js"></script>
   <script src="app.js"></script>

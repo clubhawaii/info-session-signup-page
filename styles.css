@@ -303,3 +303,20 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .modal-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
   .close { left: 8px; right: auto; }
 }
+
+/* 주소 검색 */
+.addr-row { display: grid; grid-template-columns: minmax(0, 160px) auto; gap: 8px; justify-content: start; }
+.addr-row .btn { height: 48px; padding: 0 18px; }
+.field input[readonly] { cursor: pointer; background: rgba(17, 17, 17, .02); }
+.post-body { display: flex; flex-direction: column; }
+.post-wrap { height: 470px; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+
+/* 3단계에 늘 펼쳐 두는 취소·환불 규정 */
+.policy-box { justify-self: stretch; border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; margin: 10px 0 4px; }
+.policy-box h3 { font-size: 16px; font-weight: 800; }
+.policy-box .policy { margin: 12px 0; }
+
+@media (max-width: 640px) {
+  .post-wrap { height: calc(100dvh - 120px); }
+  .policy-box { padding: 16px; }
+}

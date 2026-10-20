@@ -60,7 +60,7 @@
   function avatar(c, size) {
     var cls = "avatar" + (size ? " " + size : "");
     if (c.photo) return '<div class="' + cls + '"><img src="' + esc(c.photo) + '" alt=""></div>';
-    return '<div class="' + cls + '">' + esc(c.name.replace(/^예시\s*소장님\s*/, "").charAt(0)) + "</div>";
+    return '<div class="' + cls + '">' + esc(c.name.replace(/^예시\s*강연자\s*/, "").charAt(0)) + "</div>";
   }
 
   /* ---------- 데이터 ---------- */
@@ -118,7 +118,7 @@
       S.slots.forEach(function (s) {
         if (s.d && S.blocked[c.name + "|" + s.d]) { s.d = ""; s.t = ""; cleared = true; }
       });
-      if (cleared) toast("새로 고른 소장님이 안 되는 날짜는 비웠습니다.");
+      if (cleared) toast("새로 고른 강연자가 안 되는 날짜는 비웠습니다.");
     }
     S.coach = c;
     renderCoaches();
@@ -146,7 +146,7 @@
       '<div class="tab-pane" data-pane="1" hidden>' + topics + "</div>" +
       '<div class="tab-pane" data-pane="2" hidden>' + media + "</div>";
     var picked = S.coach && S.coach.name === c.name;
-    $("pickCoach").textContent = picked ? "선택됨 · 날짜 고르러 가기" : "이 소장님으로 신청";
+    $("pickCoach").textContent = picked ? "선택됨 · 날짜 고르러 가기" : "이 강연자로 신청";
     $("coachModal").showModal();
     $("coachDetail").scrollTop = 0;
   }
@@ -226,7 +226,7 @@
 
   function pickDate(s) {
     if (parse(s) < MIN_DATE) { $("calMsg").textContent = "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
-    if (slotBlocked(s)) { $("calMsg").textContent = "소장님 일정이 있어 선택할 수 없는 날짜입니다."; return; }
+    if (slotBlocked(s)) { $("calMsg").textContent = "강연자 일정이 있어 선택할 수 없는 날짜입니다."; return; }
     var dup = -1;
     S.slots.forEach(function (x, k) { if (x.d === s && k !== S.active) dup = k; });
     if (dup >= 0) { $("calMsg").textContent = "이미 " + RANKS[dup] + "로 고른 날짜입니다."; return; }
@@ -264,7 +264,7 @@
   function summaryHtml() {
     var c = S.coach;
     var coach = c ? avatar(c, "sm") + '<div><div class="name">' + esc(c.name) + '</div><div class="small">' + esc(c.targets.join(", ")) + "</div></div>"
-      : '<span class="muted">소장님을 골라 주세요</span>';
+      : '<span class="muted">강연자를 골라 주세요</span>';
     var dates = S.slots.map(function (s, i) {
       return '<li><span class="rk">' + RANKS[i] + "</span>" + (s.d ? '<span class="v">' + esc(krDate(s.d)) + (s.t ? " · " + esc(krTime(s.t)) : "") + "</span>" : '<span class="v none">미선택</span>') + "</li>";
     }).join("");
@@ -288,7 +288,7 @@
     var label, ok, txt;
     if (S.step === 1) {
       ok = !!S.coach; label = "날짜 고르기";
-      txt = S.coach ? "<b>" + esc(S.coach.name) + "</b>선택했어요" : "<b>소장님을 골라 주세요</b>1명을 고르면 다음으로 넘어가요";
+      txt = S.coach ? "<b>" + esc(S.coach.name) + "</b>선택했어요" : "<b>강연자를 골라 주세요</b>1명을 고르면 다음으로 넘어가요";
     } else if (S.step === 2) {
       var n = S.slots.filter(function (s) { return s.d && s.t; }).length;
       ok = datesDone(); label = "다음";
@@ -299,7 +299,7 @@
     }
     [$("nextBtn"), $("barBtn")].forEach(function (b) { b.textContent = label; b.disabled = !ok; });
     $("barTxt").innerHTML = txt;
-    $("sumNote").textContent = S.step === 3 ? "신청 후 소장님이 3일 안에 날짜를 확정합니다. 신청만으로 확정되지는 않습니다." : "신청만으로 일정이 확정되지는 않습니다.";
+    $("sumNote").textContent = S.step === 3 ? "신청 후 강연자가 3일 안에 날짜를 확정합니다. 신청만으로 확정되지는 않습니다." : "신청만으로 일정이 확정되지는 않습니다.";
   }
 
   /* ---------- 단계 이동 ---------- */
@@ -365,7 +365,8 @@
     if (!v("director")) bad("director", "원장님 성함을 입력해 주세요.");
     if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(v("phone").replace(/\s/g, ""))) bad("phone", "휴대폰 번호를 확인해 주세요.");
     if (!v("member")) bad("member", "회원 여부를 골라 주세요.");
-    if (!v("address")) bad("address", "학원 주소를 입력해 주세요.");
+    if (!v("addr1")) bad("addr1", "주소 검색으로 학원 주소를 찾아 주세요.");
+    else if (!v("addr2")) bad("addr2", "상세 주소를 입력해 주세요.");
     if (!v("target")) bad("target", "설명회 대상을 골라 주세요.");
     if (!form.elements.agreePrivacy.checked) bad("agreePrivacy", "");
     if (!form.elements.agreePolicy.checked) bad("agreePolicy", "");
@@ -380,7 +381,8 @@
     return {
       academy: v("academy"), director: v("director"),
       phone: phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3"),
-      member: v("member"), address: v("address"), target: v("target"),
+      member: v("member"), target: v("target"),
+      address: v("addr1") + " " + v("addr2") + (v("zip") ? " (" + v("zip") + ")" : ""),
       attendees: v("attendees"), request: v("request"),
       coach: S.coach.name,
       options: S.slots.map(function (s) { return { date: s.d, time: s.t }; })
@@ -424,7 +426,7 @@
     $("doneSum").innerHTML =
       "<dt>신청번호</dt><dd>" + esc(id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
-      "<dt>소장님</dt><dd>" + esc(b.coach) + "</dd>" +
+      "<dt>강연자</dt><dd>" + esc(b.coach) + "</dd>" +
       b.options.map(function (o, i) { return "<dt>" + RANKS[i] + "</dt><dd>" + esc(krDate(o.date)) + " " + esc(krTime(o.time)) + "</dd>"; }).join("");
     go(4);
   }
@@ -522,12 +524,43 @@
       if (e.target.tagName === "DIALOG") e.target.close();   // 바깥 클릭으로 닫기
     });
     $("again").addEventListener("click", reset);
+    $("form").addEventListener("click", function (e) {
+      if (e.target.closest("[data-addr]")) openPost();
+    });
+  }
+
+  /* ---------- 주소 검색 (다음 우편번호) ---------- */
+  function openPost() {
+    var form = $("form");
+    if (!window.daum || !window.daum.Postcode) {
+      // 검색 창을 못 불러오면 직접 입력할 수 있게 연다
+      form.elements.addr1.readOnly = false;
+      form.elements.addr1.placeholder = "도로명 주소를 입력해 주세요";
+      form.elements.addr1.focus();
+      toast("주소 검색을 불러오지 못해 직접 입력으로 바꿨습니다.");
+      return;
+    }
+    $("postWrap").innerHTML = "";
+    new window.daum.Postcode({
+      width: "100%",
+      height: "100%",
+      oncomplete: function (d) {
+        var extra = [d.bname && /[동로가]$/.test(d.bname) ? d.bname : "", d.apartment === "Y" ? d.buildingName : ""].filter(Boolean).join(", ");
+        form.elements.zip.value = d.zonecode;
+        form.elements.addr1.value = (d.roadAddress || d.jibunAddress) + (extra ? " (" + extra + ")" : "");
+        clearErr(form.elements.addr1);
+        $("postModal").close();
+        form.elements.addr2.focus();
+      }
+    }).embed($("postWrap"));
+    $("postModal").showModal();
   }
 
   /* ---------- 시작 ---------- */
   function init() {
     $("demoBar").hidden = !DEMO;
     $("retention").textContent = C.PRIVACY_RETENTION || "";
+    $("policyModalBody").innerHTML = $("policyInline").innerHTML;
     var sel = $("form").elements.target;
     (C.TARGETS || []).forEach(function (t) { sel.add(new Option(t, t)); });
     if (C.CONTACT_URL) {
@@ -538,12 +571,12 @@
     bind();
     renderFilters();
     go(1);
-    $("coachList").innerHTML = '<p class="empty">소장님 정보를 불러오는 중…</p>';
+    $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오는 중…</p>';
     load().then(function (d) {
       useData(d);
       renderCoaches();
     }).catch(function () {
-      $("coachList").innerHTML = '<p class="empty">소장님 정보를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>';
+      $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>';
     });
   }
 

@@ -9,7 +9,7 @@
   window.SAMPLE_DATA = {
     coaches: [
       {
-        name: "예시 소장님 A",
+        name: "예시 강연자 A",
         photo: "",
         summary: "중등 내신·고입 설명회 다수 진행 (예시 문구)",
         career: "예시 경력 1\n예시 경력 2\n예시 경력 3",
@@ -20,7 +20,7 @@
         photos: []
       },
       {
-        name: "예시 소장님 B",
+        name: "예시 강연자 B",
         photo: "",
         summary: "초등 학습 습관·독서 설명회 (예시 문구)",
         career: "예시 경력 1\n예시 경력 2",
@@ -31,7 +31,7 @@
         photos: []
       },
       {
-        name: "예시 소장님 C",
+        name: "예시 강연자 C",
         photo: "",
         summary: "고등 입시 전략·대입 설명회 (예시 문구)",
         career: "예시 경력 1\n예시 경력 2",
@@ -43,14 +43,14 @@
       }
     ],
     blocked: [
-      { coach: "예시 소장님 A", date: plus(18) },
-      { coach: "예시 소장님 A", date: plus(25) },
-      { coach: "예시 소장님 B", date: plus(20) }
+      { coach: "예시 강연자 A", date: plus(18) },
+      { coach: "예시 강연자 A", date: plus(25) },
+      { coach: "예시 강연자 B", date: plus(20) }
     ],
     // 소장님 응답 페이지(coach.html) 미리보기용 신청 1건
     request: {
       id: "SEM-20261020-001",
-      coach: "예시 소장님 A",
+      coach: "예시 강연자 A",
       academy: "클럽하와이",
       director: "홍길동",
       address: "서울 강남구 대치동 123",
