@@ -34,6 +34,7 @@
     .result { text-align: center; padding: 60px 0 0; }
     .result .lead { color: var(--ink-60); margin: 10px 0 0; }
     .gray-icon { background: var(--ink); }
+    .due.flex { margin: 12px 0 0; background: #fff; border: 1px solid var(--blue-40); }
   </style>
 </head>
 <body>
@@ -76,28 +77,33 @@
 
     function render() {
       var r = R;
-      var rows = [["학원", r.academy], ["지역", r.address || r.region], ["대상", r.target], ["예상 인원", r.attendees ? r.attendees + "명" : "미정"], ["요청사항", r.request || "없음"]];
+      var rows = [["학원", r.academy], ["지역", r.address], ["대상", r.target], ["예상 인원", r.attendees ? r.attendees + "명" : "미정"],
+        ["설명회", r.kind], ["주제", r.topics], ["요청사항", r.request || "없음"]];
       $("app").innerHTML =
         "<h1>" + esc(r.coach) + "님, 설명회 일정을 골라 주세요</h1>" +
-        '<div class="due"><b>' + esc(krDue(r.deadline)) + "까지</b> 날짜를 정해 주세요. 기한이 지나면 신청이 자동 취소되고 설명회 기회는 다른 강연자께 넘어갑니다.</div>" +
+        '<div class="due"><b>' + esc(krDue(r.deadline)) + "까지</b> 응답해 주세요. 기한까지 응답하지 않으시면 설명회 기회는 다른 강연자께 넘어갑니다.</div>" +
         '<div class="info"><div class="rows">' + rows.map(function (x) { return "<div><span>" + x[0] + "</span><b>" + esc(x[1]) + "</b></div>"; }).join("") + "</div></div>" +
+        (r.flexible ? '<div class="due flex">원장님이 <b>강연자님을 1순위로 꼭 희망</b>하셔서, 강연자님 일정에 맞춰 날짜 조정이 가능합니다. 아래 날짜가 어려우시면 「날짜 조율」로 가능한 날짜를 알려 주세요.</div>' : "") +
         '<div class="opts" id="opts">' +
         r.options.map(function (o, i) {
           return '<button type="button" class="opt" data-c="' + i + '"><span class="rk">' + RANKS[i] + '</span><span><div class="d">' + esc(krDate(o.date)) + '</div><div class="t">' + esc(krTime(o.time)) + ' 시작</div></span><span class="radio"></span></button>';
         }).join("") +
-        '<button type="button" class="opt adj" data-c="adjust"><span class="rk">조율</span><span><div class="d">세 날짜 모두 어려워요</div><div class="t">본사에서 연락드려 조율합니다</div></span><span class="radio"></span></button>' +
+        '<button type="button" class="opt adj" data-c="adjust"><span class="rk">조율</span><span><div class="d">세 날짜 모두 어려워요</div><div class="t">가능한 날짜를 알려 주시면 본사가 조율합니다</div></span><span class="radio"></span></button>' +
+        '<button type="button" class="opt adj" data-c="decline"><span class="rk">불가</span><span><div class="d">이번 설명회는 진행이 어려워요</div><div class="t">지역·주제 등 사정을 알려 주세요</div></span><span class="radio"></span></button>' +
         "</div>" +
-        '<div class="memo" id="memo" hidden><textarea id="memoText" placeholder="가능한 날짜나 사정을 적어 주시면 조율이 빨라집니다. (선택)"></textarea></div>';
+        '<div class="memo" id="memo" hidden><textarea id="memoText"></textarea></div>';
       $("cbar").hidden = false;
       $("opts").addEventListener("click", function (e) {
         var b = e.target.closest("[data-c]");
         if (!b) return;
         choice = b.dataset.c;
         Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
-        $("memo").hidden = choice !== "adjust";
+        var memo = choice === "adjust" || choice === "decline";
+        $("memo").hidden = !memo;
+        $("memoText").placeholder = choice === "adjust" ? "가능한 날짜와 시간을 적어 주시면 조율이 빨라집니다." : "진행이 어려운 사정을 적어 주세요. (선택)";
         var btn = $("send");
         btn.disabled = false;
-        btn.textContent = choice === "adjust" ? "조율 필요로 보내기" : RANKS[+choice] + " " + krDate(r.options[+choice].date) + "로 확정";
+        btn.textContent = choice === "adjust" ? "날짜 조율로 보내기" : choice === "decline" ? "진행 불가로 보내기" : RANKS[+choice] + " " + krDate(r.options[+choice].date) + " 가능";
       });
     }
 
@@ -106,13 +112,14 @@
       sending = true;
       var btn = $("send"), label = btn.textContent;
       btn.disabled = true; btn.textContent = "보내는 중…";
-      var body = { action: "respond", t: TOKEN, choice: choice, memo: choice === "adjust" ? $("memoText").value.trim() : "" };
+      var body = { action: "respond", t: TOKEN, choice: choice, memo: $("memoText").value.trim() };
       var req = DEMO ? new Promise(function (ok) { setTimeout(function () { ok({ ok: true }); }, 600); })
         : fetch(C.APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
       req.then(function (res) {
         if (!res.ok) throw new Error(res.error || "");
         if (choice === "adjust") result("ok", "조율 요청을 보냈습니다", "본사 담당자가 곧 연락드리겠습니다.");
-        else { var o = R.options[+choice]; result("ok", "일정을 확정했습니다", esc(krDate(o.date) + " " + krTime(o.time)) + "<br>원장님께 확정 안내를 드리고, 본사에서 이후 진행을 도와드립니다."); }
+        else if (choice === "decline") result("ok", "응답을 보냈습니다", "알려 주셔서 감사합니다. 다음 설명회 때 다시 연락드리겠습니다.");
+        else { var o = R.options[+choice]; result("ok", "응답을 보냈습니다", esc(krDate(o.date) + " " + krTime(o.time)) + " 가능으로 전달했습니다.<br>본사 담당자가 원장님과 확정한 뒤 연락드리겠습니다."); }
       }).catch(function (e) {
         sending = false; btn.disabled = false; btn.textContent = label;
         toast(e && e.message && !/fetch|network|json/i.test(e.message) ? e.message : "보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
@@ -123,9 +130,9 @@
     load().then(function (d) {
       if (!d.ok) { result("x", "열 수 없는 링크입니다", esc(d.error || "")); return; }
       R = d.request;
-      if (R.status === "일정확정") { var o = R.options[R.chosen]; result("ok", "이미 확정된 일정입니다", o ? esc(krDate(o.date) + " " + krTime(o.time)) : ""); return; }
-      if (R.status === "조율 필요") { result("x", "조율 요청을 이미 보내셨습니다", "본사 담당자가 연락드릴 예정입니다."); return; }
-      if (R.status !== "소장님 확인중" || new Date(R.deadline) < new Date()) { result("x", "응답 기한이 지났습니다", "이 신청은 자동 취소되었습니다. 궁금한 점은 본사로 문의해 주세요."); return; }
+      if (["강연자 수락", "일정확정", "결제안내", "결제완료", "진행완료"].indexOf(R.status) >= 0) { var o = R.options[R.chosen]; result("ok", "이미 응답하신 요청입니다", o ? esc(krDate(o.date) + " " + krTime(o.time)) + " 가능으로 전달되었습니다." : ""); return; }
+      if (R.status === "조율 필요" || R.status === "강연자 불가") { result("ok", "이미 응답하신 요청입니다", "본사 담당자가 연락드릴 예정입니다."); return; }
+      if (R.status !== "강연자 확인중" || new Date(R.deadline) < new Date()) { result("x", "응답 기한이 지났습니다", "이 요청은 다른 강연자께 넘어갔습니다. 궁금한 점은 본사로 문의해 주세요."); return; }
       render();
     }).catch(function () { result("x", "불러오지 못했습니다", "잠시 후 다시 열어 주세요."); });
   })();

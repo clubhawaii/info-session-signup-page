@@ -1,5 +1,5 @@
 // 예시 데이터 — config.js의 APPS_SCRIPT_URL이 비어 있을 때만 쓰입니다.
-// 실제 소장님 정보는 구글시트 「소장님」에 입력하세요.
+// 실제 강연자 정보는 구글시트 「강연자」에 입력하세요.
 (function () {
   function plus(days) {
     var d = new Date();
@@ -47,24 +47,26 @@
       { coach: "예시 강연자 A", date: plus(25) },
       { coach: "예시 강연자 B", date: plus(20) }
     ],
-    // 소장님 응답 페이지(coach.html) 미리보기용 신청 1건
+    // 강연자 응답 페이지(coach.html) 미리보기용 요청 1건
     request: {
       id: "SEM-20261020-001",
       coach: "예시 강연자 A",
+      rank: 1,
       academy: "클럽하와이",
-      director: "홍길동",
       address: "서울 강남구 대치동 123",
-      region: "서울 강남구",
       target: "중등 학부모",
       attendees: "30",
+      kind: "대표 주제 설명회",
+      topics: "고입 준비 로드맵",
       request: "고입 준비 위주로 부탁드립니다.",
+      flexible: true,
       options: [
         { date: plus(22), time: "14:00" },
         { date: plus(29), time: "10:30" },
         { date: plus(32), time: "19:00" }
       ],
-      deadline: new Date(Date.now() + 60 * 3600 * 1000).toISOString(),
-      status: "소장님 확인중"
+      deadline: new Date(Date.now() + 20 * 3600 * 1000).toISOString(),
+      status: "강연자 확인중"
     }
   };
 })();
