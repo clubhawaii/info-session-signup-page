@@ -422,3 +422,4 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .steps li:not(.on) span { display: none; }
   .steps li span { white-space: nowrap; }
 }
+.demo-bar a { color: inherit; margin-left: 6px; text-underline-offset: 3px; }
