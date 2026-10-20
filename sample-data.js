@@ -1,5 +1,5 @@
 // 예시 데이터 — config.js의 APPS_SCRIPT_URL이 비어 있을 때만 쓰입니다.
-// 실제 소장님 정보·월별 추천은 구글시트에 입력하세요.
+// 실제 소장님 정보는 구글시트 「소장님」에 입력하세요.
 (function () {
   function plus(days) {
     var d = new Date();
@@ -15,7 +15,7 @@
         career: "예시 경력 1\n예시 경력 2\n예시 경력 3",
         topics: ["중등 내신 대비 전략", "고입 준비 로드맵"],
         targets: ["중등 학부모", "중학생"],
-        purposes: ["신규 모집", "입시 전략"],
+        region: "서울·경기",
         video: "",
         photos: []
       },
@@ -26,7 +26,7 @@
         career: "예시 경력 1\n예시 경력 2",
         topics: ["초등 공부 습관 만들기", "초등 독서 로드맵"],
         targets: ["초등 학부모", "초등학생"],
-        purposes: ["신규 모집", "학습 습관"],
+        region: "전국",
         video: "",
         photos: []
       },
@@ -37,7 +37,7 @@
         career: "예시 경력 1\n예시 경력 2",
         topics: ["대입 수시·정시 전략", "고1 학기별 준비"],
         targets: ["중등 학부모", "고등 학부모", "고등학생"],
-        purposes: ["입시 전략", "재원생 유지"],
+        region: "서울·경기·인천",
         video: "",
         photos: []
       }
@@ -47,19 +47,24 @@
       { coach: "예시 소장님 A", date: plus(25) },
       { coach: "예시 소장님 B", date: plus(20) }
     ],
-    monthly: [
-      { month: 1, theme: "예시 테마 (1월)", desc: "월별 추천 내용은 「월별추천」 시트에서 불러옵니다.", target: "중등 학부모", coaches: ["예시 소장님 A"] },
-      { month: 2, theme: "예시 테마 (2월)", desc: "예시 설명", target: "초등 학부모", coaches: ["예시 소장님 B"] },
-      { month: 3, theme: "예시 테마 (3월)", desc: "예시 설명", target: "고등 학부모", coaches: ["예시 소장님 C"] },
-      { month: 4, theme: "예시 테마 (4월)", desc: "예시 설명", target: "중등 학부모", coaches: ["예시 소장님 A"] },
-      { month: 5, theme: "예시 테마 (5월)", desc: "예시 설명", target: "초등 학부모", coaches: ["예시 소장님 B"] },
-      { month: 6, theme: "예시 테마 (6월)", desc: "예시 설명", target: "고등 학부모", coaches: ["예시 소장님 C"] },
-      { month: 7, theme: "예시 테마 (7월)", desc: "예시 설명", target: "중등 학부모", coaches: ["예시 소장님 A"] },
-      { month: 8, theme: "예시 테마 (8월)", desc: "예시 설명", target: "초등 학부모", coaches: ["예시 소장님 B"] },
-      { month: 9, theme: "예시 테마 (9월)", desc: "예시 설명", target: "고등 학부모", coaches: ["예시 소장님 C"] },
-      { month: 10, theme: "예시 테마 (10월)", desc: "예시 설명", target: "중등 학부모", coaches: ["예시 소장님 A", "예시 소장님 C"] },
-      { month: 11, theme: "예시 테마 (11월)", desc: "예시 설명", target: "초등 학부모", coaches: ["예시 소장님 B"] },
-      { month: 12, theme: "예시 테마 (12월)", desc: "예시 설명", target: "고등 학부모", coaches: ["예시 소장님 C"] }
-    ]
+    // 소장님 응답 페이지(coach.html) 미리보기용 신청 1건
+    request: {
+      id: "SEM-20261020-001",
+      coach: "예시 소장님 A",
+      academy: "클럽하와이",
+      director: "홍길동",
+      address: "서울 강남구 대치동 123",
+      region: "서울 강남구",
+      target: "중등 학부모",
+      attendees: "30",
+      request: "고입 준비 위주로 부탁드립니다.",
+      options: [
+        { date: plus(22), time: "14:00" },
+        { date: plus(29), time: "10:30" },
+        { date: plus(32), time: "19:00" }
+      ],
+      deadline: new Date(Date.now() + 60 * 3600 * 1000).toISOString(),
+      status: "소장님 확인중"
+    }
   };
 })();
