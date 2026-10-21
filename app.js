@@ -160,7 +160,7 @@
   function setActive(i) {
     S.active = i;
     var s = S.slots[i];
-    if (s.t) S.part = partOf(s.t);
+    S.part = s.t ? partOf(s.t) : "am";   // 시간을 아직 안 고른 순위는 오전부터
     if (s.d) { var d = parse(s.d); S.month = new Date(d.getFullYear(), d.getMonth(), 1); }
     $("calMsg").textContent = "";
     renderDates();
