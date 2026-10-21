@@ -94,13 +94,23 @@
   }
   function needCoaches() { return Math.min(3, S.coaches.length || 3); }
 
-  /* ---------- 가격표 ---------- */
-  function renderPriceTable() {
-    var rows = (C.KINDS || []).map(function (k) {
-      return "<tr><th>" + esc(k.name) + "<small>" + esc(k.time) + (k.note ? " · " + esc(k.note) : "") + "</small></th>" +
-        '<td class="mem"><b>' + priceOf(k.member) + "</b></td><td>" + priceOf(k.nonmember) + "</td></tr>";
-    }).join("");
-    $("priceTable").innerHTML = '<thead><tr><th></th><th class="mem">클럽하와이 회원가</th><th>비회원가</th></tr></thead><tbody>' + rows + "</tbody>";
+  /* ---------- 가격 비교 (3단계, 고른 종류 기준) ---------- */
+  function fixed(range) { return range && range[0] === range[1] ? range[0] : 0; }
+  function renderPricing() {
+    var k = kindOf(S.kind) || (C.KINDS || [])[0];
+    if (!k) return;
+    var mem = fixed(k.member), non = fixed(k.nonmember), save = mem && non > mem ? non - mem : 0;
+    var checks = (save ? ["비회원가보다 " + man(save) + "만원 할인"] : []).concat([k.time + " 진행", k.note || "강연자 대표 주제로 진행"]);
+    $("pricing").innerHTML =
+      '<p class="pr-eyebrow">' + esc(k.name) + " 가격</p>" +
+      '<h3 class="pr-title">' + (save ? "클럽하와이 회원이면<br><em>" + man(save) + "만원 더 저렴하게</em>" : "클럽하와이 회원가로<br><em>부담 없이</em>") + "</h3>" +
+      '<div class="pr-cards">' +
+        '<div class="pr-card dim"><span class="pr-name">비회원</span><span class="pr-price">' + (k.nonmember ? priceOf(k.nonmember) : "별도 안내") + '</span><span class="pr-unit">VAT 별도</span></div>' +
+        '<div class="pr-card best">' + (save ? '<span class="pr-badge">' + man(save) + "만원 할인</span>" : "") +
+          '<span class="pr-name">클럽하와이 회원</span>' + (save ? '<s class="pr-was">' + priceOf(k.nonmember) + "</s>" : "") +
+          '<span class="pr-price">' + priceOf(k.member) + '</span><span class="pr-unit">VAT 별도</span>' +
+          '<ul class="pr-checks">' + checks.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" +
+      "</div>";
     $("travelFee").textContent = man(C.TRAVEL_FEE || 0) + "만원";
   }
 
@@ -235,9 +245,16 @@
     renderCoachSlots();
   }
 
+  // 「1순위 강연자를 꼭 희망」 체크 중이면 2·3순위도 1순위와 같은 강연자로 채움
+  function syncFlexible() {
+    if ($("flexible").checked) S.ranks = S.ranks.length ? [S.ranks[0], S.ranks[0], S.ranks[0]] : [];
+    else S.ranks = S.ranks.slice(0, 1);
+  }
+
   function toggleRank(c) {
     var i = S.ranks.indexOf(c.name);
-    if (i >= 0) S.ranks.splice(i, 1);
+    if ($("flexible").checked) S.ranks = i >= 0 ? [] : [c.name, c.name, c.name];   // 같은 강연자를 누르면 빼고, 다른 강연자면 1순위를 바꿈
+    else if (i >= 0) S.ranks.splice(i, 1);
     else if (S.ranks.length >= 3) { toast("3명을 모두 골랐습니다. 바꾸려면 위에서 한 명을 빼 주세요."); return; }
     else S.ranks.push(c.name);
     // 대표 주제는 고른 강연자의 주제에서 고르므로, 빠진 강연자의 주제는 지운다
@@ -255,6 +272,12 @@
   }
   function setPickBtn() {
     var r = S.ranks.indexOf(detailFor.name), b = $("pickCoach");
+    if ($("flexible").checked) {   // 1순위만 고르는 상태 — 다른 강연자를 누르면 1순위가 바뀜
+      b.disabled = false;
+      b.textContent = r >= 0 ? "1순위에서 빼기" : "1순위로 정하기";
+      b.className = "btn " + (r >= 0 ? "ghost" : "primary");
+      return;
+    }
     b.disabled = r < 0 && S.ranks.length >= 3;
     b.textContent = r >= 0 ? RANKS[r] + "에서 빼기" : S.ranks.length >= 3 ? "3명을 모두 골랐습니다" : RANKS[S.ranks.length] + "로 추가";
     b.className = "btn " + (r >= 0 ? "ghost" : "primary");
@@ -299,9 +322,9 @@
       return '<button type="button" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
         '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
         '<span class="kind-meta">' + esc(k.time) + "</span>" +
-        '<span class="kind-prices"><span>회원 <strong>' + priceOf(k.member) + "</strong></span><span>비회원 <strong>" + priceOf(k.nonmember) + '</strong></span><small>VAT 별도</small></span>' +
         (k.note ? '<span class="kind-note">' + esc(k.note) + "</span>" : "") + "</span></button>";
     }).join("");
+    renderPricing();
     var k = kindOf(S.kind);
     $("topicBox").hidden = !k;
     if (!k) return;
@@ -399,7 +422,6 @@
     $("side").hidden = finished;
     $("bar").hidden = finished;
     $("pageHead").hidden = finished;
-    $("priceBand").hidden = step !== 1;   // 가격표는 첫 화면에서 크게 — 이후엔 종류·회원 카드에 가격이 다시 나옴
     if (step === 1) {
       if (!S.month) S.month = new Date(MIN_DATE.getFullYear(), MIN_DATE.getMonth(), 1);
       var firstEmpty = S.slots.findIndex(function (s) { return !s.d || !s.t; });
@@ -597,7 +619,13 @@
       var x = e.target.closest("[data-unrank]");
       if (x) toggleRank(findCoach(x.dataset.unrank));
     });
-    $("flexible").addEventListener("change", renderSummary);
+    $("flexible").addEventListener("change", function () {
+      syncFlexible();
+      var allowed = topicChoices();
+      S.topics = S.topics.filter(function (t) { return allowed.indexOf(t) >= 0; });
+      renderCoaches();
+      renderSummary();
+    });
     $("coachDetail").addEventListener("click", function (e) {
       var t = e.target.closest("[data-tab]");
       if (!t) return;
@@ -670,7 +698,6 @@
       $("contactTop").hidden = false;
       $("helpCard").hidden = false;
     }
-    renderPriceTable();
     bind();
     renderFilters();
     go(1);

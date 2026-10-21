@@ -381,9 +381,6 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .kind-body b { font-size: 16px; color: var(--ink); }
 .kind-meta { color: var(--ink); }
 .kind-meta strong { color: var(--blue); font-weight: 800; }
-.kind-prices { display: grid; gap: 2px; margin-top: 2px; color: var(--ink); }
-.kind-prices strong { color: var(--blue); font-weight: 800; }
-.kind-prices small { color: var(--ink-60); font-size: 12px; font-weight: 600; }
 .vat { font-style: normal; font-weight: 700; color: var(--ink); background: var(--blue-08); padding: 1px 6px; border-radius: 4px; }
 .done-rk { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .done-rk li { display: flex; align-items: center; gap: 8px; }
@@ -431,3 +428,34 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .steps li span { white-space: nowrap; }
 }
 .demo-bar a { color: inherit; margin-left: 6px; text-underline-offset: 3px; }
+
+/* 가격 비교 (3단계) */
+.pricing { margin-top: 20px; padding: 26px 20px 24px; border-radius: var(--r); background: var(--blue-08); text-align: center; }
+.pr-eyebrow { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-60); }
+.pr-title { margin: 6px 0 22px; font-size: 22px; line-height: 1.35; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+.pr-title em { font-style: normal; color: var(--blue); }
+.pr-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 12px; align-items: end; max-width: 520px; margin: 0 auto; text-align: left; }
+.pr-card { position: relative; display: grid; gap: 2px; padding: 18px 16px; border-radius: var(--r); background: #fff; }
+.pr-card.dim { background: rgba(255, 255, 255, .6); }
+.pr-card.dim .pr-name, .pr-card.dim .pr-unit { color: var(--ink-40); }
+.pr-card.dim .pr-price { font-size: 20px; color: var(--ink-40); }
+.pr-card.best { padding: 24px 18px 18px; border: 2px solid var(--blue); box-shadow: 0 14px 30px rgba(37, 99, 235, .18); }
+.pr-name { font-size: 14px; font-weight: 700; color: var(--ink-60); }
+.best .pr-name { font-size: 16px; color: var(--ink); }
+.pr-was { margin-top: 6px; font-size: 14px; color: var(--ink-40); }
+.pr-price { font-size: 28px; font-weight: 800; color: var(--blue); letter-spacing: -.02em; }
+.pr-unit { font-size: 12px; font-weight: 600; color: var(--ink-60); }
+.pr-badge { position: absolute; top: -13px; right: 14px; padding: 4px 10px; border-radius: 13px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 800; }
+.pr-checks { list-style: none; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 13px; color: var(--ink-60); }
+.pr-checks li { display: flex; gap: 8px; align-items: flex-start; }
+.pr-checks li::before { content: ""; flex: none; width: 10px; height: 5px; margin-top: 5px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: rotate(-45deg); }
+#step3 .travel { margin-top: 12px; padding: 0; background: none; }
+@media (max-width: 640px) {
+  .pricing { padding: 22px 14px 18px; }
+  .pr-title { font-size: 19px; }
+  .pr-cards { gap: 8px; }
+  .pr-card { padding: 14px 12px; }
+  .pr-card.best { padding: 22px 14px 14px; }
+  .pr-price { font-size: 23px; }
+  .pr-card.dim .pr-price { font-size: 17px; }
+}
