@@ -268,8 +268,8 @@ function validate_(d) {
   for (var k = 0; k < 3; k++) {
     var o = d.options[k];
     if (!o || !/^\d{4}-\d{2}-\d{2}$/.test(o.date) || !/^\d{2}:\d{2}$/.test(o.time)) return '희망 날짜와 시간을 확인해 주세요.';
-    if (seen[o.date]) return '희망 날짜가 겹칩니다.';
-    seen[o.date] = 1;
+    if (seen[o.date + ' ' + o.time]) return '희망 날짜·시간이 겹칩니다.';   // 같은 날짜는 시간이 다르면 가능
+    seen[o.date + ' ' + o.time] = 1;
     if (parseDate_(o.date) < min) return '진행일 최소 2주 전까지만 신청할 수 있습니다.';
   }
   return '';

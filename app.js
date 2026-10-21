@@ -152,11 +152,11 @@
     for (var d = 1; d <= last; d++) {
       var dt = new Date(m.getFullYear(), m.getMonth(), d), s = ymd(dt);
       var early = dt < MIN_DATE;
-      var idx = -1;
-      S.slots.forEach(function (x, k) { if (x.d === s) idx = k; });
-      var cls = "day" + (s === t ? " today" : "") + (idx >= 0 ? " pick" : "") + (idx === S.active ? " cur" : "");
+      var nos = [];   // 같은 날짜를 여러 순위로 고를 수 있음
+      S.slots.forEach(function (x, k) { if (x.d === s) nos.push(k); });
+      var cls = "day" + (s === t ? " today" : "") + (nos.length ? " pick" : "") + (nos.indexOf(S.active) >= 0 ? " cur" : "");
       html += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (early ? " disabled" : "") + ">" + d +
-        (idx >= 0 ? '<span class="no">' + (idx + 1) + "</span>" : "") + "</button>";
+        (nos.length ? '<span class="no">' + nos.map(function (k) { return k + 1; }).join("·") + "</span>" : "") + "</button>";
     }
     $("calDays").innerHTML = html;
     $("prevMonth").disabled = m <= new Date(today().getFullYear(), today().getMonth(), 1);
@@ -193,9 +193,6 @@
 
   function pickDate(s) {
     if (parse(s) < MIN_DATE) { $("calMsg").textContent = "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
-    var dup = -1;
-    S.slots.forEach(function (x, k) { if (x.d === s && k !== S.active) dup = k; });
-    if (dup >= 0) { $("calMsg").textContent = "이미 " + RANKS[dup] + "로 고른 날짜입니다."; return; }
     $("calMsg").textContent = "";
     var slot = S.slots[S.active];
     slot.d = s;
@@ -204,6 +201,10 @@
   }
 
   function pickTime(t) {
+    var d = S.slots[S.active].d, dup = -1;
+    S.slots.forEach(function (x, k) { if (k !== S.active && x.d === d && x.t === t) dup = k; });
+    if (dup >= 0) { $("calMsg").textContent = "이미 " + RANKS[dup] + "로 고른 날짜·시간입니다. 같은 날이면 시간을 다르게 골라 주세요."; return; }
+    $("calMsg").textContent = "";
     S.slots[S.active].t = t;
     renderDates();
     advance();
