@@ -174,8 +174,8 @@
     $("calMsg").textContent = "";
     var slot = S.slots[S.active];
     slot.d = s;
+    slot.t = "";   // 날짜를 고르면 시간도 직접 다시 눌러야 다음 순위로 넘어감
     renderDates();
-    if (slot.t) advance();
   }
 
   function pickTime(t) {
