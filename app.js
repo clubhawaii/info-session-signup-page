@@ -174,11 +174,6 @@
     $("calMsg").textContent = "";
     var slot = S.slots[S.active];
     slot.d = s;
-    // 시간을 아직 안 골랐으면 앞 순위 시간을 기본값으로
-    if (!slot.t) {
-      var prev = S.slots.filter(function (x) { return x.t; })[0];
-      if (prev) { slot.t = prev.t; S.part = partOf(prev.t); }
-    }
     renderDates();
     if (slot.t) advance();
   }
