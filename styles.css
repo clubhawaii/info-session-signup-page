@@ -381,6 +381,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .kind-body b { font-size: 16px; color: var(--ink); }
 .kind-meta { color: var(--ink); }
 .kind-meta strong { color: var(--blue); font-weight: 800; }
+.kind-meta small { color: var(--ink-60); font-size: 12px; }
 .kind-note { font-size: 12px; font-weight: 600; color: var(--blue); }
 .topic-box { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); display: grid; gap: 4px; }
 .topic-box h3 { font-size: 17px; font-weight: 800; }

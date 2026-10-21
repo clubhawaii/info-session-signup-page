@@ -298,7 +298,7 @@
       var on = S.kind === k.id;
       return '<button type="button" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
         '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
-        '<span class="kind-meta">' + esc(k.time) + " · 회원 <strong>" + priceOf(k.member) + "</strong></span>" +
+        '<span class="kind-meta">' + esc(k.time) + " · 회원 <strong>" + priceOf(k.member) + "</strong> · 비회원 <strong>" + priceOf(k.nonmember) + "</strong> <small>(VAT 별도)</small></span>" +
         (k.note ? '<span class="kind-note">' + esc(k.note) + "</span>" : "") + "</span></button>";
     }).join("");
     var k = kindOf(S.kind);
@@ -326,7 +326,7 @@
     if (!k) return "종류 선택 후 안내";
     if (m === "비회원") return priceOf(k.nonmember);
     if (m === "회원") return priceOf(k.member);
-    return "회원 " + priceOf(k.member);
+    return "회원 " + priceOf(k.member) + " · 비회원 " + priceOf(k.nonmember);   // 회원 여부는 4단계에서 고름
   }
 
   function summaryHtml() {

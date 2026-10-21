@@ -16,8 +16,8 @@ window.APP_CONFIG = {
       name: "대표 주제 설명회",
       desc: "강연자의 대표 주제로 진행합니다.",
       time: "90분 ~ 2시간",
-      member: [900000, 900000],
-      nonmember: null
+      member: [600000, 600000],
+      nonmember: [1000000, 1000000]
     },
     {
       id: "custom",
