@@ -1,7 +1,8 @@
 /**
  * 강연자 설명회 신청 페이지 — 구글시트 연동 스크립트
- * 흐름: 원장님 신청(희망일 1~3순위 + 강연자 1~3순위 + 주제) → (알림톡) 본사(담당자·이사님·대표님)
- *       → 담당자가 시트 메뉴 「설명회 → 강연자에게 확인 요청」 → (알림톡) 강연자, 응답 기한 24시간
+ * 흐름: 원장님 신청(희망일 1~3순위 + 강연자 1~3순위 + 주제) → 시트에 저장되면 자동으로
+ *       (알림톡) 1순위 강연자에게 확인 요청(응답 기한 24시간) + (알림톡) 본사(담당자·이사님·대표님)
+ *       → 차순위 강연자에게는 담당자가 시트 메뉴 「설명회 → 강연자에게 확인 요청」으로 보냄
  *       → 강연자가 coach.html에서 「가능한 날짜 선택 / 조율 필요 / 진행 불가」 → (알림톡) 본사
  *       → 24시간 무응답이면 「응답 없음」 + 본사 알림 → 담당자가 차순위 강연자에게 다시 요청
  *       → 담당자가 원장님께 직접 확정 연락 후 상태를 「일정확정」으로 → 결제안내 → 결제완료 → 진행완료
@@ -60,7 +61,7 @@ var TEMPLATES = {
     '[설명회 신청] 새 신청 #{신청번호}\n\n학원: #{학원명} (#{원장님} 원장님 · #{회원})\n연락처: #{연락처}\n주소: #{지역}\n' +
     '대상: #{대상} · 예상 인원 #{인원}\n설명회: #{종류}\n주제: #{주제}\n요청사항: #{요청사항}\n\n' +
     '■ 희망 날짜\n1순위 #{희망일1}\n2순위 #{희망일2}\n3순위 #{희망일3}\n\n■ 강연자\n1순위 #{강연자1}\n2순위 #{강연자2}\n3순위 #{강연자3}\n#{날짜조정}\n\n' +
-    '원장님께 3일 안에 연락이 가도록 1순위 강연자부터 확인 요청을 보내 주세요.',
+    '#{자동요청}',
   COACH_REQUEST:
     '[클럽하와이] 설명회 일정 확인 요청\n\n#{강연자}님, 설명회 요청이 들어왔습니다.\n\n' +
     '■ 학원: #{학원명}\n■ 지역: #{지역}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 설명회: #{종류}\n■ 주제: #{주제}\n■ 요청사항: #{요청사항}\n\n' +
@@ -244,7 +245,13 @@ function apply_(d) {
   sh.getRange(r, col_('희망일1'), 1, 6).setNumberFormat('@');   // 날짜·시간이 자동 변환되지 않게 먼저 글자 형식으로
   sh.getRange(r, 1, 1, APP_HEADERS.length).setValues([row]);
 
-  notifyHQ_('HQ_NEW', vars_(rowGetter_(row)));
+  // 1순위 강연자에게 자동으로 확인 요청을 보낸 뒤 본사에 알림
+  var coach = String(d.coaches[0] || '').trim(), ask = askCoach_(sh, r, coach);
+  var v = vars_(rowGetter_(sh.getRange(r, 1, 1, APP_HEADERS.length).getValues()[0]));
+  v['자동요청'] = ask.ok
+    ? '1순위 강연자 ' + coach + '님께 확인 요청을 자동으로 보냈습니다(응답 기한 ' + v['응답기한'] + '). 응답이 오면 다시 알려 드립니다.'
+    : '1순위 강연자 ' + coach + '님께 자동 요청을 보내지 못했습니다(' + ask.error + '). 시트 메뉴에서 직접 확인 요청을 보내 주세요.';
+  notifyHQ_('HQ_NEW', v);
   return { ok: true, id: id };
 }
 
@@ -320,8 +327,16 @@ function menuAskCoach() {
   var input = res.getResponseText().trim();
   var coach = /^[123]$/.test(input) ? String(g('강연자' + input)) : input;
   if (!coach) { ui.alert('강연자를 찾지 못했습니다.'); return; }
+  var ask = askCoach_(sh, row, coach);
+  if (!ask.ok) { ui.alert(ask.error + ' 연락처를 넣은 뒤 다시 시도해 주세요.'); return; }
+  ui.alert(coach + '님에게 확인 요청을 ' + (ask.sent ? '보냈습니다.' : '기록했습니다. (알림톡 설정 전이라 「알림기록」에 문구만 남겼습니다)') +
+    '\n응답 기한: ' + ask.due + '\n응답 링크: ' + ask.link);
+}
+
+/** 강연자에게 확인 요청(알림톡) — 신청 직후 1순위 자동 요청과 담당자 메뉴가 함께 씀 */
+function askCoach_(sh, row, coach) {
   var phone = coachPhone_(coach);
-  if (!phone) { ui.alert('「강연자」 시트에서 ' + coach + '님의 연락처를 찾지 못했습니다. 연락처를 넣은 뒤 다시 시도해 주세요.'); return; }
+  if (!phone) return { ok: false, error: '「강연자」 시트에서 ' + coach + '님의 연락처를 찾지 못했습니다.' };
 
   var now = new Date(), due = new Date(now.getTime() + RESPONSE_HOURS * 3600 * 1000);
   var token = Utilities.getUuid().replace(/-/g, '');   // 새 요청마다 새 링크 — 이전 강연자의 링크는 더 이상 쓸 수 없음
@@ -332,8 +347,7 @@ function menuAskCoach() {
   var v = vars_(rowGetter_(sh.getRange(row, 1, 1, APP_HEADERS.length).getValues()[0]));
   v['링크'] = COACH_PAGE_URL + '?t=' + token;
   var sent = notify_('COACH_REQUEST', coach, phone, v);
-  ui.alert(coach + '님에게 확인 요청을 ' + (sent ? '보냈습니다.' : '기록했습니다. (알림톡 설정 전이라 「알림기록」에 문구만 남겼습니다)') +
-    '\n응답 기한: ' + v['응답기한'] + '\n응답 링크: ' + v['링크']);
+  return { ok: true, sent: sent, due: v['응답기한'], link: v['링크'] };
 }
 
 /* ================= 1시간마다: 응답 기한 · 결제 기한 확인 ================= */
