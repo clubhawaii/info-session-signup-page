@@ -19,6 +19,7 @@
     .opt .rk { flex: none; width: 52px; height: 28px; border-radius: 14px; background: var(--blue-08); color: var(--blue); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
     .opt .d { font-size: 17px; font-weight: 700; }
     .opt .t { font-size: 14px; color: var(--ink-60); }
+    .opt:disabled { opacity: .45; cursor: not-allowed; }
     .opt .radio { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--ink-25); flex: none; }
     .opt.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
     .opt.on .rk { background: var(--blue); color: #fff; }
@@ -60,7 +61,6 @@
     function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
     function krDate(s) { var d = parse(s); return d.getFullYear() + "년 " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ")"; }
     function krTime(t) { var p = String(t).split(":"), h = +p[0], m = +p[1]; return (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + "시" + (m ? " " + m + "분" : ""); }
-    function krDue(iso) { var d = new Date(iso); return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ") " + krTime(d.getHours() + ":" + d.getMinutes()); }
     function toast(m) { var t = $("toast"); t.textContent = m; t.classList.add("show"); setTimeout(function () { t.classList.remove("show"); }, 2400); }
 
     function load() {
@@ -81,12 +81,12 @@
         ["설명회", r.kind], ["주제", r.topics], ["요청사항", r.request || "없음"]];
       $("app").innerHTML =
         "<h1>" + esc(r.coach) + "님, 설명회 일정을 골라 주세요</h1>" +
-        '<div class="due"><b>' + esc(krDue(r.deadline)) + "까지</b> 응답해 주세요. 기한까지 응답하지 않으시면 설명회 기회는 다른 강연자께 넘어갑니다.</div>" +
+        '<div class="due"><b>24시간 이내에</b> 응답해 주세요. 응답이 없으면 설명회 기회는 다른 강연자께 넘어갑니다.</div>" +
         '<div class="info"><div class="rows">' + rows.map(function (x) { return "<div><span>" + x[0] + "</span><b>" + esc(x[1]) + "</b></div>"; }).join("") + "</div></div>" +
         (r.flexible ? '<div class="due flex">원장님이 <b>강연자님을 1순위로 꼭 희망</b>하셔서, 강연자님 일정에 맞춰 날짜 조정이 가능합니다. 아래 날짜가 어려우시면 「날짜 조율」로 가능한 날짜를 알려 주세요.</div>' : "") +
         '<div class="opts" id="opts">' +
         r.options.map(function (o, i) {
-          return '<button type="button" class="opt" data-c="' + i + '"><span class="rk">' + RANKS[i] + '</span><span><div class="d">' + esc(krDate(o.date)) + '</div><div class="t">' + esc(krTime(o.time)) + ' 시작</div></span><span class="radio"></span></button>';
+          return '<button type="button" class="opt" data-c="' + i + '"' + (o.blocked ? " disabled" : "") + '><span class="rk">' + RANKS[i] + '</span><span><div class="d">' + esc(krDate(o.date)) + '</div><div class="t">' + esc(krTime(o.time)) + (o.blocked ? " 시작 · 이미 다른 설명회가 확정된 날짜예요" : " 시작") + '</div></span><span class="radio"></span></button>';
         }).join("") +
         '<button type="button" class="opt adj" data-c="adjust"><span class="rk">조율</span><span><div class="d">세 날짜 모두 어려워요</div><div class="t">가능한 날짜를 알려 주시면 본사가 조율합니다</div></span><span class="radio"></span></button>' +
         '<button type="button" class="opt adj" data-c="decline"><span class="rk">불가</span><span><div class="d">이번 설명회는 진행이 어려워요</div><div class="t">지역·주제 등 사정을 알려 주세요</div></span><span class="radio"></span></button>' +
@@ -95,7 +95,7 @@
       $("cbar").hidden = false;
       $("opts").addEventListener("click", function (e) {
         var b = e.target.closest("[data-c]");
-        if (!b) return;
+        if (!b || b.disabled) return;
         choice = b.dataset.c;
         Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
         var memo = choice === "adjust" || choice === "decline";

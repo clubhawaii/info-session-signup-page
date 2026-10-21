@@ -6,7 +6,7 @@
   <title>학생·학부모 설명회 신청</title>
   <meta name="description" content="학생·학부모 설명회 — 희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261021k">
+  <link rel="stylesheet" href="styles.css?v=20261021m">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
@@ -14,7 +14,7 @@
   <header class="top">
     <div class="top-in">
       <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>설명회 신청</span></a>
-      <a class="top-link" id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
+      <a class="top-link" data-contact id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
     </div>
   </header>
 
@@ -37,7 +37,8 @@
         <!-- 1. 희망 날짜 -->
         <section class="panel" id="step1">
           <h2>희망 날짜 3개를 골라 주세요</h2>
-          <p class="sub">설명회는 진행일 최소 2주 전까지 신청할 수 있습니다. 학부모 모집을 위해 3~4주 전 신청을 권장합니다.</p>
+          <p class="sub">고르신 3개 날짜 중 <b>하루</b>로 설명회 날짜가 정해집니다. 강연자 일정을 확인해 1순위부터 순서대로 맞춰 드려요.</p>
+          <p class="sub">설명회는 진행일 최소 2주 전까지 신청할 수 있습니다. 학부모 모집을 위해 3~4주 전 신청을 권장합니다.<br>2주 안의 급한 일정은 <a class="inline-link" data-contact href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>로 문의해 주세요.</p>
 
           <div class="slots" id="slots"></div>
 
@@ -162,7 +163,7 @@
                   <input name="vaddr2" placeholder="상세 주소·장소 이름 (예: ○○구민회관 2층 강당)">
                 </div>
               </div>
-              <label class="field wide"><span>요청사항 <em>선택</em></span><textarea name="request" rows="3" placeholder="장비, 참고할 점을 적어 주세요."></textarea></label>
+              <label class="field wide"><span>요청사항 <em>선택</em></span><textarea name="request" rows="4" placeholder="예) 희망 날짜 3일 모두 설명회를 진행하고 싶어요.&#10;예) 같은 날 오전·오후 2회(초등·중등 따로) 진행하고 싶어요.&#10;예) 빔프로젝터·마이크가 없어요."></textarea></label>
             </div>
 
             <div class="agree">
@@ -199,6 +200,7 @@
                   <li>결제 안내 때 구간별 환불 날짜를 함께 알려 드립니다.</li>
                   <li>일정 변경은 진행일 15일 전까지 1회 가능합니다. (강연자 일정이 가능한 경우)</li>
                   <li>강연자 사정으로 진행이 어려우면 전액 환불하거나 다른 날짜로 조정해 드립니다.</li>
+                  <li>신청 후 날짜·인원 변경과 취소는 <b>카카오톡 클럽하와이cs 채널</b>로만 가능합니다.</li>
                 </ul>
               </div>
               <label class="check"><input type="checkbox" name="agreePolicy" required><span>위 취소·환불 규정을 확인했습니다 <em>필수</em></span></label>
@@ -243,7 +245,7 @@
         <div class="card help" id="helpCard" hidden>
           <strong>도움이 필요하신가요?</strong>
           <p>설명회 진행이 처음이시면 편하게 물어보세요.</p>
-          <a class="btn ghost sm" id="contactSide" href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>
+          <a class="btn ghost sm" data-contact id="contactSide" href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>
         </div>
       </aside>
     </div>
@@ -261,7 +263,7 @@
   <footer class="foot">
     <button type="button" class="link" data-open="policy">취소·환불 규정</button>
     <span>·</span>
-    <a class="foot-contact" id="contactFoot" target="_blank" rel="noopener">문의: 카카오톡 <b>클럽하와이cs</b> 채널</a>
+    <a class="foot-contact" data-contact id="contactFoot" target="_blank" rel="noopener">문의: 카카오톡 <b>클럽하와이cs</b> 채널</a>
   </footer>
 
   <!-- 강연자 자세히 보기 -->
@@ -296,8 +298,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261021k"></script>
-  <script src="sample-data.js?v=20261021k"></script>
-  <script src="app.js?v=20261021k"></script>
+  <script src="config.js?v=20261021m"></script>
+  <script src="sample-data.js?v=20261021m"></script>
+  <script src="app.js?v=20261021m"></script>
 </body>
 </html>

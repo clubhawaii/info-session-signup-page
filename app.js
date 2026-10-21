@@ -48,7 +48,7 @@
     return (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + "시" + (m ? " " + m + "분" : "");
   }
   function daysFromToday(s) { return Math.round((parse(s) - today()) / 864e5); }
-  var MIN_DATE = addDays(today(), C.MIN_DAYS || 15);
+  var MIN_DATE = addDays(today(), C.MIN_DAYS || 14);
 
   /* ---------- 가격 ---------- */
   function man(n) { return n % 10000 === 0 ? (n / 10000).toLocaleString("ko-KR") : (n / 10000).toFixed(1); }
@@ -213,6 +213,8 @@
   /* ---------- 2단계: 강연자 ---------- */
   function findCoach(name) { return S.coaches.filter(function (c) { return c.name === name; })[0]; }
   function busyCount(c) { return S.slots.filter(function (s) { return s.d && S.blocked[c.name + "|" + s.d]; }).length; }
+  // 시트에서 「일정확정」된 날짜는 막힘 — 희망 날짜가 모두 막힌 강연자는 고를 수 없음
+  function fullyBusy(c) { return !!c && S.slots.every(function (s) { return s.d && S.blocked[c.name + "|" + s.d]; }); }
 
   function renderFilters() {
     $("filters").innerHTML = ["전체"].concat(C.TARGETS || []).map(function (o) {
@@ -234,15 +236,19 @@
     var shown = S.coaches.filter(function (c) {
       return (S.filter === "전체" || c.targets.indexOf(S.filter) >= 0) && (!q || c.name.indexOf(q) >= 0);
     });
+    var before = S.ranks.length;
+    S.ranks = S.ranks.filter(function (n) { return !fullyBusy(findCoach(n)); });   // 날짜를 바꿔 모두 막힌 강연자는 순위에서 뺌
+    if (S.ranks.length < before) toast("희망 날짜에 이미 일정이 있는 강연자를 순위에서 뺐습니다.");
     $("coachEmpty").hidden = shown.length > 0;
     $("coachList").innerHTML = shown.map(function (c) {
-      var r = S.ranks.indexOf(c.name), busy = busyCount(c);
-      return '<div class="coach' + (r >= 0 ? " on" : "") + '" role="button" tabindex="0" aria-pressed="' + (r >= 0) + '" data-c="' + esc(c.name) + '">' +
+      var r = S.ranks.indexOf(c.name), busy = busyCount(c), off = fullyBusy(c);
+      return '<div class="coach' + (r >= 0 ? " on" : "") + (off ? " off" : "") + '" role="button" tabindex="0" aria-pressed="' + (r >= 0) + '"' + (off ? ' aria-disabled="true"' : "") + ' data-c="' + esc(c.name) + '">' +
         avatar(c) +
         '<div class="coach-info"><div class="coach-name">' + esc(c.name) + "</div>" +
         '<div class="coach-sum">' + esc(c.summary) + "</div>" +
         '<div class="tags">' + c.targets.map(function (t) { return '<span class="tag">' + esc(t) + "</span>"; }).join("") + "</div>" +
-        (busy ? '<div class="busy">희망 날짜 중 ' + busy + "일은 이미 일정이 있어요</div>" : "") +
+        (off ? '<div class="busy full">희망 날짜에 모두 일정이 있어 고를 수 없어요</div>'
+          : busy ? '<div class="busy">희망 날짜 중 ' + busy + "개는 이미 일정이 있어 그 날짜엔 진행할 수 없어요</div>" : "") +
         '<button type="button" class="link coach-more" data-more="' + esc(c.name) + '">자세히 보기</button></div>' +
         '<span class="rank-badge">' + (r >= 0 ? RANKS[r] : "") + "</span></div>";
     }).join("");
@@ -257,6 +263,7 @@
 
   function toggleRank(c) {
     var i = S.ranks.indexOf(c.name);
+    if (i < 0 && fullyBusy(c)) { toast(c.name + " 강연자는 희망 날짜에 모두 일정이 있어요. 날짜를 바꾸거나 다른 강연자를 골라 주세요."); return; }
     if ($("flexible").checked) S.ranks = i >= 0 ? [] : [c.name, c.name, c.name];   // 같은 강연자를 누르면 빼고, 다른 강연자면 1순위를 바꿈
     else if (i >= 0) S.ranks.splice(i, 1);
     else if (S.ranks.length >= 3) { toast("3명을 모두 골랐습니다. 바꾸려면 위에서 한 명을 빼 주세요."); return; }
@@ -276,6 +283,7 @@
   }
   function setPickBtn() {
     var r = S.ranks.indexOf(detailFor.name), b = $("pickCoach");
+    if (r < 0 && fullyBusy(detailFor)) { b.disabled = true; b.textContent = "희망 날짜에 일정이 있어요"; b.className = "btn primary"; return; }
     if ($("flexible").checked) {   // 1순위만 고르는 상태 — 다른 강연자를 누르면 1순위가 바뀜
       b.disabled = false;
       b.textContent = r >= 0 ? "1순위에서 빼기" : "1순위로 정하기";
@@ -803,7 +811,7 @@
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
     renderTargets();
     if (C.CONTACT_URL) {
-      $("contactTop").href = $("contactSide").href = $("contactFoot").href = C.CONTACT_URL;
+      each(document.querySelectorAll("[data-contact]"), function (a) { a.href = C.CONTACT_URL; });
       $("contactTop").hidden = false;
       $("helpCard").hidden = false;
     }

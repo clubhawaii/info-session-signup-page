@@ -1,7 +1,7 @@
 /**
  * 강연자 설명회 신청 페이지 — 구글시트 연동 스크립트
  * 흐름: 원장님 신청(희망일 1~3순위 + 강연자 1~3순위 + 주제) → 시트에 저장되면 자동으로
- *       (알림톡) 1순위 강연자에게 확인 요청(응답 기한 24시간) + (알림톡) 본사(담당자·이사님·대표님)
+ *       (알림톡) 1순위 강연자에게 확인 요청(24시간 이내 응답) — 불가·무응답이면 다음 순위 강연자에게 자동 요청 + (알림톡) 본사(담당자·이사님·대표님)
  *       → 차순위 강연자에게는 담당자가 시트 메뉴 「설명회 → 강연자에게 확인 요청」으로 보냄
  *       → 강연자가 coach.html에서 「가능한 날짜 선택 / 조율 필요 / 진행 불가」 → (알림톡) 본사
  *       → 24시간 무응답이면 「응답 없음」 + 본사 알림 → 담당자가 차순위 강연자에게 다시 요청
@@ -24,7 +24,7 @@ var RESPONSE_HOURS = 24;
 // ▼ 결제 기한: 상태를 「결제안내」로 바꾼 때부터 (시간). 기한이 주말에 걸리면 월요일 같은 시각으로 미룸
 var PAY_HOURS = 24;
 // ▼ 진행일까지 최소 남아야 하는 날 수 (config.js의 MIN_DAYS와 같게)
-var MIN_DAYS = 15;
+var MIN_DAYS = 14;
 
 /*
  * 알림톡 발송 설정 (솔라피 기준) — 스크립트 편집기 ⚙ 프로젝트 설정 → 스크립트 속성
@@ -45,7 +45,7 @@ var NEEDS_HQ = [ST.NEW, ST.ACCEPTED, ST.ADJUST, ST.DECLINED, ST.NO_RESPONSE];   
 var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '진행 장소', '회원 여부', '설명회 대상', '예상 참석 인원',
   '설명회 종류', '주제', '주제 상세', '요청사항',
   '희망일1', '시간1', '희망일2', '시간2', '희망일3', '시간3', '강연자1', '강연자2', '강연자3', '날짜 조정 가능',
-  '요청 강연자', '요청 일시', '응답 기한', '강연자 응답', '응답 일시', '강연자 메모',
+  '요청 강연자', '요청 일시', '응답 기한', '강연자 응답', '응답 일시', '강연자 메모', '응답 이력',
   '확정 강연자', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
   '결제 안내 문구', '담당자', '메모', '결제 기한 알림', '응답 토큰'];
 var COACH_HEADERS = ['이름', '노출', '연락처', '프로필 사진 URL', '대표 경력 (요약)', '대표 경력 (전체)', '설명회 주제', '대상 태그', '진행 지역', '강의 영상 URL', '사진 샘플 URL'];
@@ -67,7 +67,7 @@ var TEMPLATES = {
     '■ 학원: #{학원명}\n■ 장소: #{장소}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 설명회: #{종류}\n■ 주제: #{주제}\n■ 요청사항: #{요청사항}\n\n' +
     '■ 희망 일정\n1순위 #{희망일1}\n2순위 #{희망일2}\n3순위 #{희망일3}\n#{날짜조정}\n\n' +
     '아래 링크에서 가능한 날짜를 골라 주세요. 날짜가 모두 어렵거나 진행이 어려우시면 링크에서 알려 주세요.\n▶ #{링크}\n\n' +
-    '※ #{응답기한}까지 응답하지 않으시면 설명회 기회는 다른 강연자께 넘어갑니다.',
+    '※ 24시간 이내에 응답해 주세요. 응답이 없으면 설명회 기회는 다른 강연자께 넘어갑니다.',
   HQ_ACCEPTED:
     '[설명회] 강연자 수락 #{신청번호}\n\n#{요청강연자}님이 #{확정일시}(#{순위}) 가능하다고 답했습니다.\n학원: #{학원명} (#{원장님} 원장님 · #{연락처})\n\n' +
     '원장님께 확정 연락 후 시트 상태를 「일정확정」으로 바꿔 주세요.',
@@ -76,10 +76,10 @@ var TEMPLATES = {
     '학원: #{학원명} (#{원장님} 원장님 · #{연락처})\n강연자와 원장님 사이 날짜를 조율하거나 차순위 강연자에게 요청해 주세요.',
   HQ_DECLINED:
     '[설명회] 강연자 진행 불가 #{신청번호}\n\n#{요청강연자}님이 진행이 어렵다고 답했습니다.\n강연자 메모: #{메모}\n\n' +
-    '학원: #{학원명}\n강연자 순위: 1순위 #{강연자1} / 2순위 #{강연자2} / 3순위 #{강연자3}\n차순위 강연자에게 확인 요청을 보내 주세요.',
+    '학원: #{학원명}\n강연자 순위: 1순위 #{강연자1} / 2순위 #{강연자2} / 3순위 #{강연자3}\n\n#{다음요청}',
   HQ_NO_RESPONSE:
-    '[설명회] 강연자 응답 없음 #{신청번호}\n\n#{요청강연자}님이 기한(#{응답기한})까지 응답하지 않았습니다.\n\n' +
-    '학원: #{학원명}\n강연자 순위: 1순위 #{강연자1} / 2순위 #{강연자2} / 3순위 #{강연자3}\n주제: #{주제}\n차순위 강연자에게 확인 요청을 보내 주세요.',
+    '[설명회] 강연자 응답 없음 #{신청번호}\n\n#{요청강연자}님이 24시간 안에 응답하지 않았습니다.\n\n' +
+    '학원: #{학원명}\n강연자 순위: 1순위 #{강연자1} / 2순위 #{강연자2} / 3순위 #{강연자3}\n주제: #{주제}\n\n#{다음요청}',
   HQ_PAY_OVERDUE:
     '[설명회] 결제 기한 지남 #{신청번호}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n확정: #{확정강연자} · #{확정일시}\n결제 기한: #{결제기한}\n\n' +
     '원장님께 확인 후 결제 또는 취소 처리해 주세요. 취소하면 강연자 날짜가 다시 열립니다.'
@@ -178,7 +178,7 @@ function doGet(e) {
 function getRequest_(token) {
   var hit = findByToken_(token);
   if (!hit) return { ok: false, error: '요청을 찾을 수 없습니다. 알림톡의 링크로 다시 들어와 주세요.' };
-  var g = hit.get, coach = String(g('요청 강연자'));
+  var g = hit.get, coach = String(g('요청 강연자')), blocked = blockedSet_();
   var rank = [1, 2, 3].filter(function (i) { return String(g('강연자' + i)) === coach; })[0] || 0;
   var chosen = String(g('강연자 응답')).match(/^(\d)순위/);
   return {
@@ -188,7 +188,10 @@ function getRequest_(token) {
       address: String(g('학원 주소')), venue: String(g('진행 장소') || g('학원 주소')), target: String(g('설명회 대상')), attendees: String(g('예상 참석 인원') || ''),
       kind: String(g('설명회 종류')), topics: String(g('주제')) + (g('주제 상세') ? ' — ' + g('주제 상세') : ''),
       request: String(g('요청사항') || ''), flexible: g('날짜 조정 가능') === 'Y' && rank === 1,
-      options: [1, 2, 3].map(function (i) { return { date: dateStr_(g('희망일' + i)), time: timeStr_(g('시간' + i)) }; }),
+      options: [1, 2, 3].map(function (i) {
+        var ds = dateStr_(g('희망일' + i));
+        return { date: ds, time: timeStr_(g('시간' + i)), blocked: !!blocked[coach.trim() + '|' + ds] };   // 이미 확정된 날짜는 고를 수 없음
+      }),
       deadline: new Date(g('응답 기한')).toISOString(),
       status: String(g('상태')),
       chosen: chosen ? +chosen[1] - 1 : null
@@ -249,7 +252,7 @@ function apply_(d) {
   var coach = String(d.coaches[0] || '').trim(), ask = askCoach_(sh, r, coach);
   var v = vars_(rowGetter_(sh.getRange(r, 1, 1, APP_HEADERS.length).getValues()[0]));
   v['자동요청'] = ask.ok
-    ? '1순위 강연자 ' + coach + '님께 확인 요청을 자동으로 보냈습니다(응답 기한 ' + v['응답기한'] + '). 응답이 오면 다시 알려 드립니다.'
+    ? '1순위 강연자 ' + coach + '님께 확인 요청을 자동으로 보냈습니다(24시간 이내 응답). 응답이 오면 다시 알려 드립니다.'
     : '1순위 강연자 ' + coach + '님께 자동 요청을 보내지 못했습니다(' + ask.error + '). 시트 메뉴에서 직접 확인 요청을 보내 주세요.';
   notifyHQ_('HQ_NEW', v);
   return { ok: true, id: id };
@@ -283,8 +286,10 @@ function respond_(d) {
   var v = vars_(g), now = new Date(), memo = safe_(String(d.memo || '').slice(0, 500));
   v['메모'] = memo || '없음';
   if (d.choice === 'adjust' || d.choice === 'decline') {
-    var adj = d.choice === 'adjust';
-    setCells_(sh, row, { '상태': adj ? ST.ADJUST : ST.DECLINED, '강연자 응답': adj ? '날짜 조율 필요' : '진행 불가', '응답 일시': now, '강연자 메모': memo });
+    var adj = d.choice === 'adjust', said = adj ? '날짜 조율 필요' : '진행 불가';
+    setCells_(sh, row, { '상태': adj ? ST.ADJUST : ST.DECLINED, '강연자 응답': said, '응답 일시': now, '강연자 메모': memo });
+    addHistory_(sh, row, g, said + (memo ? ' — ' + memo : ''));
+    if (!adj) v['다음요청'] = askNext_(sh, row, g);   // 진행 불가면 다음 순위 강연자에게 바로 요청
     notifyHQ_(adj ? 'HQ_ADJUST' : 'HQ_DECLINED', v);
     return { ok: true };
   }
@@ -299,6 +304,7 @@ function respond_(d) {
     '상태': ST.ACCEPTED, '강연자 응답': (i + 1) + '순위 날짜 가능', '응답 일시': now, '강연자 메모': memo,
     '확정 강연자': coach, '확정일': parseDate_(ds), '확정 시간': tm
   });
+  addHistory_(sh, row, g, (i + 1) + '순위 날짜 가능');
   v['확정일시'] = krDate_(parseDate_(ds)) + ' ' + krTime_(tm);
   v['순위'] = (i + 1) + '순위';
   notifyHQ_('HQ_ACCEPTED', v);
@@ -347,6 +353,39 @@ function askCoach_(sh, row, coach) {
   return { ok: true, sent: sent, due: v['응답기한'], link: v['링크'] };
 }
 
+/**
+ * 요청한 강연자가 불가·무응답이면 순위표에서 다음 강연자에게 자동으로 확인 요청.
+ * 이미 요청한 강연자, 희망 날짜 3개가 모두 「일정확정」으로 막힌 강연자, 연락처가 없는 강연자는 건너뜀.
+ * 본사 알림톡에 넣을 한 줄을 돌려줌.
+ */
+function askNext_(sh, row, g) {
+  var ranks = [1, 2, 3].map(function (i) { return String(g('강연자' + i) || '').trim(); });
+  var cur = String(g('요청 강연자')).trim(), idx = ranks.indexOf(cur);
+  if (idx < 0) return '순위 밖의 강연자라 자동 요청은 하지 않았습니다. 시트 메뉴에서 다음 강연자에게 확인 요청을 보내 주세요.';
+  var blocked = blockedSet_(), dates = [1, 2, 3].map(function (i) { return dateStr_(g('희망일' + i)); });
+  var skipped = [];
+  for (var j = idx + 1; j < 3; j++) {
+    var name = ranks[j];
+    if (!name || ranks.slice(0, j).indexOf(name) >= 0) continue;
+    if (dates.every(function (ds) { return blocked[name + '|' + ds]; })) { skipped.push(name + '(희망 날짜 모두 일정 있음)'); continue; }
+    var ask = askCoach_(sh, row, name);
+    if (!ask.ok) { skipped.push(name + '(연락처 없음)'); continue; }
+    addHistory_(sh, row, g, (j + 1) + '순위 ' + name + '님께 자동 요청');
+    return (j + 1) + '순위 강연자 ' + name + '님께 확인 요청을 자동으로 보냈습니다(24시간 이내 응답).' +
+      (skipped.length ? ' 건너뛴 강연자: ' + skipped.join(', ') : '');
+  }
+  return '더 요청할 다음 순위 강연자가 없습니다' + (skipped.length ? ' (건너뜀: ' + skipped.join(', ') + ')' : '') +
+    '. 원장님과 강연자·날짜를 다시 조율해 주세요.';
+}
+
+/** 「응답 이력」 칸에 한 줄씩 쌓음 — 다음 강연자에게 넘어가도 누가 어떻게 답했는지 남김 */
+function addHistory_(sh, row, g, text) {
+  var c = sh.getRange(row, col_('응답 이력'));
+  var who = text.indexOf('자동 요청') >= 0 ? '' : String(g('요청 강연자')).trim() + ': ';
+  var line = Utilities.formatDate(new Date(), TZ, 'M/d HH:mm') + ' ' + who + text;
+  c.setValue(c.getValue() ? c.getValue() + '\n' + line : line);
+}
+
 /* ================= 1시간마다: 응답 기한 · 결제 기한 확인 ================= */
 
 function checkDeadlines() {
@@ -364,7 +403,10 @@ function checkDeadlines() {
       if (status === ST.ASKING && due instanceof Date && due < now) {
         sh.getRange(k + 2, col_('상태')).setValue(ST.NO_RESPONSE);
         sh.getRange(k + 2, col_('강연자 응답')).setValue('기한 내 응답 없음');
-        notifyHQ_('HQ_NO_RESPONSE', vars_(g));
+        addHistory_(sh, k + 2, g, '24시간 안에 응답 없음');
+        var nv = vars_(g);
+        nv['다음요청'] = askNext_(sh, k + 2, g);   // 다음 순위 강연자에게 바로 요청
+        notifyHQ_('HQ_NO_RESPONSE', nv);
       } else if (status === ST.PAY && pay instanceof Date && pay < now && !g('결제 기한 알림')) {
         sh.getRange(k + 2, col_('결제 기한 알림')).setValue(now);
         notifyHQ_('HQ_PAY_OVERDUE', vars_(g));
