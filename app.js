@@ -298,7 +298,8 @@
       var on = S.kind === k.id;
       return '<button type="button" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
         '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
-        '<span class="kind-meta">' + esc(k.time) + " · 회원 <strong>" + priceOf(k.member) + "</strong> · 비회원 <strong>" + priceOf(k.nonmember) + "</strong> <small>(VAT 별도)</small></span>" +
+        '<span class="kind-meta">' + esc(k.time) + "</span>" +
+        '<span class="kind-prices"><span>회원 <strong>' + priceOf(k.member) + "</strong></span><span>비회원 <strong>" + priceOf(k.nonmember) + '</strong></span><small>VAT 별도</small></span>' +
         (k.note ? '<span class="kind-note">' + esc(k.note) + "</span>" : "") + "</span></button>";
     }).join("");
     var k = kindOf(S.kind);
@@ -354,7 +355,7 @@
       var k = kindOf(S.kind);
       return { ok: topicDone(), label: "다음", txt: "<b>" + (k ? esc(k.name) : "설명회 종류") + "</b>" + (topicDone() ? "주제를 골랐어요" : k ? "주제를 골라 주세요" : "종류를 골라 주세요") };
     }
-    return { ok: !S.sending, label: S.sending ? "신청 중…" : "신청하기", txt: "<b>예상 " + esc(priceText()) + "</b>VAT 별도 · 지방 출장비 별도" };
+    return { ok: !S.sending, label: S.sending ? "신청 중…" : "신청하기", txt: "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
   }
 
   function renderSummary() {
@@ -493,13 +494,20 @@
     });
   }
 
+  // 순위 글자와 내용을 칸으로 나눠 보여 줌
+  function rankList(items) {
+    return '<ul class="done-rk">' + items.map(function (t, i) {
+      return '<li><span class="rk">' + RANKS[i] + '</span><span>' + esc(t) + "</span></li>";
+    }).join("") + "</ul>";
+  }
+
   function showDone(id, b) {
     S.sending = false;
     $("doneSum").innerHTML =
       "<dt>신청번호</dt><dd>" + esc(id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
-      "<dt>희망 날짜</dt><dd>" + b.options.map(function (o, i) { return RANKS[i] + " " + esc(krDate(o.date)) + " " + esc(krTime(o.time)); }).join("<br>") + "</dd>" +
-      "<dt>강연자</dt><dd>" + b.coaches.map(function (n, i) { return RANKS[i] + " " + esc(n); }).join("<br>") + "</dd>" +
+      "<dt>희망 날짜</dt><dd>" + rankList(b.options.map(function (o) { return krDate(o.date) + " " + krTime(o.time); })) + "</dd>" +
+      "<dt>강연자</dt><dd>" + rankList(b.coaches) + "</dd>" +
       "<dt>설명회</dt><dd>" + esc(b.kind) + (b.topics.length ? "<br>" + esc(b.topics.join(", ")) : "") + "</dd>";
     go(5);
   }
