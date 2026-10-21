@@ -6,7 +6,7 @@
   <title>학생·학부모 설명회 신청</title>
   <meta name="description" content="학생·학부모 설명회 — 희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261021m">
+  <link rel="stylesheet" href="styles.css?v=20261021n">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
@@ -99,16 +99,8 @@
           <h3 class="sub-step"><span>1</span>설명회 종류를 하나 골라 주세요</h3>
           <div class="kinds" id="kinds" role="radiogroup" aria-label="설명회 종류"></div>
 
-          <!-- ② 고른 종류의 가격 -->
-          <h3 class="sub-step"><span>2</span><em id="prKind"></em> 가격을 확인해 주세요</h3>
-          <div class="pricing">
-            <div class="pr-head" id="prHead"></div>
-            <div class="pr-cards" id="pricing"></div>
-          </div>
-          <p class="travel"><b>지방 출장비 <span id="travelFee"></span></b> 지방 출장 및 지방에서 이동하는 강연자의 경우 출장비가 추가되며, 일정 확정 후 청구됩니다.</p>
-
           <div class="topic-box" id="topicBox" hidden>
-            <h3 class="sub-step"><span>3</span><b id="topicTitle">주제</b></h3>
+            <h3 class="sub-step"><span>2</span><b id="topicTitle">주제</b></h3>
             <p class="sub" id="topicSub"></p>
             <div class="chips wrap-chips" id="topics"></div>
             <label class="field">
@@ -129,6 +121,12 @@
               <span>클럽하와이 회원 여부</span>
               <div class="member-cards" id="memberSeg"></div>
               <input type="hidden" name="member" required>
+              <!-- 회원 혜택: 고른 설명회 종류의 비회원·회원 가격 비교 -->
+              <div class="pricing">
+                <div class="pr-head" id="prHead"></div>
+                <div class="pr-cards" id="pricing"></div>
+              </div>
+              <p class="travel"><b>지방 출장비 <span id="travelFee"></span></b> 지방 출장 및 지방에서 이동하는 강연자의 경우 출장비가 추가되며, 일정 확정 후 청구됩니다.</p>
             </div>
 
             <div class="fields">
@@ -298,8 +296,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261021m"></script>
-  <script src="sample-data.js?v=20261021m"></script>
-  <script src="app.js?v=20261021m"></script>
+  <script src="config.js?v=20261021n"></script>
+  <script src="sample-data.js?v=20261021n"></script>
+  <script src="app.js?v=20261021n"></script>
 </body>
 </html>

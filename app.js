@@ -102,7 +102,6 @@
     var k = kindOf(S.kind) || (C.KINDS || [])[0];
     if (!k) return;
     var mem = fixed(k.member), non = fixed(k.nonmember), save = mem && non > mem ? non - mem : 0;
-    $("prKind").textContent = k.name;
     $("prHead").innerHTML =
       '<h3 class="pr-title">클럽하와이 회원이면<br><em>더 저렴하게</em></h3>' +
       '<p class="pr-sub">오직 클럽하와이 회원 학원만 받을 수 있는 특별가</p>';
@@ -333,7 +332,6 @@
         '<span class="kind-meta">' + esc(k.time) + "</span></span>" +
         (on ? '<span class="kind-picked">선택됨</span>' : "") + "</button>";
     }).join("");
-    renderPricing();
     var k = kindOf(S.kind);
     $("topicBox").hidden = !k;
     if (!k) return;
@@ -422,6 +420,7 @@
       '<button type="button" class="mcard' + (m === "회원" ? " on" : "") + '" data-v="회원"><span class="radio"></span><span class="mc-body"><b>클럽하와이 회원</b><span class="mc-tag">회원가</span></span><strong>' + priceOf(k.member) + "</strong></button>" +
       '<button type="button" class="mcard' + (m === "비회원" ? " on" : "") + '" data-v="비회원"><span class="radio"></span><span class="mc-body"><b>비회원</b><span class="mc-tag gray">비회원가</span></span><strong>' + priceOf(k.nonmember) + "</strong></button>" +
       '<p class="mc-note">' + esc(k.name) + " 기준 · VAT 별도" + (k.note ? " · " + esc(k.note) : "") + "<br>회원 여부는 담당자 연락 때 확인합니다.</p>";
+    renderPricing();
   }
 
   /* ---------- 단계 이동 ---------- */
