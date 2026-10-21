@@ -6,7 +6,7 @@
   <title>강연자 설명회 신청</title>
   <meta name="description" content="희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261021f">
+  <link rel="stylesheet" href="styles.css?v=20261021g">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
@@ -93,18 +93,22 @@
         <!-- 3. 설명회 주제 -->
         <section class="panel" id="step3" hidden>
           <h2>어떤 설명회를 원하세요?</h2>
-          <p class="sub">설명회 종류를 고르고 원하는 주제를 알려 주세요.</p>
-          <!-- 설명회 종류 선택 + 가격 비교 (한 덩어리) -->
+          <p class="sub">설명회는 두 가지 중 <b>하나</b>로 진행합니다. 종류를 고르고 원하는 주제를 알려 주세요.</p>
+
+          <!-- ① 종류 고르기 (둘 중 하나) -->
+          <h3 class="sub-step"><span>1</span>설명회 종류를 하나 골라 주세요</h3>
+          <div class="kinds" id="kinds" role="radiogroup" aria-label="설명회 종류"></div>
+
+          <!-- ② 고른 종류의 가격 -->
+          <h3 class="sub-step"><span>2</span><em id="prKind"></em> 가격을 확인해 주세요</h3>
           <div class="pricing">
             <div class="pr-head" id="prHead"></div>
-            <div class="seg kind-seg" id="kinds" role="tablist" aria-label="설명회 종류"></div>
-            <p class="kind-desc" id="kindDesc"></p>
             <div class="pr-cards" id="pricing"></div>
           </div>
           <p class="travel"><b>지방 출장비 <span id="travelFee"></span></b> 지방 출장 및 지방에서 이동하는 강연자의 경우 출장비가 추가되며, 일정 확정 후 청구됩니다.</p>
 
           <div class="topic-box" id="topicBox" hidden>
-            <h3 id="topicTitle">주제</h3>
+            <h3 class="sub-step"><span>3</span><b id="topicTitle">주제</b></h3>
             <p class="sub" id="topicSub"></p>
             <div class="chips wrap-chips" id="topics"></div>
             <label class="field">
@@ -277,8 +281,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261021f"></script>
-  <script src="sample-data.js?v=20261021f"></script>
-  <script src="app.js?v=20261021f"></script>
+  <script src="config.js?v=20261021g"></script>
+  <script src="sample-data.js?v=20261021g"></script>
+  <script src="app.js?v=20261021g"></script>
 </body>
 </html>

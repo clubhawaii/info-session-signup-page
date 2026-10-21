@@ -109,7 +109,7 @@
         '<p class="pr-sub">같은 강연자, 같은 구성의 설명회를 회원가로 진행하세요.</p>'
       : '<h3 class="pr-title">클럽하와이 회원이면<br><em>회원가로 진행</em></h3>' +
         '<p class="pr-sub">주제를 확인한 뒤 비용을 협의해서 안내드립니다.</p>';
-    $("kindDesc").textContent = k.desc;
+    $("prKind").textContent = k.name;
     $("pricing").innerHTML =
       '<div class="pr-card">' +
         '<span class="pr-ico">' + ICON_USER + '</span><span class="pr-name">비회원</span>' +
@@ -335,7 +335,10 @@
     if (!S.kind && (C.KINDS || []).length) S.kind = C.KINDS[0].id;   // 처음엔 대표 주제 설명회가 골라진 상태
     $("kinds").innerHTML = (C.KINDS || []).map(function (k) {
       var on = S.kind === k.id;
-      return '<button type="button" role="tab" aria-selected="' + on + '"' + (on ? ' class="on"' : "") + ' data-kind="' + k.id + '">' + esc(k.name) + "</button>";
+      return '<button type="button" role="radio" aria-checked="' + on + '" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
+        '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
+        '<span class="kind-meta">' + esc(k.time) + "</span></span>" +
+        (on ? '<span class="kind-picked">선택됨</span>' : "") + "</button>";
     }).join("");
     renderPricing();
     var k = kindOf(S.kind);
