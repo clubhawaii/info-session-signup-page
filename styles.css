@@ -10,6 +10,8 @@
   --ink-25: rgba(17, 17, 17, .25);
   --line: rgba(17, 17, 17, .1);
   --bg: #ffffff;
+  --red: #e5484d;
+  --red-12: rgba(229, 72, 77, .12);
   --r: 12px;
   --r-sm: 8px;
 }
@@ -177,12 +179,14 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .field textarea { resize: vertical; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
 .field small { font-size: 12px; color: var(--ink-40); }
-.field.err input, .field.err select, .field.err .seg { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-16); }
-.field .msg { font-size: 12px; color: var(--blue); font-weight: 600; }
+.field.err input:not([type="checkbox"]), .field.err select, .field.err .seg { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-12); }
+.field.err > span { color: var(--red); }
+.field .msg { font-size: 12px; color: var(--red); font-weight: 600; }
 .agree { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); display: grid; gap: 8px; justify-items: start; }
 .check { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; cursor: pointer; }
 .check input { width: 20px; height: 20px; accent-color: var(--blue); margin: 0; }
-.check.err span { color: var(--blue); }
+.check.err span { color: var(--red); }
+.check.err input { outline: 2px solid var(--red); outline-offset: 1px; }
 .fold { font-size: 13px; color: var(--ink-60); margin: -2px 0 6px 30px; }
 .fold summary { cursor: pointer; color: var(--ink-40); }
 .fold p { margin: 6px 0 0; }
@@ -361,10 +365,9 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 /* 강연자 순위 */
 .rank-slots { margin-bottom: 10px; }
 .rank-slots .slot { cursor: default; }
-.flex-opt { align-items: flex-start; padding: 14px 16px; border-radius: var(--r-sm); background: var(--blue-08); font-weight: 500; line-height: 1.5; margin-bottom: 4px; }
-.flex-opt input { margin-top: 1px; flex: none; }
-.flex-opt b { font-weight: 700; }
-.flex-guide { margin: 16px 0 6px; font-size: 13px; color: var(--ink-60); }
+.flex-opt { align-items: flex-start; margin: 12px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink-60); line-height: 1.5; }
+.flex-opt input { width: 16px; height: 16px; margin-top: 2px; flex: none; }
+.flex-opt small { font-size: 12px; font-weight: 500; color: var(--ink-40); }
 .coach .tick { display: none; }
 .rank-badge { position: absolute; top: 14px; right: 14px; min-width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--ink-25); background: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; padding: 0 2px; }
 .coach.on .rank-badge { background: var(--blue); border-color: var(--blue); color: #fff; padding: 0 8px; }
@@ -402,7 +405,8 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .mcard[data-v="회원"] strong { color: var(--blue); }
 .mcard[data-v="비회원"] strong { color: var(--ink-60); font-size: 17px; }
 .mc-note { grid-column: 1 / -1; margin: 2px 0 0; font-size: 12px; color: var(--ink-40); }
-.field.err .member-cards .mcard { border-color: var(--blue); }
+.field.err .member-cards .mcard { border-color: var(--red); }
+.field.err .target-chips .chip { border-color: var(--red); }
 
 .dots.ink { color: var(--ink); font-size: 14px; }
 .photos { margin-top: 10px; }
@@ -485,3 +489,16 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   #step3 .kinds { grid-template-columns: 1fr; }
   .sub-step { font-size: 16px; }
 }
+
+/* 로고 */
+.brand { display: inline-flex; align-items: center; gap: 8px; }
+.brand-logo { display: block; height: 28px; width: auto; }
+.brand span { margin-left: 0; }
+
+/* 4단계 */
+.field-note { color: var(--ink-60) !important; }
+.target-chips { margin: 0; }
+.same-addr { font-size: 14px; font-weight: 600; margin: 2px 0; }
+.same-addr input { width: 18px; height: 18px; }
+.venue-box { display: grid; gap: 6px; }
+.btn.is-off { opacity: .35; cursor: not-allowed; }

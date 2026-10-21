@@ -4,7 +4,7 @@ window.APP_CONFIG = {
   APPS_SCRIPT_URL: "",
 
   // 카카오톡 「클럽하와이cs」 채널 주소 (예: https://pf.kakao.com/_xxxxx). 비워 두면 문구만 보이고 버튼은 숨겨집니다.
-  CONTACT_URL: "",
+  CONTACT_URL: "https://pf.kakao.com/_xdrlwX",
 
   // 개인정보 보관 기간 (회사 기준으로 확정 후 입력)
   PRIVACY_RETENTION: "회사 기준 확정 후 안내",

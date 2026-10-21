@@ -54,6 +54,7 @@
       rank: 1,
       academy: "클럽하와이",
       address: "서울 강남구 대치동 123",
+      venue: "서울 강남구 대치동 123 (학원)",
       target: "중등 학부모",
       attendees: "30",
       kind: "대표 주제 설명회",

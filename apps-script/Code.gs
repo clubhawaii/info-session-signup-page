@@ -42,7 +42,7 @@ var ST = {
 var STATUS = Object.keys(ST).map(function (k) { return ST[k]; });
 var NEEDS_HQ = [ST.NEW, ST.ACCEPTED, ST.ADJUST, ST.DECLINED, ST.NO_RESPONSE];   // 본사가 다음 행동을 해야 하는 상태
 
-var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '회원 여부', '설명회 대상', '예상 참석 인원',
+var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '진행 장소', '회원 여부', '설명회 대상', '예상 참석 인원',
   '설명회 종류', '주제', '주제 상세', '요청사항',
   '희망일1', '시간1', '희망일2', '시간2', '희망일3', '시간3', '강연자1', '강연자2', '강연자3', '날짜 조정 가능',
   '요청 강연자', '요청 일시', '응답 기한', '강연자 응답', '응답 일시', '강연자 메모',
@@ -58,13 +58,13 @@ var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내
  */
 var TEMPLATES = {
   HQ_NEW:
-    '[설명회 신청] 새 신청 #{신청번호}\n\n학원: #{학원명} (#{원장님} 원장님 · #{회원})\n연락처: #{연락처}\n주소: #{지역}\n' +
+    '[설명회 신청] 새 신청 #{신청번호}\n\n학원: #{학원명} (#{원장님} 원장님 · #{회원})\n연락처: #{연락처}\n학원 주소: #{지역}\n진행 장소: #{장소}\n' +
     '대상: #{대상} · 예상 인원 #{인원}\n설명회: #{종류}\n주제: #{주제}\n요청사항: #{요청사항}\n\n' +
     '■ 희망 날짜\n1순위 #{희망일1}\n2순위 #{희망일2}\n3순위 #{희망일3}\n\n■ 강연자\n1순위 #{강연자1}\n2순위 #{강연자2}\n3순위 #{강연자3}\n#{날짜조정}\n\n' +
     '#{자동요청}',
   COACH_REQUEST:
     '[클럽하와이] 설명회 일정 확인 요청\n\n#{강연자}님, 설명회 요청이 들어왔습니다.\n\n' +
-    '■ 학원: #{학원명}\n■ 지역: #{지역}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 설명회: #{종류}\n■ 주제: #{주제}\n■ 요청사항: #{요청사항}\n\n' +
+    '■ 학원: #{학원명}\n■ 장소: #{장소}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 설명회: #{종류}\n■ 주제: #{주제}\n■ 요청사항: #{요청사항}\n\n' +
     '■ 희망 일정\n1순위 #{희망일1}\n2순위 #{희망일2}\n3순위 #{희망일3}\n#{날짜조정}\n\n' +
     '아래 링크에서 가능한 날짜를 골라 주세요. 날짜가 모두 어렵거나 진행이 어려우시면 링크에서 알려 주세요.\n▶ #{링크}\n\n' +
     '※ #{응답기한}까지 응답하지 않으시면 설명회 기회는 다른 강연자께 넘어갑니다.',
@@ -185,7 +185,7 @@ function getRequest_(token) {
     ok: true,
     request: {
       id: String(g('신청번호')), coach: coach, rank: rank, academy: String(g('학원명')),
-      address: String(g('학원 주소')), target: String(g('설명회 대상')), attendees: String(g('예상 참석 인원') || ''),
+      address: String(g('학원 주소')), venue: String(g('진행 장소') || g('학원 주소')), target: String(g('설명회 대상')), attendees: String(g('예상 참석 인원') || ''),
       kind: String(g('설명회 종류')), topics: String(g('주제')) + (g('주제 상세') ? ' — ' + g('주제 상세') : ''),
       request: String(g('요청사항') || ''), flexible: g('날짜 조정 가능') === 'Y' && rank === 1,
       options: [1, 2, 3].map(function (i) { return { date: dateStr_(g('희망일' + i)), time: timeStr_(g('시간' + i)) }; }),
@@ -234,7 +234,7 @@ function apply_(d) {
   function set(h, v) { row[col_(h) - 1] = v; }
   set('신청번호', id); set('신청일시', now); set('상태', ST.NEW);
   set('학원명', safe_(d.academy)); set('원장님 성함', safe_(d.director)); set('연락처', "'" + d.phone);
-  set('학원 주소', safe_(d.address)); set('회원 여부', d.member); set('설명회 대상', safe_(d.target));
+  set('학원 주소', safe_(d.address)); set('진행 장소', safe_(d.venue || d.address)); set('회원 여부', d.member); set('설명회 대상', safe_(d.target));
   set('예상 참석 인원', safe_(d.attendees)); set('설명회 종류', safe_(d.kind));
   set('주제', safe_((d.topics || []).join(', '))); set('주제 상세', safe_(d.topicMemo)); set('요청사항', safe_(d.request));
   d.options.forEach(function (o, i) { set('희망일' + (i + 1), o.date); set('시간' + (i + 1), o.time); });
@@ -264,12 +264,9 @@ function validate_(d) {
   if (!Array.isArray(d.topics) || !d.topics.length) return '설명회 주제를 골라 주세요.';
   if (!Array.isArray(d.options) || d.options.length !== 3) return '희망 날짜 3개를 골라 주세요.';
   var min = today_(); min.setDate(min.getDate() + MIN_DAYS);
-  var seen = {};
-  for (var k = 0; k < 3; k++) {
+  for (var k = 0; k < 3; k++) {   // 1~3순위가 같은 날짜·시간이어도 됨
     var o = d.options[k];
     if (!o || !/^\d{4}-\d{2}-\d{2}$/.test(o.date) || !/^\d{2}:\d{2}$/.test(o.time)) return '희망 날짜와 시간을 확인해 주세요.';
-    if (seen[o.date + ' ' + o.time]) return '희망 날짜·시간이 겹칩니다.';   // 같은 날짜는 시간이 다르면 가능
-    seen[o.date + ' ' + o.time] = 1;
     if (parseDate_(o.date) < min) return '진행일 최소 2주 전까지만 신청할 수 있습니다.';
   }
   return '';
@@ -469,7 +466,7 @@ function vars_(g) {
   return {
     '신청번호': String(g('신청번호')), '원장님': String(g('원장님 성함')), '학원명': String(g('학원명')),
     '연락처': String(g('연락처')).replace(/^'/, ''), '회원': String(g('회원 여부')),
-    '지역': String(g('학원 주소')), '대상': String(g('설명회 대상')),
+    '지역': String(g('학원 주소')), '장소': String(g('진행 장소') || g('학원 주소')), '대상': String(g('설명회 대상')),
     '인원': g('예상 참석 인원') ? g('예상 참석 인원') + '명' : '미정', '요청사항': String(g('요청사항') || '없음'),
     '종류': String(g('설명회 종류')), '주제': String(g('주제')) + (g('주제 상세') ? ' — ' + g('주제 상세') : ''),
     '희망일1': opt(1), '희망일2': opt(2), '희망일3': opt(3),
@@ -609,7 +606,7 @@ function parseDate_(s) { var p = String(s).split('-'); return new Date(+p[0], +p
 function shift_(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
 function num_(v) { return Number(String(v || '').replace(/[^\d.]/g, '')) || 0; }
 function krMD_(d) { return (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; }
-function krDate_(d) { return krMD_(d) + '(' + '일월화수목금토'.charAt(d.getDay()) + ')'; }
+function krDate_(d) { return d.getFullYear() + '년 ' + krMD_(d) + '(' + '일월화수목금토'.charAt(d.getDay()) + ')'; }
 function krTime_(t) {
   var p = String(t).split(':'), h = +p[0], m = +(p[1] || 0);
   if (isNaN(h)) return String(t);

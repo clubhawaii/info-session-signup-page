@@ -3,24 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>강연자 설명회 신청</title>
-  <meta name="description" content="희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
+  <title>학생·학부모 설명회 신청</title>
+  <meta name="description" content="학생·학부모 설명회 — 희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261021i">
+  <link rel="stylesheet" href="styles.css?v=20261021k">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
 
   <header class="top">
     <div class="top-in">
-      <a class="brand" href="./">클럽하와이 <span>설명회 신청</span></a>
+      <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>설명회 신청</span></a>
       <a class="top-link" id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
     </div>
   </header>
 
   <main class="wrap">
     <div class="head" id="pageHead">
-      <h1>강연자 설명회 신청</h1>
+      <h1>학생·학부모 설명회 신청</h1>
       <p>희망 날짜와 강연자를 1~3순위로 골라 주세요. 담당자가 일정을 조율해 3일 안에 연락드립니다.</p>
 
       <ol class="steps" id="steps">
@@ -75,10 +75,9 @@
           <p class="sub">누르는 순서대로 1·2·3순위가 됩니다. 1순위 강연자 일정이 안 되면 2순위, 3순위 순서로 확인합니다.</p>
 
           <div class="slots rank-slots" id="coachSlots"></div>
-          <p class="flex-guide">1순위 강연자를 꼭 원하시면 체크해 주세요.</p>
           <label class="check flex-opt">
             <input type="checkbox" id="flexible">
-            <span><b>1순위 강연자를 꼭 희망합니다.</b> 강연자 일정에 맞춰 설명회 날짜가 바뀌는 것에 동의합니다.</span>
+            <span>1순위 강연자를 꼭 희망합니다 <small>(강연자 일정에 맞춰 설명회 날짜가 바뀌는 것에 동의)</small></span>
           </label>
 
           <div class="search">
@@ -121,7 +120,7 @@
         <!-- 4. 신청 정보 -->
         <section class="panel" id="step4" hidden>
           <h2>신청 정보를 알려 주세요</h2>
-          <p class="sub">신청 후 담당자가 이 번호로 3일 안에 연락드립니다.</p>
+          <p class="sub">「선택」이라고 적힌 항목 말고는 모두 입력해야 신청할 수 있습니다.</p>
           <div class="m-sum" id="mSum"></div>
 
           <form id="form" novalidate>
@@ -134,27 +133,43 @@
             <div class="fields">
               <label class="field"><span>학원명</span><input name="academy" required autocomplete="organization" placeholder="예) 클럽하와이"></label>
               <label class="field"><span>원장님 성함</span><input name="director" required autocomplete="name"></label>
-              <label class="field"><span>휴대폰 번호</span><input name="phone" required inputmode="numeric" autocomplete="tel" maxlength="13" placeholder="010-0000-0000"></label>
-              <label class="field"><span>설명회 대상</span>
-                <select name="target" required><option value="">선택해 주세요</option></select></label>
+              <label class="field"><span>휴대폰 번호</span><input name="phone" id="phone" required inputmode="numeric" autocomplete="tel" maxlength="13" placeholder="010-0000-0000">
+                <small class="field-note">신청 후 담당자가 이 번호로 3일 안에 연락드립니다.</small></label>
+              <label class="field"><span>예상 참석 인원 <em>선택</em></span><input name="attendees" id="attendees" inputmode="numeric" maxlength="4" placeholder="숫자만 입력 (예: 30)"></label>
+              <div class="field wide">
+                <span>설명회 대상 <em>여러 개 고를 수 있어요</em></span>
+                <div class="chips wrap-chips target-chips" id="targetChips"></div>
+                <input type="hidden" name="target" required>
+              </div>
               <div class="field wide addr">
                 <span>학원 주소</span>
                 <div class="addr-row">
-                  <input name="zip" readonly placeholder="우편번호" tabindex="-1" data-addr>
-                  <button type="button" class="btn outline sm" data-addr>주소 검색</button>
+                  <input name="zip" readonly placeholder="우편번호" tabindex="-1" data-addr="academy">
+                  <button type="button" class="btn outline sm" data-addr="academy">주소 검색</button>
                 </div>
-                <input name="addr1" readonly placeholder="주소 검색을 눌러 주세요" data-addr>
+                <input name="addr1" readonly placeholder="주소 검색을 눌러 주세요" data-addr="academy">
                 <input name="addr2" placeholder="상세 주소를 입력해 주세요" autocomplete="address-line2">
               </div>
-              <label class="field"><span>예상 참석 인원 <em>선택</em></span><input name="attendees" inputmode="numeric" placeholder="예) 30"></label>
-              <label class="field wide"><span>요청사항 <em>선택</em></span><textarea name="request" rows="3" placeholder="장소(학원 안·외부 대관), 장비, 참고할 점을 적어 주세요."></textarea></label>
+              <div class="field wide addr" id="venueField">
+                <span>설명회 진행 장소</span>
+                <label class="check same-addr"><input type="checkbox" name="venueSame" id="venueSame"><span>학원 주소와 같아요</span></label>
+                <div class="venue-box" id="venueBox">
+                  <div class="addr-row">
+                    <input name="vzip" readonly placeholder="우편번호" tabindex="-1" data-addr="venue">
+                    <button type="button" class="btn outline sm" data-addr="venue">주소 검색</button>
+                  </div>
+                  <input name="vaddr1" readonly placeholder="주소 검색을 눌러 주세요" data-addr="venue">
+                  <input name="vaddr2" placeholder="상세 주소·장소 이름 (예: ○○구민회관 2층 강당)">
+                </div>
+              </div>
+              <label class="field wide"><span>요청사항 <em>선택</em></span><textarea name="request" rows="3" placeholder="장비, 참고할 점을 적어 주세요."></textarea></label>
             </div>
 
             <div class="agree">
               <label class="check"><input type="checkbox" name="agreePrivacy" required><span>개인정보 수집·이용에 동의합니다 <em>필수</em></span></label>
               <details class="fold">
                 <summary>내용 보기</summary>
-                <p>수집 항목: 학원명, 원장님 성함, 휴대폰 번호, 학원 주소(우편번호·상세 주소 포함), 회원 여부, 설명회 대상·주제, 예상 참석 인원, 요청사항<br>
+                <p>수집 항목: 학원명, 원장님 성함, 휴대폰 번호, 학원 주소·설명회 진행 장소(우편번호·상세 주소 포함), 회원 여부, 설명회 대상·주제, 예상 참석 인원, 요청사항<br>
                 이용 목적: 설명회 일정 조율, 결제 안내, 진행 관련 연락<br>
                 보관 기간: <span class="retention"></span></p>
               </details>
@@ -162,7 +177,7 @@
               <details class="fold">
                 <summary>내용 보기</summary>
                 <p>제공받는 자: 설명회 강연자 (신청서에서 고른 강연자와, 일정 조율 과정에서 안내드리는 강연자)<br>
-                제공 항목: 학원명, 학원 주소, 설명회 일정·종류·주제·대상, 예상 참석 인원, 요청사항<br>
+                제공 항목: 학원명, 학원 주소, 설명회 진행 장소, 설명회 일정·종류·주제·대상, 예상 참석 인원, 요청사항<br>
                 제공 목적: 설명회 일정 확인 및 강의 준비<br>
                 보유 기간: 설명회 종료 시까지 (보관 기간: <span class="retention"></span>)<br>
                 동의하지 않으실 수 있으나, 이 경우 강연자 일정 확인이 어려워 신청할 수 없습니다.</p>
@@ -281,8 +296,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261021i"></script>
-  <script src="sample-data.js?v=20261021i"></script>
-  <script src="app.js?v=20261021i"></script>
+  <script src="config.js?v=20261021k"></script>
+  <script src="sample-data.js?v=20261021k"></script>
+  <script src="app.js?v=20261021k"></script>
 </body>
 </html>

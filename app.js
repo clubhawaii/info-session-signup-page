@@ -1,4 +1,4 @@
-// 강연자 설명회 신청 — 희망 날짜 1~3순위 → 강연자 1~3순위 → 설명회 종류·주제 → 신청 정보 → 완료
+// 학생·학부모 설명회 신청 — 희망 날짜 1~3순위 → 강연자 1~3순위 → 설명회 종류·주제 → 신청 정보 → 완료
 (function () {
   "use strict";
 
@@ -41,7 +41,7 @@
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
   function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-  function krDate(s) { var d = parse(s); return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ")"; }
+  function krDate(s) { var d = parse(s); return d.getFullYear() + "년 " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ")"; }
   function krTime(t) {
     if (!t) return "";
     var p = t.split(":"), h = +p[0], m = +p[1];
@@ -102,29 +102,20 @@
     var k = kindOf(S.kind) || (C.KINDS || [])[0];
     if (!k) return;
     var mem = fixed(k.member), non = fixed(k.nonmember), save = mem && non > mem ? non - mem : 0;
-    var base = [k.time + " 진행", k.note || "강연자 대표 주제로 진행"];
-    function list(items) { return '<ul class="pr-checks">' + items.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>"; }
-    $("prHead").innerHTML = save
-      ? '<h3 class="pr-title">클럽하와이 회원이면<br><em>' + man(save) + "만원 더 저렴하게</em></h3>" +
-        '<p class="pr-sub">같은 강연자, 같은 구성의 설명회를 회원가로 진행하세요.</p>'
-      : '<h3 class="pr-title">클럽하와이 회원이면<br><em>회원가로 진행</em></h3>' +
-        '<p class="pr-sub">주제를 확인한 뒤 비용을 협의해서 안내드립니다.</p>';
     $("prKind").textContent = k.name;
+    $("prHead").innerHTML =
+      '<h3 class="pr-title">클럽하와이 회원이면<br><em>더 저렴하게</em></h3>' +
+      '<p class="pr-sub">오직 클럽하와이 회원 학원만 받을 수 있는 특별가</p>';
     $("pricing").innerHTML =
       '<div class="pr-card">' +
         '<span class="pr-ico">' + ICON_USER + '</span><span class="pr-name">비회원</span>' +
-        '<span class="pr-for">클럽하와이 회원이 아닌 학원</span>' +
         '<div class="pr-amount"><span class="pr-price">' + (k.nonmember ? priceOf(k.nonmember) : "별도 안내") + '</span><span class="pr-unit">VAT 별도</span></div>' +
-        '<div class="pr-strip">' + (k.nonmember ? "정가" : "확인 후 안내") + "</div>" +
-        list(base.map(esc)) +
       "</div>" +
-      '<div class="pr-card best">' + (save ? '<span class="pr-badge">' + man(save) + "만원 할인</span>" : '<span class="pr-badge">회원 혜택</span>') +
+      '<div class="pr-card best"><span class="pr-badge">회원 전용</span>' +
         '<span class="pr-ico">' + ICON_GEM + '</span><span class="pr-name">클럽하와이 회원</span>' +
-        '<span class="pr-for">클럽하와이 회원 학원</span>' +
         '<div class="pr-amount">' + (save ? '<s class="pr-was">' + priceOf(k.nonmember) + "</s>" : "") +
           '<span class="pr-price">' + priceOf(k.member) + '</span><span class="pr-unit">VAT 별도</span></div>' +
-        '<div class="pr-strip">' + (save ? "비회원보다 <b>" + man(save) + "만원</b> 저렴해요" : "회원가 적용") + "</div>" +
-        list(["<b>비회원과 같은 구성 그대로</b>"].concat(save ? ["<b>" + man(save) + "만원 할인</b>"] : ["회원가 적용"])) +
+        (save ? '<div class="pr-strip"><b>' + man(save) + "만원</b> 할인</div>" : (k.note ? '<div class="pr-strip">' + esc(k.note) + "</div>" : "")) +
       "</div>";
     $("travelFee").textContent = man(C.TRAVEL_FEE || 0) + "만원";
   }
@@ -201,9 +192,6 @@
   }
 
   function pickTime(t) {
-    var d = S.slots[S.active].d, dup = -1;
-    S.slots.forEach(function (x, k) { if (k !== S.active && x.d === d && x.t === t) dup = k; });
-    if (dup >= 0) { $("calMsg").textContent = "이미 " + RANKS[dup] + "로 고른 날짜·시간입니다. 같은 날이면 시간을 다르게 골라 주세요."; return; }
     $("calMsg").textContent = "";
     S.slots[S.active].t = t;
     renderDates();
@@ -308,12 +296,8 @@
 
     $("coachDetail").innerHTML =
       '<div class="profile">' + avatar(c, "lg") + '<div class="nm">' + esc(c.name) + '</div><div class="sm">' + esc(c.summary) + "</div></div>" +
-      '<div class="stats"><div><b>' + c.topics.length + "개</b><span>설명회 주제</span></div>" +
-      "<div><b>" + esc(c.targets[0] || "-") + (c.targets.length > 1 ? " 외" : "") + "</b><span>대상</span></div>" +
-      "<div><b>" + esc(c.region || "협의") + "</b><span>진행 지역</span></div></div>" +
       '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 주제</button><button type="button" data-tab="2">영상·사진</button></div>' +
-      '<div class="tab-pane" data-pane="0"><h4>대표 경력</h4><div class="box">' + esc(c.career || c.summary) + "</div>" +
-      '<h4>대상</h4><div class="tags">' + c.targets.map(function (t) { return '<span class="tag">' + esc(t) + "</span>"; }).join("") + "</div></div>" +
+      '<div class="tab-pane" data-pane="0"><h4>대표 경력</h4><div class="box">' + esc(c.career || c.summary) + "</div></div>" +
       '<div class="tab-pane" data-pane="1" hidden>' + topics + "</div>" +
       '<div class="tab-pane" data-pane="2" hidden>' + media + "</div>";
     setPickBtn();
@@ -395,7 +379,9 @@
       var k = kindOf(S.kind);
       return { ok: topicDone(), label: "다음", txt: "<b>" + (k ? esc(k.name) : "설명회 종류") + "</b>" + (topicDone() ? "주제를 골랐어요" : k ? "주제를 골라 주세요" : "종류를 골라 주세요") };
     }
-    return { ok: !S.sending, label: S.sending ? "신청 중…" : "신청하기", txt: "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
+    var left = formErrors().length;
+    return { ok: !S.sending && !left, soft: true, label: S.sending ? "신청 중…" : "신청하기",
+      txt: left ? "<b>필수 항목 " + left + "개 남음</b>모두 입력하면 신청할 수 있어요" : "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
   }
 
   function renderSummary() {
@@ -407,7 +393,14 @@
     $("mSum").innerHTML = '<div class="sum-block">' + h.dates + '</div><div class="sum-block">' + h.coaches + '</div><div class="sum-block">' + h.kind + "</div>";
 
     var st = stepState();
-    each(document.querySelectorAll("[data-next]"), function (b) { b.textContent = st.label; b.disabled = !st.ok; });
+    // 4단계는 눌러 보면 빠진 항목을 빨갛게 알려 주도록, 막지 않고 흐리게만 둔다
+    each(document.querySelectorAll("[data-next]"), function (b) {
+      b.textContent = st.label;
+      b.disabled = !st.ok && !st.soft;
+      b.classList.toggle("is-off", !st.ok && !!st.soft);
+      b.setAttribute("aria-disabled", String(!st.ok));
+    });
+    save();
     each(document.querySelectorAll("[data-prev]"), function (b) { b.hidden = S.step === 1; });
     $("barTxt").innerHTML = st.txt;
     $("sumNote").textContent = S.step === 4 ? "신청 후 담당자가 3일 안에 연락드립니다. 신청만으로 확정되지는 않습니다." : "신청만으로 일정이 확정되지는 않습니다.";
@@ -476,33 +469,55 @@
     if (m) m.remove();
   }
 
+  function fv(n) { return String($("form").elements[n].value || "").trim(); }
+  // 빠진·틀린 항목 목록 (화면에 표시하지 않고 세기만 함)
+  function formErrors() {
+    var form = $("form"), out = [];
+    function bad(name, msg) { out.push({ name: name, msg: msg }); }
+    if (!fv("member")) bad("member", "회원 여부를 골라 주세요.");
+    if (!fv("academy")) bad("academy", "학원명을 입력해 주세요.");
+    if (!fv("director")) bad("director", "원장님 성함을 입력해 주세요.");
+    if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(fv("phone"))) bad("phone", fv("phone") ? "휴대폰 번호를 끝까지 입력해 주세요." : "휴대폰 번호를 입력해 주세요.");
+    if (fv("attendees") && !/^\d+$/.test(fv("attendees"))) bad("attendees", "숫자만 입력해 주세요.");
+    if (!fv("target")) bad("target", "설명회 대상을 하나 이상 골라 주세요.");
+    if (!fv("addr1")) bad("addr1", "학원 주소를 입력해 주세요.");
+    else if (!fv("addr2")) bad("addr2", "상세 주소를 입력해 주세요.");
+    if (!form.elements.venueSame.checked) {
+      if (!fv("vaddr1")) bad("vaddr1", "설명회 진행 장소를 입력하거나 「학원 주소와 같아요」를 체크해 주세요.");
+      else if (!fv("vaddr2")) bad("vaddr2", "상세 주소나 장소 이름을 입력해 주세요.");
+    }
+    ["agreePrivacy", "agreeThird", "agreePolicy"].forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
+    return out;
+  }
+  // 한 칸만 다시 검사해서 틀렸으면 빨갛게 (칸을 벗어날 때)
+  function checkOne(name) {
+    var el = $("form").elements[name];
+    if (!el) return;
+    var hit = formErrors().filter(function (e) { return e.name === name; })[0];
+    if (hit) setErr(el, hit.msg); else clearErr(el);
+  }
+
   function check() {
     var form = $("form"), first = null;
     each(form.querySelectorAll("input, select, textarea"), clearErr);
-    function bad(name, msg) {
-      var el = form.elements[name];
-      setErr(el, msg);
+    formErrors().forEach(function (e) {
+      var el = form.elements[e.name];
+      setErr(el, e.msg);
       if (!first) first = el;
-    }
-    var v = function (n) { return String(form.elements[n].value || "").trim(); };
-    if (!v("member")) bad("member", "회원 여부를 골라 주세요.");
-    if (!v("academy")) bad("academy", "학원명을 입력해 주세요.");
-    if (!v("director")) bad("director", "원장님 성함을 입력해 주세요.");
-    if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(v("phone"))) bad("phone", "휴대폰 번호를 확인해 주세요.");
-    if (!v("target")) bad("target", "설명회 대상을 골라 주세요.");
-    if (!v("addr1")) bad("addr1", "주소 검색으로 학원 주소를 찾아 주세요.");
-    else if (!v("addr2")) bad("addr2", "상세 주소를 입력해 주세요.");
-    ["agreePrivacy", "agreeThird", "agreePolicy"].forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
+    });
     if (first) {
       fieldOf(first).scrollIntoView({ behavior: "smooth", block: "center" });
       if (first.type !== "hidden" && first.type !== "checkbox") setTimeout(function () { first.focus({ preventScroll: true }); }, 300);
       toast(first.type === "checkbox" ? "필수 항목에 동의해 주세요." : "입력하지 않은 항목이 있습니다.");
       return null;
     }
+    var v = fv;
+    var address = v("addr1") + " " + v("addr2") + (v("zip") ? " (" + v("zip") + ")" : "");
     return {
       academy: v("academy"), director: v("director"), phone: v("phone"),
       member: v("member"), target: v("target"),
-      address: v("addr1") + " " + v("addr2") + (v("zip") ? " (" + v("zip") + ")" : ""),
+      address: address,
+      venue: form.elements.venueSame.checked ? address + " (학원)" : v("vaddr1") + " " + v("vaddr2") + (v("vzip") ? " (" + v("vzip") + ")" : ""),
       attendees: v("attendees"), request: v("request"),
       options: S.slots.map(function (s) { return { date: s.d, time: s.t }; }),
       coaches: S.ranks.slice(),
@@ -542,6 +557,8 @@
 
   function showDone(id, b) {
     S.sending = false;
+    S.finished = true;
+    try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {}
     $("doneSum").innerHTML =
       "<dt>신청번호</dt><dd>" + esc(id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
@@ -552,15 +569,17 @@
   }
 
   /* ---------- 주소 검색 (다음 우편번호) ---------- */
-  function openPost() {
-    var form = $("form");
+  var ADDR = { academy: ["zip", "addr1", "addr2"], venue: ["vzip", "vaddr1", "vaddr2"] };
+  function openPost(which) {
+    var form = $("form"), f = ADDR[which] || ADDR.academy;
+    var zip = form.elements[f[0]], a1 = form.elements[f[1]], a2 = form.elements[f[2]];
     // 파일을 더블클릭해 열면(file://) 검색 결과를 눌러도 값이 넘어오지 않는다 — 미리보기.bat으로 열어야 함
     if (location.protocol === "file:") toast("파일로 열면 주소 검색이 동작하지 않습니다. 폴더의 '미리보기.bat'으로 열어 주세요.");
     if (!window.daum || !window.daum.Postcode) {
       // 검색 창을 못 불러오면 직접 입력할 수 있게 연다
-      form.elements.addr1.readOnly = false;
-      form.elements.addr1.placeholder = "도로명 주소를 입력해 주세요";
-      form.elements.addr1.focus();
+      a1.readOnly = false;
+      a1.placeholder = "도로명 주소를 입력해 주세요";
+      a1.focus();
       toast("주소 검색을 불러오지 못해 직접 입력으로 바꿨습니다.");
       return;
     }
@@ -570,11 +589,12 @@
       height: "100%",
       oncomplete: function (d) {
         var extra = [d.bname && /[동로가]$/.test(d.bname) ? d.bname : "", d.apartment === "Y" ? d.buildingName : ""].filter(Boolean).join(", ");
-        form.elements.zip.value = d.zonecode;
-        form.elements.addr1.value = (d.roadAddress || d.jibunAddress) + (extra ? " (" + extra + ")" : "");
-        clearErr(form.elements.addr1);
+        zip.value = d.zonecode;
+        a1.value = (d.roadAddress || d.jibunAddress) + (extra ? " (" + extra + ")" : "");
+        clearErr(a1);
         $("postModal").close();
-        form.elements.addr2.focus();
+        a2.focus();
+        renderSummary();
       }
     }).embed($("postWrap"));
     $("postModal").showModal();
@@ -686,15 +706,44 @@
     });
     $("form").addEventListener("input", function (e) {
       if (e.target.name === "phone") e.target.value = phoneFmt(e.target.value);
-      clearErr(e.target);
+      if (e.target.name === "attendees") e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);   // 숫자만
+      if (fieldOf(e.target) && fieldOf(e.target).classList.contains("err")) checkOne(e.target.name);
+      renderSummary();
     });
-    $("form").addEventListener("change", function (e) { clearErr(e.target); });
+    $("form").addEventListener("change", function (e) {
+      if (e.target.name === "venueSame") { $("venueBox").hidden = e.target.checked; ["vaddr1", "vaddr2"].forEach(function (n) { clearErr($("form").elements[n]); }); }
+      if (e.target.type === "checkbox") checkOne(e.target.name);
+      renderSummary();
+    });
+    // 칸을 벗어날 때 틀렸으면 빨갛게
+    $("form").addEventListener("focusout", function (e) {
+      var n = e.target.name;
+      if (!n || e.target.type === "checkbox" || e.target.type === "hidden") return;
+      if (e.target.readOnly && !fv(n)) return;
+      checkOne(n);
+    });
+    $("targetChips").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-target]");
+      if (!b) return;
+      var input = $("form").elements.target;
+      var cur = list(input.value), t = b.dataset.target, i = cur.indexOf(t);
+      if (i >= 0) cur.splice(i, 1); else cur.push(t);
+      input.value = (C.TARGETS || []).filter(function (x) { return cur.indexOf(x) >= 0; }).join(", ");
+      renderTargets();
+      checkOne("target");
+      renderSummary();
+    });
     $("form").addEventListener("submit", function (e) { e.preventDefault(); submit(); });
-    $("form").addEventListener("click", function (e) { if (e.target.closest("[data-addr]")) openPost(); });
+    $("form").addEventListener("click", function (e) {
+      var a = e.target.closest("[data-addr]");
+      if (a && !(a.tagName === "INPUT" && !a.readOnly)) openPost(a.dataset.addr);
+    });
 
     // 공통
     document.addEventListener("click", function (e) {
-      if (e.target.closest("[data-next]")) next();
+      var nb = e.target.closest("[data-next]");
+      if (nb && nb.classList.contains("is-off")) { check(); return; }
+      if (nb) next();
       if (e.target.closest("[data-prev]")) prev();
       var o = e.target.closest("[data-open]");
       if (o) $(o.dataset.open + "Modal").showModal();
@@ -703,13 +752,56 @@
     });
   }
 
+  /* ---------- 설명회 대상 (여러 개) ---------- */
+  function renderTargets() {
+    var cur = list($("form").elements.target.value);
+    $("targetChips").innerHTML = (C.TARGETS || []).map(function (t) {
+      var on = cur.indexOf(t) >= 0;
+      return '<button type="button" class="chip' + (on ? " on" : "") + '" aria-pressed="' + on + '" data-target="' + esc(t) + '">' + esc(t) + "</button>";
+    }).join("");
+  }
+
+  /* ---------- 입력 내용 보관 (같은 탭에서 새로고침해도 이어서) ---------- */
+  var SAVE_KEY = "seminar-signup-v1";
+  var KEEP = ["member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2", "request"];
+  function save() {
+    if (S.finished) return;
+    try {
+      var form = $("form"), f = {};
+      KEEP.forEach(function (n) { f[n] = form.elements[n].value; });
+      f.venueSame = form.elements.venueSame.checked;
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify({
+        step: S.step, slots: S.slots, ranks: S.ranks, kind: S.kind, topics: S.topics,
+        flexible: $("flexible").checked, topicMemo: $("topicMemo").value, form: f
+      }));
+    } catch (e) {}
+  }
+  function restore() {
+    var d = null;
+    try { d = JSON.parse(sessionStorage.getItem(SAVE_KEY) || "null"); } catch (e) {}
+    if (!d || !Array.isArray(d.slots) || d.slots.length !== 3) return 1;
+    S.slots = d.slots.map(function (s) { return { d: String(s.d || ""), t: String(s.t || "") }; });
+    S.ranks = Array.isArray(d.ranks) ? d.ranks.slice(0, 3) : [];
+    S.kind = d.kind || "";
+    S.topics = Array.isArray(d.topics) ? d.topics : [];
+    $("flexible").checked = !!d.flexible;
+    $("topicMemo").value = d.topicMemo || "";
+    var form = $("form"), f = d.form || {};
+    KEEP.forEach(function (n) { if (f[n] != null) form.elements[n].value = f[n]; });
+    form.elements.venueSame.checked = !!f.venueSame;
+    $("venueBox").hidden = !!f.venueSame;
+    renderTargets();
+    var first = S.slots.filter(function (s) { return s.d; })[0];
+    if (first) { var p = parse(first.d); S.month = new Date(p.getFullYear(), p.getMonth(), 1); }
+    return Math.min(4, Math.max(1, +d.step || 1));
+  }
+
   /* ---------- 시작 ---------- */
   function init() {
     $("demoBar").hidden = !DEMO;
     each(document.querySelectorAll(".retention"), function (el) { el.textContent = C.PRIVACY_RETENTION || ""; });
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
-    var sel = $("form").elements.target;
-    (C.TARGETS || []).forEach(function (t) { sel.add(new Option(t, t)); });
+    renderTargets();
     if (C.CONTACT_URL) {
       $("contactTop").href = $("contactSide").href = $("contactFoot").href = C.CONTACT_URL;
       $("contactTop").hidden = false;
@@ -717,11 +809,12 @@
     }
     bind();
     renderFilters();
-    go(1);
+    go(restore());   // 새로고침·화면 갱신이 있어도 입력한 내용과 단계를 이어서 보여 줌
     $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오는 중…</p>';
     load().then(function (d) {
       useData(d);
       renderCoaches();
+      if (S.step === 3) renderKinds();
       renderSummary();
     }).catch(function () {
       $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>';
