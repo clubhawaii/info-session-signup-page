@@ -364,6 +364,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .flex-opt { align-items: flex-start; padding: 14px 16px; border-radius: var(--r-sm); background: var(--blue-08); font-weight: 500; line-height: 1.5; margin-bottom: 4px; }
 .flex-opt input { margin-top: 1px; flex: none; }
 .flex-opt b { font-weight: 700; }
+.flex-guide { margin: 16px 0 6px; font-size: 13px; color: var(--ink-60); }
 .coach .tick { display: none; }
 .rank-badge { position: absolute; top: 14px; right: 14px; min-width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--ink-25); background: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; padding: 0 2px; }
 .coach.on .rank-badge { background: var(--blue); border-color: var(--blue); color: #fff; padding: 0 8px; }

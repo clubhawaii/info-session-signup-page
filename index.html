@@ -6,7 +6,7 @@
   <title>강연자 설명회 신청</title>
   <meta name="description" content="희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261021">
+  <link rel="stylesheet" href="styles.css?v=20261021b">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
@@ -81,9 +81,10 @@
           <p class="sub">누르는 순서대로 1·2·3순위가 됩니다. 1순위 강연자 일정이 안 되면 2순위, 3순위 순서로 확인합니다.</p>
 
           <div class="slots rank-slots" id="coachSlots"></div>
+          <p class="flex-guide">1순위 강연자를 꼭 원하시면 체크해 주세요.</p>
           <label class="check flex-opt">
             <input type="checkbox" id="flexible">
-            <span><b>1순위 강연자를 꼭 희망하는 경우에 체크해주세요.</b> 강연자 일정에 따라 설명회 날짜를 조정하는 데 동의합니다.</span>
+            <span><b>1순위 강연자를 꼭 희망합니다.</b> 강연자 일정에 맞춰 설명회 날짜가 바뀌는 것에 동의합니다.</span>
           </label>
 
           <div class="search">
@@ -275,8 +276,8 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261021"></script>
-  <script src="sample-data.js?v=20261021"></script>
-  <script src="app.js?v=20261021"></script>
+  <script src="config.js?v=20261021b"></script>
+  <script src="sample-data.js?v=20261021b"></script>
+  <script src="app.js?v=20261021b"></script>
 </body>
 </html>

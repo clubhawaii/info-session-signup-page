@@ -16,7 +16,7 @@
     ranks: [],            // 고른 강연자 이름 (순위 순서)
     slots: [{ d: "", t: "" }, { d: "", t: "" }, { d: "", t: "" }],
     active: 0,
-    part: "pm",
+    part: "am",
     month: null,
     kind: "",
     topics: [],
