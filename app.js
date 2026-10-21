@@ -363,7 +363,7 @@
 
   function priceText() {
     var k = kindOf(S.kind), m = memberVal();
-    if (!k) return "종류 선택 후 안내";
+    if (!k || !S.topics.length) return "0원";   // 설명회 주제를 고르기 전에는 0원
     if (m === "비회원") return priceOf(k.nonmember);
     if (m === "회원") return priceOf(k.member);
     return "회원 " + priceOf(k.member) + " · 비회원 " + priceOf(k.nonmember);   // 회원 여부는 4단계에서 고름
