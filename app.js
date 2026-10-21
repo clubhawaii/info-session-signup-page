@@ -96,20 +96,35 @@
 
   /* ---------- 가격 비교 (3단계, 고른 종류 기준) ---------- */
   function fixed(range) { return range && range[0] === range[1] ? range[0] : 0; }
+  var ICON_USER = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+  var ICON_GEM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg>';
   function renderPricing() {
     var k = kindOf(S.kind) || (C.KINDS || [])[0];
     if (!k) return;
     var mem = fixed(k.member), non = fixed(k.nonmember), save = mem && non > mem ? non - mem : 0;
-    var checks = (save ? ["비회원가보다 " + man(save) + "만원 할인"] : []).concat([k.time + " 진행", k.note || "강연자 대표 주제로 진행"]);
+    var base = [k.time + " 진행", k.note || "강연자 대표 주제로 진행"];
+    function list(items) { return '<ul class="pr-checks">' + items.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>"; }
+    $("prHead").innerHTML = save
+      ? '<h3 class="pr-title">클럽하와이 회원이면<br><em>' + man(save) + "만원 더 저렴하게</em></h3>" +
+        '<p class="pr-sub">같은 강연자, 같은 구성의 설명회를 회원가로 진행하세요.</p>'
+      : '<h3 class="pr-title">클럽하와이 회원이면<br><em>회원가로 진행</em></h3>' +
+        '<p class="pr-sub">주제를 확인한 뒤 비용을 협의해서 안내드립니다.</p>';
+    $("kindDesc").textContent = k.desc;
     $("pricing").innerHTML =
-      '<p class="pr-eyebrow">' + esc(k.name) + " 가격</p>" +
-      '<h3 class="pr-title">' + (save ? "클럽하와이 회원이면<br><em>" + man(save) + "만원 더 저렴하게</em>" : "클럽하와이 회원가로<br><em>부담 없이</em>") + "</h3>" +
-      '<div class="pr-cards">' +
-        '<div class="pr-card dim"><span class="pr-name">비회원</span><span class="pr-price">' + (k.nonmember ? priceOf(k.nonmember) : "별도 안내") + '</span><span class="pr-unit">VAT 별도</span></div>' +
-        '<div class="pr-card best">' + (save ? '<span class="pr-badge">' + man(save) + "만원 할인</span>" : "") +
-          '<span class="pr-name">클럽하와이 회원</span>' + (save ? '<s class="pr-was">' + priceOf(k.nonmember) + "</s>" : "") +
-          '<span class="pr-price">' + priceOf(k.member) + '</span><span class="pr-unit">VAT 별도</span>' +
-          '<ul class="pr-checks">' + checks.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" +
+      '<div class="pr-card">' +
+        '<span class="pr-ico">' + ICON_USER + '</span><span class="pr-name">비회원</span>' +
+        '<span class="pr-for">클럽하와이 회원이 아닌 학원</span>' +
+        '<div class="pr-amount"><span class="pr-price">' + (k.nonmember ? priceOf(k.nonmember) : "별도 안내") + '</span><span class="pr-unit">VAT 별도</span></div>' +
+        '<div class="pr-strip">' + (k.nonmember ? "정가" : "확인 후 안내") + "</div>" +
+        list(base.map(esc)) +
+      "</div>" +
+      '<div class="pr-card best">' + (save ? '<span class="pr-badge">' + man(save) + "만원 할인</span>" : '<span class="pr-badge">회원 혜택</span>') +
+        '<span class="pr-ico">' + ICON_GEM + '</span><span class="pr-name">클럽하와이 회원</span>' +
+        '<span class="pr-for">클럽하와이 회원 학원</span>' +
+        '<div class="pr-amount">' + (save ? '<s class="pr-was">' + priceOf(k.nonmember) + "</s>" : "") +
+          '<span class="pr-price">' + priceOf(k.member) + '</span><span class="pr-unit">VAT 별도</span></div>' +
+        '<div class="pr-strip">' + (save ? "비회원보다 <b>" + man(save) + "만원</b> 저렴해요" : "회원가 적용") + "</div>" +
+        list(["<b>비회원과 같은 구성 그대로</b>"].concat(save ? ["<b>" + man(save) + "만원 할인</b>"] : ["회원가 적용"])) +
       "</div>";
     $("travelFee").textContent = man(C.TRAVEL_FEE || 0) + "만원";
   }
@@ -317,12 +332,10 @@
   }
 
   function renderKinds() {
+    if (!S.kind && (C.KINDS || []).length) S.kind = C.KINDS[0].id;   // 처음엔 대표 주제 설명회가 골라진 상태
     $("kinds").innerHTML = (C.KINDS || []).map(function (k) {
       var on = S.kind === k.id;
-      return '<button type="button" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
-        '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
-        '<span class="kind-meta">' + esc(k.time) + "</span>" +
-        (k.note ? '<span class="kind-note">' + esc(k.note) + "</span>" : "") + "</span></button>";
+      return '<button type="button" role="tab" aria-selected="' + on + '"' + (on ? ' class="on"' : "") + ' data-kind="' + k.id + '">' + esc(k.name) + "</button>";
     }).join("");
     renderPricing();
     var k = kindOf(S.kind);

@@ -429,33 +429,47 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 }
 .demo-bar a { color: inherit; margin-left: 6px; text-underline-offset: 3px; }
 
-/* 가격 비교 (3단계) */
-.pricing { margin-top: 20px; padding: 26px 20px 24px; border-radius: var(--r); background: var(--blue-08); text-align: center; }
-.pr-eyebrow { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-60); }
-.pr-title { margin: 6px 0 22px; font-size: 22px; line-height: 1.35; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+/* 설명회 종류 + 가격 비교 (3단계) */
+.pricing { margin-top: 20px; padding: 28px 20px 22px; border-radius: var(--r); background: var(--blue-08); text-align: center; }
+.pr-title { margin: 0; font-size: 24px; line-height: 1.35; font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
 .pr-title em { font-style: normal; color: var(--blue); }
-.pr-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 12px; align-items: end; max-width: 520px; margin: 0 auto; text-align: left; }
-.pr-card { position: relative; display: grid; gap: 2px; padding: 18px 16px; border-radius: var(--r); background: #fff; }
-.pr-card.dim { background: rgba(255, 255, 255, .6); }
-.pr-card.dim .pr-name, .pr-card.dim .pr-unit { color: var(--ink-40); }
-.pr-card.dim .pr-price { font-size: 20px; color: var(--ink-40); }
-.pr-card.best { padding: 24px 18px 18px; border: 2px solid var(--blue); box-shadow: 0 14px 30px rgba(37, 99, 235, .18); }
-.pr-name { font-size: 14px; font-weight: 700; color: var(--ink-60); }
-.best .pr-name { font-size: 16px; color: var(--ink); }
-.pr-was { margin-top: 6px; font-size: 14px; color: var(--ink-40); }
-.pr-price { font-size: 28px; font-weight: 800; color: var(--blue); letter-spacing: -.02em; }
-.pr-unit { font-size: 12px; font-weight: 600; color: var(--ink-60); }
-.pr-badge { position: absolute; top: -13px; right: 14px; padding: 4px 10px; border-radius: 13px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 800; }
-.pr-checks { list-style: none; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 13px; color: var(--ink-60); }
+.pr-sub { margin: 8px 0 0; font-size: 14px; color: var(--blue); font-weight: 600; }
+.kind-seg { max-width: 420px; margin: 20px auto 0; background: rgba(37, 99, 235, .1); }
+.kind-seg button { height: 44px; font-size: 15px; }
+.kind-seg button.on { font-weight: 800; }
+.kind-desc { margin: 10px 0 18px; font-size: 13px; color: var(--ink-60); }
+.pr-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 560px; margin: 0 auto; text-align: left; }
+.pr-card { position: relative; display: flex; flex-direction: column; padding: 22px 18px 18px; border-radius: var(--r); background: #fff; border: 1px solid var(--line); }
+.pr-card.best { border: 2px solid var(--blue); box-shadow: 0 16px 34px rgba(37, 99, 235, .2); }
+.pr-badge { position: absolute; top: -13px; right: 14px; padding: 4px 11px; border-radius: 13px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 800; }
+.pr-ico svg { width: 24px; height: 24px; fill: none; stroke: var(--ink-40); stroke-width: 2; stroke-linejoin: round; }
+.best .pr-ico svg { stroke: var(--blue); fill: rgba(37, 99, 235, .15); }
+.pr-name { margin-top: 8px; font-size: 20px; font-weight: 800; color: var(--ink-60); }
+.best .pr-name { color: var(--blue); }
+.pr-for { margin-top: 2px; font-size: 13px; color: var(--ink-40); }
+.pr-amount { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-top: 18px; min-height: 52px; align-content: flex-end; }
+.pr-was { width: 100%; font-size: 14px; color: var(--ink-40); }
+.pr-price { font-size: 22px; font-weight: 800; color: var(--ink-60); letter-spacing: -.02em; }
+.best .pr-price { font-size: 30px; color: var(--blue); }
+.pr-unit { font-size: 12px; font-weight: 600; color: var(--ink-40); }
+.pr-strip { margin-top: 12px; padding: 10px 8px; border-radius: var(--r-sm); background: var(--blue-08); color: var(--ink-60); font-size: 14px; font-weight: 700; text-align: center; }
+.best .pr-strip { background: var(--blue); color: #fff; }
+.pr-checks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 13px; color: var(--ink-60); }
+.pr-checks b { color: var(--ink); }
 .pr-checks li { display: flex; gap: 8px; align-items: flex-start; }
-.pr-checks li::before { content: ""; flex: none; width: 10px; height: 5px; margin-top: 5px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: rotate(-45deg); }
+.pr-checks li::before { content: ""; flex: none; width: 10px; height: 5px; margin-top: 5px; border-left: 2px solid var(--ink-40); border-bottom: 2px solid var(--ink-40); transform: rotate(-45deg); }
+.best .pr-checks li::before { border-color: var(--blue); }
 #step3 .travel { margin-top: 12px; padding: 0; background: none; }
 @media (max-width: 640px) {
-  .pricing { padding: 22px 14px 18px; }
-  .pr-title { font-size: 19px; }
+  .pricing { padding: 22px 12px 16px; }
+  .pr-title { font-size: 20px; }
+  .pr-sub { font-size: 13px; }
+  .kind-seg button { height: 40px; font-size: 13px; }
   .pr-cards { gap: 8px; }
-  .pr-card { padding: 14px 12px; }
-  .pr-card.best { padding: 22px 14px 14px; }
-  .pr-price { font-size: 23px; }
-  .pr-card.dim .pr-price { font-size: 17px; }
+  .pr-card { padding: 18px 12px 14px; }
+  .pr-name { font-size: 16px; }
+  .pr-for { font-size: 12px; }
+  .pr-price { font-size: 18px; }
+  .best .pr-price { font-size: 24px; }
+  .pr-strip { font-size: 12px; padding: 8px 4px; }
 }
