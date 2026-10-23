@@ -43,8 +43,8 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 120px; }
 .head h1 { font-size: 28px; font-weight: 800; }
 .head p { margin: 6px 0 0; color: var(--ink-60); }
-.head .intro { margin: 10px 0 12px; font-size: 17px; line-height: 1.55; color: var(--ink); }
-.head .intro b { color: var(--blue); font-weight: 700; }
+.head .intro { margin: 0 0 12px; font-size: 17px; line-height: 1.55; color: var(--ink); }
+.head .intro b { display: inline-block; margin-bottom: 4px; font-size: 26px; font-weight: 800; line-height: 1.35; color: var(--blue); }
 
 /* 단계 표시 */
 .steps { list-style: none; display: flex; gap: 8px; margin: 20px 0 24px; padding: 0; }
@@ -289,6 +289,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .head h1 { font-size: 23px; }
   .head p { font-size: 14px; }
   .head .intro { font-size: 15px; }
+  .head .intro b { font-size: 21px; }
   .steps { margin: 16px 0 18px; gap: 6px; }
   .steps li { font-size: 13px; gap: 6px; }
   .steps li + li::before { width: 12px; }
