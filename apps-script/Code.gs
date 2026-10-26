@@ -718,7 +718,7 @@ function coachByPhone_(phone) {
 
 function profileLogin_(d) {
   var hit = coachByPhone_(d.phone);
-  if (!hit) return { ok: false, error: '등록된 번호가 아닙니다. 번호를 다시 확인하시거나 본사 담당자에게 문의해 주세요.' };
+  if (!hit) return { ok: false, error: '등록된 번호가 아니에요. 번호를 다시 확인하시거나 본사 담당자에게 말씀해 주세요.' };
   var coach = coachFromRow_(hit.r, topicsByCoach_(false));
   // 아직 반영 전인 제출이 있으면 그 내용으로 이어서 고치게 함
   var wait = lastSubmit_(coach.name, SUBMIT_ST.WAIT);
@@ -766,7 +766,7 @@ function profileSubmit_(d) {
   if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
   var data = cleanProfile_(d.data || {});
   if (!data.topics.length) return { ok: false, error: '대표 주제를 1개 이상 적어 주세요.' };
-  if (!data.agreePublish) return { ok: false, error: '웹 게시 동의에 체크해 주세요.' };
+  if (!data.agreePriority || !data.agreePublish) return { ok: false, error: '확인 및 동의 두 항목에 모두 체크해 주세요.' };
   if (!data.photo) return { ok: false, error: '프로필 사진을 올려 주세요.' };
   var name = String(hit.r['이름']).trim();
   var before = coachFromRow_(hit.r, topicsByCoach_(false));
