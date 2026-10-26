@@ -73,11 +73,11 @@
   }
   function normalize(c) {
     return {
-      name: c.name || "",
+      name: c.name || "", title: c.title || "",
       slogan: arr(c.slogan).concat(c.sub ? [c.sub] : []).slice(0, 2),
       history: arr(c.history), extra: arr(c.extra), works: arr(c.works),
       links: (c.links || []).map(function (l) { return { type: l.type || "", url: l.url || "" }; }),
-      photo: c.photo || "", photos: arr(c.photos), branding: c.branding || "",
+      photo: c.photo || "", photos: arr(c.photos),
       agreePriority: false, agreePublish: false,   // 두 동의는 제출할 때마다 다시 받음
       topics: (c.topics || []).map(readTopic)
     };
@@ -135,9 +135,8 @@
     renderTopics();
     $("agreePriority").checked = P.cur.agreePriority;
     $("agreePublish").checked = P.cur.agreePublish;
-    var b = $("brandImg");
-    b.innerHTML = P.orig.branding ? '<img src="' + esc(P.orig.branding) + '" alt="' + esc(P.orig.name) + ' 브랜딩 이미지">' : '<span class="muted">등록된 브랜딩 이미지가 없어요.</span>';
-    if (P.orig.branding) b.href = P.orig.branding; else b.removeAttribute("href");
+    $("titleLine").hidden = !P.orig.title;
+    $("titleText").textContent = P.orig.title;
     renderProgress();
   }
 
@@ -301,7 +300,7 @@
       if (t.cats.indexOf(ETC) >= 0 && t.catEtc.trim()) cats = cats.concat(t.catEtc.split(",").map(function (s) { return s.trim(); }).filter(Boolean));
       return { area: t.area, cats: cats, name: t.name.trim(), intro: t.intro.trim(), points: t.points, targets: t.targets, seasons: t.seasons };
     });
-    delete c.branding;
+    delete c.title;   // 직함은 본사가 정함 — 보내지 않음
     return c;
   }
 

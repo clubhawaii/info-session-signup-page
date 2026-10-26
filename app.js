@@ -102,7 +102,7 @@
       });
       return {
         name: c.name, photo: c.photo || "", slogan: lines(c.slogan),
-        history: lines(c.history), extra: lines(c.extra), works: lines(c.works),
+        history: lines(c.title).concat(lines(c.history)), extra: lines(c.extra), works: lines(c.works),   // 클럽하와이 직함은 경력 맨 위
         links: (c.links || []).filter(function (l) { return l && l.url; }), photos: list(c.photos),
         topics: topics, targets: targets, bizOnly: all.length > 0 && !topics.length
       };

@@ -6,8 +6,8 @@
   <title>강연자 정보 입력</title>
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261026c">
-  <link rel="stylesheet" href="profile.css?v=20261026c">
+  <link rel="stylesheet" href="styles.css?v=20261026d">
+  <link rel="stylesheet" href="profile.css?v=20261026d">
 </head>
 <body class="pf">
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 아무 번호나 입력하면 예시 강연자로 들어가요. 제출해도 저장되지 않아요.</div>
@@ -54,7 +54,7 @@
           <div class="fields">
             <label class="field wide"><span>이름</span><input id="f_name" readonly tabindex="-1"></label>
             <div class="field wide" data-f="slogan"><span>슬로건 <em>두 줄까지 · 강연자 카드에 이름과 함께 보여요</em></span></div>
-            <div class="field wide" data-f="history"><span>경력 <em>한 줄에 하나씩 작성해 주세요.</em></span><p class="careful">작성하신 그대로 웹에 올라가요. 오탈자나 빠진 내용이 없는지 한 번 더 확인해 주세요.</p></div>
+            <div class="field wide" data-f="history"><span>경력 <em>한 줄에 하나씩 작성해 주세요.</em></span><p class="careful">작성하신 그대로 웹에 올라가요. 오탈자나 빠진 내용이 없는지 한 번 더 확인해 주세요.</p><div class="title-line" id="titleLine" hidden><b id="titleText"></b><small>클럽하와이 직함은 경력 맨 위에 항상 보여요. 본사에서 정하는 부분이라 따로 고치지 않으셔도 돼요.</small></div></div>
           </div>
         </section>
 
@@ -153,8 +153,7 @@
       <!-- 오른쪽: 브랜딩 이미지 · 진행 상황 -->
       <aside class="pf-side">
         <div class="side-card">
-          <h3>브랜딩 이미지</h3>
-          <a class="brand-img" id="brandImg" target="_blank" rel="noopener"></a>
+          <h3>작성 현황</h3>
           <ol class="progress" id="progress"></ol>
           <button type="button" class="btn primary" id="submitSide">제출하기</button>
         </div>
@@ -174,9 +173,9 @@
 
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="config.js?v=20261026c"></script>
-  <script src="sample-data.js?v=20261026c"></script>
+  <script src="config.js?v=20261026d"></script>
+  <script src="sample-data.js?v=20261026d"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="profile.js?v=20261026c"></script>
+  <script src="profile.js?v=20261026d"></script>
 </body>
 </html>

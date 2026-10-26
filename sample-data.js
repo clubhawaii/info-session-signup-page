@@ -11,6 +11,7 @@
     coaches: [
       {
         name: "예시 강연자 A",
+        title: "클럽하와이 입시 연구소장",
         phone: "010-0000-0001",
         photo: "",
         branding: "",

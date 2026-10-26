@@ -50,8 +50,9 @@ var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원�
   '결제 안내 문구', '담당자', '메모', '결제 기한 알림', '응답 토큰'];
 // 강연자 — 줄 단위 칸(경력·주요 이력·저서·관련 링크)은 한 줄에 하나씩. 관련 링크 한 줄 = 「종류 | 이름 | 주소」
 // 슬로건은 두 줄까지(셀 안 줄바꿈). 관련 링크 한 줄 = 「구분 | 주소」
-var COACH_HEADERS = ['이름', '노출', '연락처', '슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
-  '프로필 사진 URL', '현장 사진 URL', '브랜딩 이미지 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
+// 클럽하와이 직함은 본사가 정하는 줄 — 경력 맨 위에 항상 보이고, 소장님 입력 페이지에서는 고칠 수 없음
+var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
+  '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
 // 대표 주제 — 강연자 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
 var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
@@ -170,8 +171,7 @@ function doGet(e) {
     var coaches = rows_(ss.getSheetByName(SH.COACH)).filter(function (r) {
       return String(r['노출']).trim().toUpperCase() === 'Y' && r['이름'];
     }).map(function (r) {
-      var c = coachFromRow_(r, topics);   // 연락처·브랜딩 이미지·동의·본사 메모는 내보내지 않는다
-      delete c.branding;
+      var c = coachFromRow_(r, topics);   // 연락처·동의·본사 메모는 내보내지 않는다
       delete c.agreePriority;
       return c;
     });
@@ -692,14 +692,14 @@ function topicsByCoach_(onlyShown) {
 function coachFromRow_(r, topics) {
   var name = String(r['이름']).trim();
   return {
-    name: name, slogan: lines_(r['슬로건']),
+    name: name, title: String(r['클럽하와이 직함'] || '').trim(), slogan: lines_(r['슬로건']),
     history: lines_(r['경력']), extra: lines_(r['주요 이력']), works: lines_(r['저서·방송·언론']),
     links: lines_(r['관련 링크']).map(function (l) {
       var i = l.indexOf('|');
       return i >= 0 ? { type: l.slice(0, i).trim(), url: l.slice(i + 1).trim() } : { type: '', url: l };
     }).filter(function (l) { return l.url; }),
     photo: driveImage_(r['프로필 사진 URL']), photos: commas_(r['현장 사진 URL']).map(driveImage_),
-    branding: driveImage_(r['브랜딩 이미지 URL']), agreePriority: String(r['우선 수락 동의']).trim().toUpperCase() === 'Y',
+    agreePriority: String(r['우선 수락 동의']).trim().toUpperCase() === 'Y',
     topics: topics[name] || []
   };
 }
@@ -726,7 +726,7 @@ function profileLogin_(d) {
     var data = JSON.parse(wait.r['데이터']);
     data.photo = driveImage_(data.photo);
     data.photos = (data.photos || []).map(driveImage_);
-    data.branding = coach.branding;
+    data.title = coach.title;   // 직함은 늘 시트 값
     data.name = coach.name;
     return { ok: true, coach: data, pending: true };
   }
