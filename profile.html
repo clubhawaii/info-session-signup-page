@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>강연자 정보 입력</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="styles.css?v=20261026a">
+  <link rel="stylesheet" href="profile.css?v=20261026a">
+</head>
+<body class="pf">
+  <div class="demo-bar" id="demoBar" hidden>시험 모드 — 아무 번호나 입력하면 예시 강연자로 들어갑니다. 제출해도 저장되지 않습니다.</div>
+
+  <header class="top">
+    <div class="top-in">
+      <a class="brand" href="./profile.html"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>강연자 정보 입력</span></a>
+      <span class="top-save" id="saveState" hidden></span>
+    </div>
+  </header>
+
+  <!-- 1) 번호로 들어오기 -->
+  <main class="wrap pf-login" id="loginView">
+    <div class="login-card">
+      <h1>소장님, 안녕하세요</h1>
+      <p>「분야별 전문가 출강」 페이지에 올라갈 소장님 소개와 대표 주제를 확인해 주세요.<br>지금 등록된 내용을 보면서 바꾸실 부분만 고치시면 됩니다.</p>
+      <form id="loginForm" novalidate>
+        <label class="field">
+          <span>등록된 휴대폰 번호</span>
+          <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000" maxlength="13">
+          <small class="msg" id="loginMsg"></small>
+        </label>
+        <button class="btn primary" type="submit" id="loginBtn">들어가기</button>
+      </form>
+      <p class="login-help">번호가 맞지 않다고 나오면 본사 담당자에게 문의해 주세요.</p>
+    </div>
+  </main>
+
+  <!-- 2) 입력 -->
+  <main class="wrap pf-main" id="editView" hidden>
+    <div class="pf-head">
+      <h1><span id="whoName"></span> 소장님 정보</h1>
+      <p>각 칸에는 지금 등록된 내용이 미리 들어 있습니다. <b>바꿀 부분만 고치고</b> 맨 아래 「제출하기」를 눌러 주세요. 쓰는 중에는 이 컴퓨터에 자동으로 임시 저장됩니다.</p>
+      <p class="pf-pending" id="pendingNote" hidden>이전에 제출하신 내용이 아직 본사 확인 중입니다. 지금 화면은 그 제출 내용이며, 다시 제출하면 새 내용으로 바뀝니다.</p>
+    </div>
+
+    <div class="pf-grid">
+      <form id="pf" novalidate>
+        <!-- ① 브랜딩 이미지 문구 -->
+        <section class="pf-sec" id="secBrand">
+          <h2><span>1</span>소개 이미지 문구 확인</h2>
+          <p class="sub">오른쪽 소개 이미지에 들어간 문구입니다. 이미지를 다시 만들지 않더라도 <b>소개 페이지에 그대로 쓰입니다.</b></p>
+          <div class="fields">
+            <label class="field"><span>이름</span><input id="f_name" readonly tabindex="-1"></label>
+            <div class="field" data-f="nameEn"><span>영문 이름</span></div>
+            <div class="field wide" data-f="slogan"><span>메인 슬로건 <em>사진 오른쪽 큰 문구 · 30자 이내</em></span></div>
+            <div class="field wide" data-f="sub"><span>서브 슬로건 <em>메인 슬로건 위 작은 문구 · 50자 이내</em></span></div>
+            <div class="field wide" data-f="history"><span>경력 (HISTORY) <em>한 줄에 하나씩 · 현/전 표기</em></span></div>
+          </div>
+        </section>
+
+        <!-- ② 더 넣을 내용 -->
+        <section class="pf-sec">
+          <h2><span>2</span>소개 페이지에 더 넣을 내용 <small>선택</small></h2>
+          <p class="sub">이미지에는 다 못 넣었지만 원장님들께 보여 주고 싶은 내용을 적어 주세요.</p>
+          <div class="fields">
+            <div class="field wide" data-f="extra"><span>주요 이력·자격 <em>한 줄에 하나씩</em></span></div>
+            <div class="field wide" data-f="works"><span>저서·방송·언론 <em>한 줄에 하나씩</em></span></div>
+          </div>
+        </section>
+
+        <!-- ③ 링크 -->
+        <section class="pf-sec">
+          <h2><span>3</span>관련 링크 <small>선택</small></h2>
+          <p class="sub">유튜브 강의 영상, 블로그, 인스타그램, 저서 판매 페이지, 기사 등. <b>유튜브 링크는 소개 페이지에서 바로 재생</b>됩니다.</p>
+          <div class="link-rows" id="links"></div>
+          <button type="button" class="btn ghost sm" id="addLink">+ 링크 추가</button>
+        </section>
+
+        <!-- ④ 사진 -->
+        <section class="pf-sec">
+          <h2><span>4</span>사진</h2>
+          <p class="sub">올리신 사진은 본사 구글 드라이브에 자동으로 저장됩니다. 사진 한 장당 15MB까지 올릴 수 있습니다.</p>
+          <div class="photo-blocks">
+            <div class="photo-block">
+              <h3>프로필 사진</h3>
+              <p class="hint">얼굴이 잘 보이는 고화질 사진 1장. 바꾸실 때만 올려 주세요.</p>
+              <div class="pf-photo" id="photoMain"></div>
+              <label class="btn ghost sm file-btn">사진 올리기<input type="file" id="photoMainIn" accept="image/*" hidden></label>
+            </div>
+            <div class="photo-block">
+              <h3>강의 현장 사진 <small>최대 <span id="maxPhotos">5</span>장</small></h3>
+              <p class="hint">설명회·강의하시는 모습이 담긴 사진이면 좋습니다.</p>
+              <div class="pf-photos" id="photos"></div>
+              <label class="btn ghost sm file-btn" id="photosBtn">사진 추가<input type="file" id="photosIn" accept="image/*" multiple hidden></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ⑤ 대표 주제 -->
+        <section class="pf-sec" id="secTopics">
+          <h2><span>5</span>대표 주제 <em class="req">필수</em></h2>
+          <p class="sub">원장님들이 신청할 때 고르는 주제입니다. <b>1개 이상, 최대 <span id="maxTopics">5</span>개</b>까지 적어 주세요. 주제명은 짧게, 내용은 한 줄 소개와 핵심 2~3줄이면 충분합니다.</p>
+          <details class="example">
+            <summary>작성 예시 보기</summary>
+            <div class="ex-card">
+              <div class="ex-row"><b>영역 · 카테고리</b>학부모 설명회 · 고교선택</div>
+              <div class="ex-row"><b>주제명</b>고교 선택의 정석</div>
+              <div class="ex-row"><b>한 줄 소개</b>우리 아이 성향과 진로로 결정하는 고교 선택</div>
+              <div class="ex-row"><b>핵심 내용</b>특목·자사·일반고 장단점 비교<br>고교 유형별 학생부 기재 경향과 대입 유불리</div>
+              <div class="ex-row"><b>대상 · 시기 · 시간</b>중등 학부모 · 2학기 초, 겨울방학 · 90분</div>
+            </div>
+          </details>
+          <p class="msg" id="topicMsg"></p>
+          <div id="topics"></div>
+          <button type="button" class="btn outline sm" id="addTopic">+ 대표 주제 추가</button>
+        </section>
+
+        <!-- ⑥ 진행 조건 -->
+        <section class="pf-sec">
+          <h2><span>6</span>진행 조건</h2>
+          <div class="fields">
+            <div class="field wide">
+              <span>진행 가능 지역 <em>여러 개 선택</em></span>
+              <div class="checks" id="regions"></div>
+            </div>
+            <div class="field wide">
+              <span>하루 2회(오전·오후) 진행</span>
+              <div class="checks" id="twice"></div>
+            </div>
+            <label class="field wide">
+              <span>본사에 전할 말 <em>선택</em></span>
+              <textarea id="f_memo" rows="3" placeholder="예) 평일 오전은 어렵습니다. / 표에 없는 ○○ 분야 강연도 가능합니다."></textarea>
+            </label>
+          </div>
+        </section>
+
+        <div class="pf-submit">
+          <button type="submit" class="btn primary" id="submitBtn">제출하기</button>
+          <p class="hint">제출하신 내용은 본사 확인 후 소개 페이지에 반영됩니다. 같은 번호로 다시 들어와 언제든 고칠 수 있습니다.</p>
+        </div>
+      </form>
+
+      <!-- 오른쪽: 소개 이미지 · 진행 상황 -->
+      <aside class="pf-side">
+        <div class="side-card">
+          <h3>지금 소개 이미지</h3>
+          <a class="brand-img" id="brandImg" target="_blank" rel="noopener"></a>
+          <ol class="progress" id="progress"></ol>
+          <button type="button" class="btn primary" id="submitSide">제출하기</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- 3) 완료 -->
+  <main class="wrap pf-done" id="doneView" hidden>
+    <div class="login-card">
+      <div class="done-ico">✓</div>
+      <h1>제출했습니다</h1>
+      <p>감사합니다. 본사에서 확인한 뒤 소개 페이지에 반영해 드립니다.<br>고칠 내용이 생기면 같은 번호로 다시 들어와 주세요.</p>
+      <button type="button" class="btn ghost" id="again">내용 다시 보기</button>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="config.js?v=20261026a"></script>
+  <script src="sample-data.js?v=20261026a"></script>
+  <script src="local-data.js" onerror="this.remove()"></script>
+  <script src="profile.js?v=20261026a"></script>
+</body>
+</html>

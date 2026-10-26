@@ -33,7 +33,7 @@ var MIN_DAYS = 14;
  * 설정 전이거나 템플릿 ID가 없으면 보내지 않고 「알림기록」 시트에 "미발송(설정 전)"으로 문구만 남깁니다.
  */
 
-var SH = { APPS: '신청내역', COACH: '강연자', BLOCK: '예약불가', LOG: '알림기록' };
+var SH = { APPS: '신청내역', COACH: '강연자', TOPIC: '대표 주제', SUBMIT: '프로필 제출', BLOCK: '예약불가', LOG: '알림기록' };
 var TZ = 'Asia/Seoul';
 var ST = {
   NEW: '접수', ASKING: '강연자 확인중', ACCEPTED: '강연자 수락', ADJUST: '조율 필요', DECLINED: '강연자 불가',
@@ -48,7 +48,16 @@ var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원�
   '요청 강연자', '요청 일시', '응답 기한', '강연자 응답', '응답 일시', '강연자 메모', '응답 이력',
   '확정 강연자', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
   '결제 안내 문구', '담당자', '메모', '결제 기한 알림', '응답 토큰'];
-var COACH_HEADERS = ['이름', '노출', '연락처', '프로필 사진 URL', '대표 경력 (요약)', '대표 경력 (전체)', '설명회 주제', '대상 태그', '진행 지역', '강의 영상 URL', '사진 샘플 URL'];
+// 강연자 — 줄 단위 칸(경력·주요 이력·저서·관련 링크)은 한 줄에 하나씩. 관련 링크 한 줄 = 「종류 | 이름 | 주소」
+var COACH_HEADERS = ['이름', '노출', '연락처', '영문 이름', '메인 슬로건', '서브 슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
+  '진행 지역', '하루 2회', '프로필 사진 URL', '현장 사진 URL', '브랜딩 이미지 URL', '최근 제출', '본사 메모'];
+// 대표 주제 — 강연자 한 명당 여러 줄. 대상·적합 시기·진행 방식은 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
+var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기', '소요 시간', '진행 방식', '적정 인원', '준비물·추가 비용'];
+// 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
+var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '본사에 전할 말', '반영일시', '데이터'];
+var SUBMIT_ST = { WAIT: '확인 대기', DONE: '반영 완료', SKIP: '반영 안 함' };
+// 소장님이 올린 사진을 모을 드라이브 폴더 이름 (내 드라이브 맨 위에 자동으로 만듦)
+var PHOTO_FOLDER = '강연자 사진';
 var BLOCK_HEADERS = ['강연자', '날짜', '사유', '신청번호'];
 var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내용'];
 
@@ -94,6 +103,11 @@ function setupSheets() {
   var ss = SpreadsheetApp.getActive();
   var apps = ensureSheet_(ss, SH.APPS, APP_HEADERS);
   ensureSheet_(ss, SH.COACH, COACH_HEADERS);
+  ensureSheet_(ss, SH.TOPIC, TOPIC_HEADERS);
+  var sub = ensureSheet_(ss, SH.SUBMIT, SUBMIT_HEADERS);
+  sub.getRange(2, SUBMIT_HEADERS.indexOf('상태') + 1, sub.getMaxRows() - 1, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([SUBMIT_ST.WAIT, SUBMIT_ST.DONE, SUBMIT_ST.SKIP], true).build());
+  sub.hideColumns(SUBMIT_HEADERS.indexOf('데이터') + 1);
   ensureSheet_(ss, SH.BLOCK, BLOCK_HEADERS);
   ensureSheet_(ss, SH.LOG, LOG_HEADERS);
 
@@ -140,6 +154,8 @@ function colLetter_(n) {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('설명회')
     .addItem('선택한 신청의 강연자에게 확인 요청', 'menuAskCoach')
+    .addSeparator()
+    .addItem('선택한 프로필 제출을 강연자 정보에 반영', 'menuApplyProfile')
     .addToUi();
 }
 
@@ -149,21 +165,14 @@ function doGet(e) {
   try {
     if (e && e.parameter && e.parameter.action === 'request') return json_(getRequest_(e.parameter.t));
     var ss = SpreadsheetApp.getActive();
+    var topics = topicsByCoach_(true);
     var coaches = rows_(ss.getSheetByName(SH.COACH)).filter(function (r) {
       return String(r['노출']).trim().toUpperCase() === 'Y' && r['이름'];
     }).map(function (r) {
-      // 연락처는 내보내지 않는다
-      return {
-        name: String(r['이름']).trim(),
-        photo: driveImage_(r['프로필 사진 URL']),
-        summary: r['대표 경력 (요약)'] || '',
-        career: r['대표 경력 (전체)'] || '',
-        topics: String(r['설명회 주제'] || ''),
-        targets: String(r['대상 태그'] || ''),
-        region: String(r['진행 지역'] || ''),
-        video: r['강의 영상 URL'] || '',
-        photos: String(r['사진 샘플 URL'] || '').split(',').map(function (u) { return driveImage_(u.trim()); }).filter(String)
-      };
+      var c = coachFromRow_(r, topics);   // 연락처·브랜딩 이미지·본사 메모는 내보내지 않는다
+      delete c.branding;
+      delete c.twice;
+      return c;
     });
     var blocked = rows_(ss.getSheetByName(SH.BLOCK)).filter(function (r) { return r['강연자'] && r['날짜']; })
       .map(function (r) { return { coach: String(r['강연자']).trim(), date: dateStr_(r['날짜']) }; });
@@ -216,6 +225,9 @@ function doPost(e) {
   }
   try {
     var d = JSON.parse(e.postData.contents);
+    if (d.action === 'profileLogin') return json_(profileLogin_(d));
+    if (d.action === 'profileUpload') return json_(profileUpload_(d));
+    if (d.action === 'profileSubmit') return json_(profileSubmit_(d));
     return json_(d.action === 'respond' ? respond_(d) : apply_(d));
   } catch (err) {
     console.error(err);
@@ -653,4 +665,231 @@ function krTime_(t) {
   var p = String(t).split(':'), h = +p[0], m = +(p[1] || 0);
   if (isNaN(h)) return String(t);
   return (h < 12 ? '오전 ' : '오후 ') + (h % 12 === 0 ? 12 : h % 12) + '시' + (m ? ' ' + m + '분' : '');
+}
+
+/* ================= 강연자 정보 입력 (profile.html) ================= */
+
+function lines_(v) { return String(v || '').split('\n').map(function (x) { return x.trim(); }).filter(String); }
+function commas_(v) { return String(v || '').split(/[,\n]/).map(function (x) { return x.trim(); }).filter(String); }
+function digits_(v) { return String(v || '').replace(/\D/g, ''); }
+
+/** 「대표 주제」를 강연자 이름별로 묶음. onlyShown이면 노출이 N인 주제는 뺌 */
+function topicsByCoach_(onlyShown) {
+  var out = {};
+  rows_(SpreadsheetApp.getActive().getSheetByName(SH.TOPIC)).filter(function (r) {
+    return r['강연자'] && r['주제명'] && !(onlyShown && String(r['노출']).trim().toUpperCase() === 'N');
+  }).sort(function (a, b) { return (Number(a['순서']) || 99) - (Number(b['순서']) || 99); }).forEach(function (r) {
+    var who = String(r['강연자']).trim();
+    (out[who] = out[who] || []).push({
+      area: String(r['영역'] || ''), cat: String(r['카테고리'] || ''), name: String(r['주제명']).trim(), intro: String(r['한 줄 소개'] || ''),
+      points: lines_(r['핵심 내용']), targets: commas_(r['대상']), seasons: commas_(r['적합 시기']), time: String(r['소요 시간'] || ''),
+      formats: commas_(r['진행 방식']), size: String(r['적정 인원'] || ''), extra: String(r['준비물·추가 비용'] || '')
+    });
+  });
+  return out;
+}
+
+function coachFromRow_(r, topics) {
+  var name = String(r['이름']).trim();
+  return {
+    name: name, nameEn: String(r['영문 이름'] || ''), slogan: String(r['메인 슬로건'] || ''), sub: String(r['서브 슬로건'] || ''),
+    history: lines_(r['경력']), extra: lines_(r['주요 이력']), works: lines_(r['저서·방송·언론']),
+    links: lines_(r['관련 링크']).map(function (l) {
+      var p = l.split('|').map(function (x) { return x.trim(); });
+      return p.length >= 3 ? { type: p[0], title: p[1], url: p.slice(2).join('|') } : { type: '', title: '', url: p[p.length - 1] };
+    }).filter(function (l) { return l.url; }),
+    regions: commas_(r['진행 지역']), twice: String(r['하루 2회'] || ''),
+    photo: driveImage_(r['프로필 사진 URL']), photos: commas_(r['현장 사진 URL']).map(driveImage_),
+    branding: driveImage_(r['브랜딩 이미지 URL']),
+    topics: topics[name] || []
+  };
+}
+
+/** 번호로 강연자 찾기 — 노출 여부와 상관없이 「강연자」 시트에 있으면 들어올 수 있음 */
+function coachByPhone_(phone) {
+  phone = digits_(phone);
+  if (phone.length < 10) return null;
+  var sh = SpreadsheetApp.getActive().getSheetByName(SH.COACH);
+  var list = rows_(sh);
+  for (var i = 0; i < list.length; i++) {
+    if (list[i]['이름'] && digits_(list[i]['연락처']) === phone) return { row: i + 2, r: list[i] };
+  }
+  return null;
+}
+
+function profileLogin_(d) {
+  var hit = coachByPhone_(d.phone);
+  if (!hit) return { ok: false, error: '등록된 번호가 아닙니다. 번호를 다시 확인하시거나 본사 담당자에게 문의해 주세요.' };
+  var coach = coachFromRow_(hit.r, topicsByCoach_(false));
+  // 아직 반영 전인 제출이 있으면 그 내용으로 이어서 고치게 함
+  var wait = lastSubmit_(coach.name, SUBMIT_ST.WAIT);
+  if (wait) {
+    var data = JSON.parse(wait.r['데이터']);
+    data.photo = driveImage_(data.photo);
+    data.photos = (data.photos || []).map(driveImage_);
+    data.branding = coach.branding;
+    data.name = coach.name;
+    return { ok: true, coach: data, pending: true };
+  }
+  return { ok: true, coach: coach, pending: false };
+}
+
+function lastSubmit_(name, state) {
+  var list = rows_(SpreadsheetApp.getActive().getSheetByName(SH.SUBMIT));
+  for (var i = list.length - 1; i >= 0; i--) {
+    if (String(list[i]['강연자']).trim() === name && (!state || list[i]['상태'] === state)) return { row: i + 2, r: list[i] };
+  }
+  return null;
+}
+
+/** 사진 1장 저장 — 드라이브 「강연자 사진/이름」 폴더, 링크가 있는 사람은 볼 수 있게 */
+function profileUpload_(d) {
+  var hit = coachByPhone_(d.phone);
+  if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
+  var bytes = Utilities.base64Decode(String(d.data || ''));
+  if (!bytes.length || bytes.length > 15 * 1024 * 1024) return { ok: false, error: '사진을 올리지 못했습니다. 15MB 이하의 사진으로 다시 올려 주세요.' };
+  var name = String(hit.r['이름']).trim();
+  var folder = subFolder_(subFolder_(DriveApp.getRootFolder(), PHOTO_FOLDER), name);
+  var stamp = Utilities.formatDate(new Date(), TZ, 'yyMMdd-HHmmss');
+  var file = folder.createFile(Utilities.newBlob(bytes, 'image/jpeg', (d.kind === 'main' ? '프로필_' : '현장_') + stamp + '.jpg'));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { ok: true, url: 'https://drive.google.com/file/d/' + file.getId() + '/view' };
+}
+
+function subFolder_(parent, name) {
+  var it = parent.getFoldersByName(name);
+  return it.hasNext() ? it.next() : parent.createFolder(name);
+}
+
+/** 제출 저장 — 바로 반영하지 않고 「프로필 제출」에 쌓은 뒤 본사 알림 */
+function profileSubmit_(d) {
+  var hit = coachByPhone_(d.phone);
+  if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
+  var data = cleanProfile_(d.data || {});
+  if (!data.topics.length) return { ok: false, error: '대표 주제를 1개 이상 적어 주세요.' };
+  var name = String(hit.r['이름']).trim();
+  var before = coachFromRow_(hit.r, topicsByCoach_(false));
+  var diff = profileDiff_(before, data);
+  var sh = SpreadsheetApp.getActive().getSheetByName(SH.SUBMIT);
+  // 같은 강연자의 확인 대기 제출이 있으면 새 내용으로 덮어씀 (여러 번 제출해도 한 줄)
+  var wait = lastSubmit_(name, SUBMIT_ST.WAIT);
+  var row = [new Date(), name, SUBMIT_ST.WAIT, diff.keys.join(', ') || '바뀐 내용 없음', diff.text.join('\n'), safe_(data.memo || ''), '', JSON.stringify(data)];
+  if (wait) sh.getRange(wait.row, 1, 1, row.length).setValues([row]);
+  else sh.appendRow(row);
+  SpreadsheetApp.getActive().getSheetByName(SH.COACH).getRange(hit.row, COACH_HEADERS.indexOf('최근 제출') + 1).setValue(new Date());
+  if (HQ_EMAIL) {
+    try {
+      MailApp.sendEmail(HQ_EMAIL, '[강연자 정보] ' + name + ' 소장님이 프로필을 제출했습니다',
+        '바뀐 항목: ' + (diff.keys.join(', ') || '없음') + '\n\n' + diff.text.join('\n') + (data.memo ? '\n\n본사에 전할 말: ' + data.memo : '') +
+        '\n\n시트 「프로필 제출」에서 확인 후, 줄을 고르고 메뉴 「설명회 → 선택한 프로필 제출을 강연자 정보에 반영」을 눌러 주세요.');
+    } catch (err) { console.error(err); }
+  }
+  return { ok: true };
+}
+
+/** 받은 값을 정해진 모양으로만 남김 (모르는 칸은 버림, 글자 수 제한) */
+function cleanProfile_(x) {
+  function str(v, n) { return String(v == null ? '' : v).trim().slice(0, n || 500); }
+  function arr(v, n) { return (Array.isArray(v) ? v : []).map(function (s) { return str(s, n); }).filter(String); }
+  return {
+    nameEn: str(x.nameEn, 60), slogan: str(x.slogan, 60), sub: str(x.sub, 100),
+    history: arr(x.history, 200).slice(0, 20), extra: arr(x.extra, 200).slice(0, 20), works: arr(x.works, 200).slice(0, 20),
+    links: (Array.isArray(x.links) ? x.links : []).map(function (l) {
+      return { type: str(l.type, 20), title: str(l.title, 80).replace(/\|/g, '/'), url: str(l.url, 500) };
+    }).filter(function (l) { return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(l.url); }).slice(0, 20),
+    regions: arr(x.regions, 20), twice: str(x.twice, 10),
+    photo: /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(x.photo) || !x.photo ? str(x.photo, 300) : '',
+    photos: arr(x.photos, 300).filter(function (u) { return /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(u); }).slice(0, 10),
+    topics: (Array.isArray(x.topics) ? x.topics : []).map(function (t) {
+      return {
+        area: str(t.area, 30), cat: str(t.cat, 30), name: str(t.name, 40), intro: str(t.intro, 120), points: arr(t.points, 200).slice(0, 8),
+        targets: arr(t.targets, 20), seasons: arr(t.seasons, 20), time: str(t.time, 20), formats: arr(t.formats, 20),
+        size: str(t.size, 60), extra: str(t.extra, 200)
+      };
+    }).filter(function (t) { return t.name; }).slice(0, 10),
+    memo: str(x.memo, 1000)
+  };
+}
+
+/** 본사가 읽기 쉬운 변경 내용: 「항목: 전 → 후」 */
+function profileDiff_(a, b) {
+  var names = { nameEn: '영문 이름', slogan: '메인 슬로건', sub: '서브 슬로건', history: '경력', extra: '주요 이력', works: '저서·방송·언론', regions: '진행 지역', twice: '하루 2회' };
+  var keys = [], text = [];
+  function show(v) { return Array.isArray(v) ? (v.length ? v.join(' / ') : '(없음)') : (v || '(없음)'); }
+  Object.keys(names).forEach(function (k) {
+    if (JSON.stringify(a[k] || '') !== JSON.stringify(b[k] || '')) { keys.push(names[k]); text.push('· ' + names[k] + ': ' + show(a[k]) + ' → ' + show(b[k])); }
+  });
+  function linkStr(l) { return [l.type, l.title, l.url].join(' | '); }
+  if (JSON.stringify(a.links.map(linkStr)) !== JSON.stringify(b.links.map(linkStr))) {
+    keys.push('관련 링크');
+    text.push('· 관련 링크: ' + b.links.length + '개 — ' + (b.links.map(function (l) { return (l.type ? '[' + l.type + '] ' : '') + (l.title || l.url); }).join(' / ') || '(없음)'));
+  }
+  if (b.photo !== a.photo && b.photo !== '' && !/googleusercontent/.test(b.photo)) { keys.push('프로필 사진'); text.push('· 프로필 사진: 새로 올림'); }
+  if (a.photo && !b.photo) { keys.push('프로필 사진'); text.push('· 프로필 사진: 지움'); }
+  var newPhotos = b.photos.filter(function (u) { return /drive\.google\.com/.test(u); }).length;
+  if (newPhotos || b.photos.length !== a.photos.length) { keys.push('현장 사진'); text.push('· 현장 사진: ' + b.photos.length + '장' + (newPhotos ? ' (새로 ' + newPhotos + '장)' : '')); }
+  var an = a.topics.map(function (t) { return t.name; }), bn = b.topics.map(function (t) { return t.name; });
+  var added = bn.filter(function (n) { return an.indexOf(n) < 0; }), removed = an.filter(function (n) { return bn.indexOf(n) < 0; });
+  var changed = b.topics.filter(function (t) {
+    var o = a.topics.filter(function (x) { return x.name === t.name; })[0];
+    return o && sortedJson_(o) !== sortedJson_(t);
+  }).map(function (t) { return t.name; });
+  if (added.length || removed.length || changed.length) {
+    keys.push('대표 주제');
+    text.push('· 대표 주제 ' + b.topics.length + '개' + (added.length ? ' / 추가: ' + added.join(', ') : '') +
+      (changed.length ? ' / 수정: ' + changed.join(', ') : '') + (removed.length ? ' / 뺌: ' + removed.join(', ') : ''));
+  }
+  return { keys: keys, text: text };
+}
+
+function sortedJson_(o) { return JSON.stringify(Object.keys(o).sort().map(function (k) { return [k, o[k]]; })); }
+
+/** 메뉴: 「프로필 제출」에서 고른 줄을 「강연자」·「대표 주제」에 반영 */
+function menuApplyProfile() {
+  var ui = SpreadsheetApp.getUi(), ss = SpreadsheetApp.getActive(), sh = ss.getActiveSheet();
+  if (sh.getName() !== SH.SUBMIT) { ui.alert('「' + SH.SUBMIT + '」 시트에서 반영할 줄을 먼저 골라 주세요.'); return; }
+  var row = sh.getActiveRange().getRow();
+  if (row < 2) { ui.alert('반영할 제출 줄을 골라 주세요.'); return; }
+  var head = sh.getRange(1, 1, 1, SUBMIT_HEADERS.length).getValues()[0];
+  var vals = sh.getRange(row, 1, 1, SUBMIT_HEADERS.length).getValues()[0];
+  var g = function (h) { return vals[head.indexOf(h)]; };
+  var name = String(g('강연자')).trim();
+  if (g('상태') === SUBMIT_ST.DONE && ui.alert('이미 반영한 제출입니다. 다시 반영할까요?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  if (ui.alert(name + ' 소장님의 제출 내용을 강연자 정보와 대표 주제에 반영할까요?\n(이 소장님의 대표 주제는 제출 내용으로 모두 바뀝니다)', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  applyProfile_(name, JSON.parse(g('데이터')));
+  sh.getRange(row, head.indexOf('상태') + 1).setValue(SUBMIT_ST.DONE);
+  sh.getRange(row, head.indexOf('반영일시') + 1).setValue(new Date());
+  ss.toast(name + ' 소장님 정보를 반영했습니다. 신청 페이지에 바로 보입니다.');
+}
+
+function applyProfile_(name, d) {
+  var ss = SpreadsheetApp.getActive();
+  var csh = ss.getSheetByName(SH.COACH);
+  var head = csh.getRange(1, 1, 1, csh.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+  var names = csh.getRange(2, head.indexOf('이름') + 1, Math.max(csh.getLastRow() - 1, 1), 1).getValues().map(function (r) { return String(r[0]).trim(); });
+  var row = names.indexOf(name) + 2;
+  if (row < 2) throw new Error('「강연자」 시트에 ' + name + ' 소장님이 없습니다.');
+  var set = {
+    '영문 이름': d.nameEn, '메인 슬로건': d.slogan, '서브 슬로건': d.sub, '경력': d.history.join('\n'), '주요 이력': d.extra.join('\n'),
+    '저서·방송·언론': d.works.join('\n'), '관련 링크': d.links.map(function (l) { return [l.type, l.title, l.url].join(' | '); }).join('\n'),
+    '진행 지역': d.regions.join(', '), '하루 2회': d.twice, '프로필 사진 URL': d.photo, '현장 사진 URL': d.photos.join(', ')
+  };
+  Object.keys(set).forEach(function (h) {
+    var c = head.indexOf(h);
+    if (c >= 0) csh.getRange(row, c + 1).setValue(safe_(set[h]));
+  });
+
+  // 대표 주제: 이 강연자 줄을 지우고 제출 순서대로 다시 씀 (본사가 끈 노출 N은 같은 주제명이면 유지)
+  var tsh = ss.getSheetByName(SH.TOPIC);
+  var all = rows_(tsh), hidden = {};
+  for (var i = all.length - 1; i >= 0; i--) {
+    if (String(all[i]['강연자']).trim() !== name) continue;
+    if (String(all[i]['노출']).trim().toUpperCase() === 'N') hidden[String(all[i]['주제명']).trim()] = true;
+    tsh.deleteRow(i + 2);
+  }
+  var rows = d.topics.map(function (t, i) {
+    return [name, i + 1, hidden[t.name] ? 'N' : 'Y', t.area, t.cat, t.name, t.intro, t.points.join('\n'), t.targets.join(', '),
+      t.seasons.join(', '), t.time, t.formats.join(', '), t.size, t.extra].map(safe_);
+  });
+  if (rows.length) tsh.getRange(tsh.getLastRow() + 1, 1, rows.length, TOPIC_HEADERS.length).setValues(rows);
 }

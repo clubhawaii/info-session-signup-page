@@ -12,6 +12,7 @@
     coaches: [],
     blocked: {},          // "강연자|YYYY-MM-DD" → true
     filter: "전체",
+    cat: "전체",          // 주제로 찾기
     q: "",
     ranks: [],            // 고른 강연자 이름 (순위 순서)
     slots: [{ d: "", t: "" }, { d: "", t: "" }, { d: "", t: "" }],
@@ -34,6 +35,16 @@
   function list(v) {
     if (Array.isArray(v)) return v.filter(Boolean);
     return String(v || "").split(/[\n,]/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  // 경력처럼 한 줄 안에 쉼표가 들어가는 글은 줄 단위로만 나눔
+  function lines(v) {
+    if (Array.isArray(v)) return v.filter(Boolean);
+    return String(v || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  // 영역이 비즈니스 교육(biz)이면 이 페이지에는 보이지 않음
+  function areaPage(name) {
+    var a = (C.AREAS || []).filter(function (x) { return x.name === name; })[0];
+    return a ? a.page : "edu";
   }
 
   /* ---------- 날짜 ---------- */
@@ -75,7 +86,7 @@
 
   /* ---------- 데이터 ---------- */
   function load() {
-    if (DEMO) return Promise.resolve(window.SAMPLE_DATA);
+    if (DEMO) return Promise.resolve(window.LOCAL_DATA || window.SAMPLE_DATA);
     return fetch(C.APPS_SCRIPT_URL).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) throw new Error(d.error);
       return d;
@@ -83,12 +94,20 @@
   }
   function useData(d) {
     S.coaches = (d.coaches || []).map(function (c) {
+      var all = (c.topics || []).filter(function (t) { return t.name; });
+      var topics = all.filter(function (t) { return areaPage(t.area) !== "biz"; });
+      // 대상 태그는 대표 주제의 대상을 모아서 만듦
+      var targets = (C.TARGETS || []).filter(function (x) {
+        return topics.some(function (t) { return list(t.targets).indexOf(x) >= 0; });
+      });
       return {
-        name: c.name, photo: c.photo || "", summary: c.summary || "", career: c.career || "",
-        topics: list(c.topics), targets: list(c.targets), region: c.region || "",
-        video: c.video || "", photos: list(c.photos)
+        name: c.name, photo: c.photo || "", slogan: c.slogan || "", sub: c.sub || "",
+        history: lines(c.history), extra: lines(c.extra), works: lines(c.works),
+        links: (c.links || []).filter(function (l) { return l && l.url; }), regions: list(c.regions), photos: list(c.photos),
+        topics: topics, targets: targets, bizOnly: all.length > 0 && !topics.length
       };
-    }).sort(function (a, b) { return a.name.localeCompare(b.name, "ko"); });
+    }).filter(function (c) { return !c.bizOnly; })   // 비즈니스 교육 주제만 있는 강연자는 이 페이지에서 뺌
+      .sort(function (a, b) { return a.name.localeCompare(b.name, "ko"); });
     S.blocked = {};
     (d.blocked || []).forEach(function (b) { S.blocked[b.coach + "|" + b.date] = true; });
   }
@@ -219,6 +238,27 @@
     $("filters").innerHTML = ["전체"].concat(C.TARGETS || []).map(function (o) {
       return '<button type="button" class="chip' + (o === S.filter ? " on" : "") + '" data-f="' + esc(o) + '">' + esc(o) + "</button>";
     }).join("");
+    // 주제로 찾기 — 강연자들의 대표 주제에 실제로 있는 카테고리만
+    var cats = [];
+    (C.AREAS || []).forEach(function (a) {
+      if (a.page === "biz") return;
+      a.cats.forEach(function (k) {
+        if (S.coaches.some(function (c) { return c.topics.some(function (t) { return t.cat === k; }); })) cats.push(k);
+      });
+    });
+    $("catRow").hidden = !cats.length;
+    $("catFilters").innerHTML = ["전체"].concat(cats).map(function (o) {
+      return '<button type="button" class="chip' + (o === S.cat ? " on" : "") + '" data-cat="' + esc(o) + '">' + esc(o) + "</button>";
+    }).join("");
+  }
+  function coachTopicsLine(c) {
+    if (!c.topics.length) return "";
+    var hit = S.cat === "전체" ? [] : c.topics.filter(function (t) { return t.cat === S.cat; });
+    var rest = c.topics.filter(function (t) { return hit.indexOf(t) < 0; });
+    var show = hit.concat(rest).slice(0, 3);
+    return '<div class="coach-topics"><span>대표 주제</span>' + show.map(function (t) {
+      return hit.indexOf(t) >= 0 ? "<b>" + esc(t.name) + "</b>" : "<i>" + esc(t.name) + "</i>";
+    }).join("") + (c.topics.length > 3 ? "<i>외 " + (c.topics.length - 3) + "개</i>" : "") + "</div>";
   }
 
   function renderCoachSlots() {
@@ -233,7 +273,8 @@
   function renderCoaches() {
     var q = S.q.trim();
     var shown = S.coaches.filter(function (c) {
-      return (S.filter === "전체" || c.targets.indexOf(S.filter) >= 0) && (!q || c.name.indexOf(q) >= 0);
+      return (S.filter === "전체" || c.targets.indexOf(S.filter) >= 0) && (!q || c.name.indexOf(q) >= 0) &&
+        (S.cat === "전체" || c.topics.some(function (t) { return t.cat === S.cat; }));
     });
     var before = S.ranks.length;
     S.ranks = S.ranks.filter(function (n) { return !fullyBusy(findCoach(n)); });   // 날짜를 바꿔 모두 막힌 강연자는 순위에서 뺌
@@ -244,7 +285,7 @@
       return '<div class="coach' + (r >= 0 ? " on" : "") + (off ? " off" : "") + '" role="button" tabindex="0" aria-pressed="' + (r >= 0) + '"' + (off ? ' aria-disabled="true"' : "") + ' data-c="' + esc(c.name) + '">' +
         avatar(c) +
         '<div class="coach-info"><div class="coach-name">' + esc(c.name) + "</div>" +
-        '<div class="coach-sum">' + esc(c.summary) + "</div>" +
+        '<div class="coach-sum">' + esc(c.slogan || c.history[0] || "") + "</div>" + coachTopicsLine(c) +
         '<div class="tags">' + c.targets.map(function (t) { return '<span class="tag">' + esc(t) + "</span>"; }).join("") + "</div>" +
         (off ? '<div class="busy full">희망 날짜에 모두 일정이 있어 고를 수 없어요</div>'
           : busy ? '<div class="busy">희망 날짜 중 ' + busy + "개는 이미 일정이 있어 그 날짜엔 진행할 수 없어요</div>" : "") +
@@ -293,18 +334,42 @@
     b.textContent = r >= 0 ? RANKS[r] + "에서 빼기" : S.ranks.length >= 3 ? "3명을 모두 골랐습니다" : RANKS[S.ranks.length] + "로 추가";
     b.className = "btn " + (r >= 0 ? "ghost" : "primary");
   }
+  function ul(items) { return '<ul class="dots ink">' + items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>"; }
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "https://" + u; }
+  function topicCard(t) {
+    var meta = [list(t.targets).join(", "), list(t.seasons).join(", "), t.time, list(t.formats).join(", ")].filter(Boolean);
+    return '<div class="tcard"><div class="tc-cat">' + esc([t.area, t.cat].filter(Boolean).join(" · ")) + "</div>" +
+      '<div class="tc-name">' + esc(t.name) + "</div>" +
+      (t.intro ? '<p class="tc-intro">' + esc(t.intro) + "</p>" : "") +
+      (lines(t.points).length ? ul(lines(t.points)) : "") +
+      (meta.length ? '<div class="tc-meta">' + meta.map(esc).join("<i></i>") + "</div>" : "") +
+      (t.extra ? '<div class="tc-note">' + esc(t.extra) + "</div>" : "") + "</div>";
+  }
   function openDetail(c) {
     detailFor = c;
-    var topics = c.topics.length ? '<ul class="dots ink">' + c.topics.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : '<p class="muted">준비 중입니다.</p>';
-    var vid = youtubeId(c.video);
-    var media = (vid ? '<div class="video"><iframe src="https://www.youtube.com/embed/' + vid + '" allowfullscreen title="강의 영상"></iframe></div>' : "") +
+    var intro = (c.history.length ? "<h4>경력</h4>" + ul(c.history) : "") +
+      (c.extra.length ? "<h4>주요 이력</h4>" + ul(c.extra) : "") +
+      (c.works.length ? "<h4>저서·방송·언론</h4>" + ul(c.works) : "") +
+      (c.regions.length ? '<h4>진행 지역</h4><p class="plain">' + esc(c.regions.join(", ")) + "</p>" : "");
+    if (!intro) intro = '<p class="muted">준비 중입니다.</p>';
+    var topics = c.topics.length ? c.topics.map(topicCard).join("") : '<p class="muted">준비 중입니다.</p>';
+    // 유튜브 링크는 바로 재생, 나머지 링크는 버튼으로
+    var vids = c.links.filter(function (l) { return youtubeId(l.url); }).slice(0, 2);
+    var others = c.links.filter(function (l) { return vids.indexOf(l) < 0; });
+    var media = vids.map(function (l) {
+      return '<div class="video"><iframe src="https://www.youtube.com/embed/' + youtubeId(l.url) + '" allowfullscreen title="' + esc(l.title || "강의 영상") + '"></iframe></div>';
+    }).join("") +
+      (others.length ? '<div class="link-list">' + others.map(function (l) {
+        return '<a href="' + esc(safeUrl(l.url)) + '" target="_blank" rel="noopener"><span>' + esc(l.type || "링크") + "</span>" + esc(l.title || l.url) + "</a>";
+      }).join("") + "</div>" : "") +
       (c.photos.length ? '<div class="photos">' + c.photos.map(function (p) { return '<img src="' + esc(p) + '" alt="" loading="lazy">'; }).join("") + "</div>" : "");
-    if (!media) media = '<p class="muted">등록된 영상·사진이 없습니다.</p>';
+    if (!media) media = '<p class="muted">등록된 영상·링크가 없습니다.</p>';
 
     $("coachDetail").innerHTML =
-      '<div class="profile">' + avatar(c, "lg") + '<div class="nm">' + esc(c.name) + '</div><div class="sm">' + esc(c.summary) + "</div></div>" +
-      '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 주제</button><button type="button" data-tab="2">영상·사진</button></div>' +
-      '<div class="tab-pane" data-pane="0"><h4>대표 경력</h4><div class="box">' + esc(c.career || c.summary) + "</div></div>" +
+      '<div class="profile">' + avatar(c, "lg") + '<div class="nm">' + esc(c.name) + "</div>" +
+        (c.slogan ? '<div class="slogan">' + esc(c.slogan) + "</div>" : "") + (c.sub ? '<div class="sm">' + esc(c.sub) + "</div>" : "") + "</div>" +
+      '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 주제 ' + c.topics.length + '</button><button type="button" data-tab="2">영상·링크</button></div>' +
+      '<div class="tab-pane" data-pane="0">' + intro + "</div>" +
       '<div class="tab-pane" data-pane="1" hidden>' + topics + "</div>" +
       '<div class="tab-pane" data-pane="2" hidden>' + media + "</div>";
     setPickBtn();
@@ -318,7 +383,7 @@
     var out = [];
     S.ranks.forEach(function (n) {
       var c = findCoach(n);
-      (c ? c.topics : []).forEach(function (t) { if (out.indexOf(t) < 0) out.push(t); });
+      (c ? c.topics : []).forEach(function (t) { if (out.indexOf(t.name) < 0) out.push(t.name); });
     });
     return out.concat([LEAVE_IT]);
   }
@@ -337,11 +402,23 @@
     if (!k) return;
     var custom = S.kind === "custom";
     $("topicTitle").textContent = custom ? "어떤 내용이 필요하세요?" : "원하시는 주제를 골라 주세요";
-    $("topicSub").textContent = custom ? "여러 개 고를 수 있습니다. 주제 확인 후 비용을 협의해서 안내드립니다." : "고르신 강연자들의 대표 주제입니다. 여러 개 고를 수 있습니다.";
+    $("topicSub").textContent = custom ? "여러 개 고를 수 있습니다. 주제 확인 후 비용을 협의해서 안내드립니다." : "고르신 강연자들의 대표 주제입니다. 여러 개 고를 수 있고, 최종 주제는 담당자가 강연자와 조율해 안내드립니다.";
     $("topicMemoLabel").innerHTML = custom ? "원하시는 내용 <em>필수</em>" : "더 알려 주실 내용 <em>선택</em>";
-    $("topics").innerHTML = topicChoices().map(function (t) {
-      return '<button type="button" class="chip' + (S.topics.indexOf(t) >= 0 ? " on" : "") + '" data-topic="' + esc(t) + '">' + esc(t) + "</button>";
-    }).join("");
+    function chips(arr) {
+      return '<div class="chips wrap-chips">' + arr.map(function (t) {
+        return '<button type="button" class="chip' + (S.topics.indexOf(t) >= 0 ? " on" : "") + '" data-topic="' + esc(t) + '">' + esc(t) + "</button>";
+      }).join("") + "</div>";
+    }
+    if (custom) { $("topics").innerHTML = chips(topicChoices()); return; }
+    // 대표 주제는 강연자별로 묶어서 — 어느 강연자의 주제인지 보이게
+    var seen = [];
+    $("topics").innerHTML = S.ranks.map(function (n, i) {
+      var c = findCoach(n);
+      if (seen.indexOf(n) >= 0 || !c || !c.topics.length) return "";
+      seen.push(n);
+      return '<div class="topic-group"><div class="tg-name">' + RANKS[i] + " · " + esc(n) + "</div>" +
+        chips(c.topics.map(function (t) { return t.name; })) + "</div>";
+    }).join("") + chips([LEAVE_IT]);
   }
 
   function topicDone() {
@@ -649,6 +726,13 @@
       renderFilters();
       renderCoaches();
     });
+    $("catFilters").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cat]");
+      if (!b) return;
+      S.cat = b.dataset.cat;
+      renderFilters();
+      renderCoaches();
+    });
     $("coachList").addEventListener("click", function (e) {
       var more = e.target.closest("[data-more]");
       if (more) { openDetail(findCoach(more.dataset.more)); return; }
@@ -820,6 +904,7 @@
     $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오는 중…</p>';
     load().then(function (d) {
       useData(d);
+      renderFilters();   // 주제로 찾기는 강연자 주제가 있어야 그릴 수 있음
       renderCoaches();
       if (S.step === 3) renderKinds();
       renderSummary();

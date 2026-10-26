@@ -6,5 +6,13 @@ Thumbs.db
 # 디자인 참고 이미지 (내부용)
 *.jpg
 미리보기.bat
-중간보고.html
+*중간보고.html
 dist/
+
+# 내부 참고 자료 · 실제 강연자 초기 자료(공개 저장소에 올리지 않음)
+*.png
+!logo.png
+*.txt
+이즈유 프로필 브랜딩 이미지/
+seed/
+local-data.js
