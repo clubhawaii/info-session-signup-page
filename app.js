@@ -322,19 +322,6 @@
     var m = String(u || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
     return m ? m[1] : "";
   }
-  function setPickBtn() {
-    var r = S.ranks.indexOf(detailFor.name), b = $("pickCoach");
-    if (r < 0 && fullyBusy(detailFor)) { b.disabled = true; b.textContent = "희망 날짜에 일정이 있어요"; b.className = "btn primary"; return; }
-    if ($("flexible").checked) {   // 1순위만 고르는 상태 — 다른 강연자를 누르면 1순위가 바뀜
-      b.disabled = false;
-      b.textContent = r >= 0 ? "1순위에서 빼기" : "1순위로 정하기";
-      b.className = "btn " + (r >= 0 ? "ghost" : "primary");
-      return;
-    }
-    b.disabled = r < 0 && S.ranks.length >= 3;
-    b.textContent = r >= 0 ? RANKS[r] + "에서 빼기" : S.ranks.length >= 3 ? "3명을 모두 골랐습니다" : RANKS[S.ranks.length] + "로 추가";
-    b.className = "btn " + (r >= 0 ? "ghost" : "primary");
-  }
   function ul(items) { return '<ul class="dots ink">' + items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>"; }
   function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "https://" + u; }
   function topicCard(t) {
@@ -365,11 +352,11 @@
     $("coachDetail").innerHTML =
       '<div class="profile">' + avatar(c, "lg") + '<div class="nm">' + esc(c.name) + "</div>" +
         (c.slogan.length ? '<div class="slogan">' + c.slogan.map(esc).join("<br>") + "</div>" : "") + "</div>" +
+      // 탭은 바로가기 — 내용은 한 페이지에 이어서 보이고, 탭을 누르면 그 부분으로 이동
       '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 주제 ' + c.topics.length + '</button><button type="button" data-tab="2">영상·링크</button></div>' +
-      '<div class="tab-pane" data-pane="0">' + intro + "</div>" +
-      '<div class="tab-pane" data-pane="1" hidden>' + topics + "</div>" +
-      '<div class="tab-pane" data-pane="2" hidden>' + media + "</div>";
-    setPickBtn();
+      '<section class="tab-pane" data-pane="0"><h3 class="pane-title">소개</h3>' + intro + "</section>" +
+      '<section class="tab-pane" data-pane="1"><h3 class="pane-title">설명회 주제</h3>' + topics + "</section>" +
+      '<section class="tab-pane" data-pane="2"><h3 class="pane-title">영상·링크</h3>' + media + "</section>";
     $("coachModal").showModal();
     $("coachDetail").scrollTop = 0;
   }
@@ -754,13 +741,22 @@
     $("coachDetail").addEventListener("click", function (e) {
       var t = e.target.closest("[data-tab]");
       if (!t) return;
-      each(this.querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b === t); });
-      each(this.querySelectorAll("[data-pane]"), function (p) { p.hidden = p.dataset.pane !== t.dataset.tab; });
+      var body = this, pane = body.querySelector('[data-pane="' + t.dataset.tab + '"]');
+      setTab(t.dataset.tab);
+      body.scrollTo({ top: pane.offsetTop - body.querySelector(".tabs").offsetHeight - 8, behavior: "smooth" });
     });
-    $("pickCoach").addEventListener("click", function () {
-      toggleRank(detailFor);
-      $("coachModal").close();
+    // 스크롤한 위치에 맞춰 탭 표시를 바꿈
+    $("coachDetail").addEventListener("scroll", function () {
+      var body = this, tabs = body.querySelector(".tabs");
+      if (!tabs) return;
+      var y = body.scrollTop + tabs.offsetHeight + 24, cur = "0";
+      each(body.querySelectorAll("[data-pane]"), function (p) { if (p.offsetTop <= y) cur = p.dataset.pane; });
+      if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4) cur = String(body.querySelectorAll("[data-pane]").length - 1);
+      setTab(cur);
     });
+    function setTab(k) {
+      each($("coachDetail").querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b.dataset.tab === k); });
+    }
 
     // 3단계
     $("kinds").addEventListener("click", function (e) {

@@ -225,7 +225,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .modal-box { position: relative; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; background: #fff; border-radius: 16px; overflow: hidden; }
 .modal-body { padding: 28px; overflow-y: auto; }
 .modal-foot { padding: 14px 28px 20px; border-top: 1px solid var(--line); }
-.close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; background: #fff; border-radius: 50%; font-size: 24px; line-height: 1; color: var(--ink-60); z-index: 1; }
+.close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; background: #fff; border-radius: 50%; font-size: 24px; line-height: 1; color: var(--ink-60); z-index: 3; }
 .close:hover { background: var(--blue-08); }
 .modal h3 { font-size: 19px; font-weight: 800; }
 
@@ -541,3 +541,13 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .topic-group { margin-top: 12px; }
 .topic-group .tg-name { font-size: 13px; font-weight: 700; color: var(--ink-60); }
 .topic-group .wrap-chips { margin: 8px 0 4px; }
+
+/* 자세히 보기 — 한 페이지에 이어서, 탭은 바로가기 */
+.modal-body { position: relative; }
+.modal-body .tabs { position: sticky; top: -28px; z-index: 2; background: #fff; margin: 0 -28px 4px; padding: 12px 28px; border-bottom: 1px solid var(--line); }
+.tab-pane { padding: 18px 0 8px; }
+.tab-pane + .tab-pane { border-top: 1px solid var(--line); margin-top: 10px; }
+.tab-pane .pane-title { font-size: 16px; font-weight: 800; margin: 0 0 12px; }
+@media (max-width: 640px) {
+  .modal-body .tabs { top: -56px; margin: 0 -20px 4px; padding: 12px 20px 12px 56px; }
+}
