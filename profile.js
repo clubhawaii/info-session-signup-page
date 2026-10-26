@@ -84,7 +84,9 @@
   function login(phone) {
     if (DEMO) {
       var d = window.LOCAL_DATA || window.SAMPLE_DATA || { coaches: [] };
-      var hit = d.coaches.filter(function (c) { return digits(c.phone) === phone; })[0] || d.coaches[0];
+      var hit = d.coaches.filter(function (c) {   // 번호가 여러 개면 쉼표로 구분
+        return String(c.phone || "").split(",").some(function (p) { return digits(p) === phone; });
+      })[0] || d.coaches[0];
       return Promise.resolve(hit ? { ok: true, coach: hit } : { ok: false, error: "예시 데이터가 없어요." });
     }
     return post({ action: "profileLogin", phone: phone });

@@ -635,9 +635,15 @@ function blockedSet_() {
   return set;
 }
 
+// 연락처 칸에 번호가 여러 개면 쉼표·줄바꿈으로 구분 — 알림은 첫 번호로, 입력 페이지 로그인은 어느 번호로든
+function phones_(v) {
+  return String(v || '').split(/[,\n\/]|또는/).map(function (x) { return x.replace(/[^\d]/g, ''); })
+    .filter(function (x) { return x.length >= 10; });
+}
+
 function coachPhone_(name) {
   var hit = rows_(SpreadsheetApp.getActive().getSheetByName(SH.COACH)).filter(function (r) { return String(r['이름']).trim() === name; })[0];
-  return hit ? String(hit['연락처'] || '').replace(/[^\d]/g, '') : '';
+  return hit ? (phones_(hit['연락처'])[0] || '') : '';
 }
 
 function rows_(sh) {
@@ -711,7 +717,7 @@ function coachByPhone_(phone) {
   var sh = SpreadsheetApp.getActive().getSheetByName(SH.COACH);
   var list = rows_(sh);
   for (var i = 0; i < list.length; i++) {
-    if (list[i]['이름'] && digits_(list[i]['연락처']) === phone) return { row: i + 2, r: list[i] };
+    if (list[i]['이름'] && phones_(list[i]['연락처']).indexOf(phone) >= 0) return { row: i + 2, r: list[i] };
   }
   return null;
 }
