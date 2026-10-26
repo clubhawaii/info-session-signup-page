@@ -49,12 +49,13 @@ var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원�
   '확정 강연자', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
   '결제 안내 문구', '담당자', '메모', '결제 기한 알림', '응답 토큰'];
 // 강연자 — 줄 단위 칸(경력·주요 이력·저서·관련 링크)은 한 줄에 하나씩. 관련 링크 한 줄 = 「종류 | 이름 | 주소」
-var COACH_HEADERS = ['이름', '노출', '연락처', '영문 이름', '메인 슬로건', '서브 슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
-  '진행 지역', '하루 2회', '프로필 사진 URL', '현장 사진 URL', '브랜딩 이미지 URL', '최근 제출', '본사 메모'];
-// 대표 주제 — 강연자 한 명당 여러 줄. 대상·적합 시기·진행 방식은 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
-var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기', '소요 시간', '진행 방식', '적정 인원', '준비물·추가 비용'];
+// 슬로건은 두 줄까지(셀 안 줄바꿈). 관련 링크 한 줄 = 「구분 | 주소」
+var COACH_HEADERS = ['이름', '노출', '연락처', '슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
+  '프로필 사진 URL', '현장 사진 URL', '브랜딩 이미지 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
+// 대표 주제 — 강연자 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
+var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
-var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '본사에 전할 말', '반영일시', '데이터'];
+var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '우선 수락 동의', '게시 동의', '반영일시', '데이터'];
 var SUBMIT_ST = { WAIT: '확인 대기', DONE: '반영 완료', SKIP: '반영 안 함' };
 // 소장님이 올린 사진을 모을 드라이브 폴더 이름 (내 드라이브 맨 위에 자동으로 만듦)
 var PHOTO_FOLDER = '강연자 사진';
@@ -169,9 +170,9 @@ function doGet(e) {
     var coaches = rows_(ss.getSheetByName(SH.COACH)).filter(function (r) {
       return String(r['노출']).trim().toUpperCase() === 'Y' && r['이름'];
     }).map(function (r) {
-      var c = coachFromRow_(r, topics);   // 연락처·브랜딩 이미지·본사 메모는 내보내지 않는다
+      var c = coachFromRow_(r, topics);   // 연락처·브랜딩 이미지·동의·본사 메모는 내보내지 않는다
       delete c.branding;
-      delete c.twice;
+      delete c.agreePriority;
       return c;
     });
     var blocked = rows_(ss.getSheetByName(SH.BLOCK)).filter(function (r) { return r['강연자'] && r['날짜']; })
@@ -681,9 +682,8 @@ function topicsByCoach_(onlyShown) {
   }).sort(function (a, b) { return (Number(a['순서']) || 99) - (Number(b['순서']) || 99); }).forEach(function (r) {
     var who = String(r['강연자']).trim();
     (out[who] = out[who] || []).push({
-      area: String(r['영역'] || ''), cat: String(r['카테고리'] || ''), name: String(r['주제명']).trim(), intro: String(r['한 줄 소개'] || ''),
-      points: lines_(r['핵심 내용']), targets: commas_(r['대상']), seasons: commas_(r['적합 시기']), time: String(r['소요 시간'] || ''),
-      formats: commas_(r['진행 방식']), size: String(r['적정 인원'] || ''), extra: String(r['준비물·추가 비용'] || '')
+      area: String(r['영역'] || ''), cats: commas_(r['카테고리']), name: String(r['주제명']).trim(), intro: String(r['한 줄 소개'] || ''),
+      points: lines_(r['핵심 내용']), targets: commas_(r['대상']), seasons: commas_(r['적합 시기'])
     });
   });
   return out;
@@ -692,15 +692,14 @@ function topicsByCoach_(onlyShown) {
 function coachFromRow_(r, topics) {
   var name = String(r['이름']).trim();
   return {
-    name: name, nameEn: String(r['영문 이름'] || ''), slogan: String(r['메인 슬로건'] || ''), sub: String(r['서브 슬로건'] || ''),
+    name: name, slogan: lines_(r['슬로건']),
     history: lines_(r['경력']), extra: lines_(r['주요 이력']), works: lines_(r['저서·방송·언론']),
     links: lines_(r['관련 링크']).map(function (l) {
-      var p = l.split('|').map(function (x) { return x.trim(); });
-      return p.length >= 3 ? { type: p[0], title: p[1], url: p.slice(2).join('|') } : { type: '', title: '', url: p[p.length - 1] };
+      var i = l.indexOf('|');
+      return i >= 0 ? { type: l.slice(0, i).trim(), url: l.slice(i + 1).trim() } : { type: '', url: l };
     }).filter(function (l) { return l.url; }),
-    regions: commas_(r['진행 지역']), twice: String(r['하루 2회'] || ''),
     photo: driveImage_(r['프로필 사진 URL']), photos: commas_(r['현장 사진 URL']).map(driveImage_),
-    branding: driveImage_(r['브랜딩 이미지 URL']),
+    branding: driveImage_(r['브랜딩 이미지 URL']), agreePriority: String(r['우선 수락 동의']).trim().toUpperCase() === 'Y',
     topics: topics[name] || []
   };
 }
@@ -767,20 +766,23 @@ function profileSubmit_(d) {
   if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
   var data = cleanProfile_(d.data || {});
   if (!data.topics.length) return { ok: false, error: '대표 주제를 1개 이상 적어 주세요.' };
+  if (!data.agreePublish) return { ok: false, error: '웹 게시 동의에 체크해 주세요.' };
+  if (!data.photo) return { ok: false, error: '프로필 사진을 올려 주세요.' };
   var name = String(hit.r['이름']).trim();
   var before = coachFromRow_(hit.r, topicsByCoach_(false));
   var diff = profileDiff_(before, data);
   var sh = SpreadsheetApp.getActive().getSheetByName(SH.SUBMIT);
   // 같은 강연자의 확인 대기 제출이 있으면 새 내용으로 덮어씀 (여러 번 제출해도 한 줄)
   var wait = lastSubmit_(name, SUBMIT_ST.WAIT);
-  var row = [new Date(), name, SUBMIT_ST.WAIT, diff.keys.join(', ') || '바뀐 내용 없음', diff.text.join('\n'), safe_(data.memo || ''), '', JSON.stringify(data)];
+  var row = [new Date(), name, SUBMIT_ST.WAIT, diff.keys.join(', ') || '바뀐 내용 없음', diff.text.join('\n'),
+    data.agreePriority ? 'Y' : 'N', data.agreePublish ? 'Y' : 'N', '', JSON.stringify(data)];
   if (wait) sh.getRange(wait.row, 1, 1, row.length).setValues([row]);
   else sh.appendRow(row);
   SpreadsheetApp.getActive().getSheetByName(SH.COACH).getRange(hit.row, COACH_HEADERS.indexOf('최근 제출') + 1).setValue(new Date());
   if (HQ_EMAIL) {
     try {
       MailApp.sendEmail(HQ_EMAIL, '[강연자 정보] ' + name + ' 소장님이 프로필을 제출했습니다',
-        '바뀐 항목: ' + (diff.keys.join(', ') || '없음') + '\n\n' + diff.text.join('\n') + (data.memo ? '\n\n본사에 전할 말: ' + data.memo : '') +
+        '바뀐 항목: ' + (diff.keys.join(', ') || '없음') + '\n\n' + diff.text.join('\n') + '\n\n우선 수락 동의: ' + (data.agreePriority ? '예' : '아니오') +
         '\n\n시트 「프로필 제출」에서 확인 후, 줄을 고르고 메뉴 「설명회 → 선택한 프로필 제출을 강연자 정보에 반영」을 눌러 주세요.');
     } catch (err) { console.error(err); }
   }
@@ -792,37 +794,35 @@ function cleanProfile_(x) {
   function str(v, n) { return String(v == null ? '' : v).trim().slice(0, n || 500); }
   function arr(v, n) { return (Array.isArray(v) ? v : []).map(function (s) { return str(s, n); }).filter(String); }
   return {
-    nameEn: str(x.nameEn, 60), slogan: str(x.slogan, 60), sub: str(x.sub, 100),
+    slogan: arr(x.slogan, 80).slice(0, 2),
     history: arr(x.history, 200).slice(0, 20), extra: arr(x.extra, 200).slice(0, 20), works: arr(x.works, 200).slice(0, 20),
     links: (Array.isArray(x.links) ? x.links : []).map(function (l) {
-      return { type: str(l.type, 20), title: str(l.title, 80).replace(/\|/g, '/'), url: str(l.url, 500) };
+      return { type: str(l.type, 20).replace(/\|/g, '/'), url: str(l.url, 500) };
     }).filter(function (l) { return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(l.url); }).slice(0, 20),
-    regions: arr(x.regions, 20), twice: str(x.twice, 10),
+    agreePriority: x.agreePriority === true, agreePublish: x.agreePublish === true,
     photo: /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(x.photo) || !x.photo ? str(x.photo, 300) : '',
     photos: arr(x.photos, 300).filter(function (u) { return /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(u); }).slice(0, 10),
     topics: (Array.isArray(x.topics) ? x.topics : []).map(function (t) {
       return {
-        area: str(t.area, 30), cat: str(t.cat, 30), name: str(t.name, 40), intro: str(t.intro, 120), points: arr(t.points, 200).slice(0, 8),
-        targets: arr(t.targets, 20), seasons: arr(t.seasons, 20), time: str(t.time, 20), formats: arr(t.formats, 20),
-        size: str(t.size, 60), extra: str(t.extra, 200)
+        area: str(t.area, 30), cats: arr(t.cats, 30).map(function (c) { return c.replace(/,/g, ' '); }).slice(0, 10), name: str(t.name, 40),
+        intro: str(t.intro, 120), points: arr(t.points, 200).slice(0, 8), targets: arr(t.targets, 20), seasons: arr(t.seasons, 20)
       };
-    }).filter(function (t) { return t.name; }).slice(0, 10),
-    memo: str(x.memo, 1000)
+    }).filter(function (t) { return t.name; }).slice(0, 10)
   };
 }
 
 /** 본사가 읽기 쉬운 변경 내용: 「항목: 전 → 후」 */
 function profileDiff_(a, b) {
-  var names = { nameEn: '영문 이름', slogan: '메인 슬로건', sub: '서브 슬로건', history: '경력', extra: '주요 이력', works: '저서·방송·언론', regions: '진행 지역', twice: '하루 2회' };
+  var names = { slogan: '슬로건', history: '경력', extra: '주요 이력', works: '저서·방송·언론' };
   var keys = [], text = [];
   function show(v) { return Array.isArray(v) ? (v.length ? v.join(' / ') : '(없음)') : (v || '(없음)'); }
   Object.keys(names).forEach(function (k) {
     if (JSON.stringify(a[k] || '') !== JSON.stringify(b[k] || '')) { keys.push(names[k]); text.push('· ' + names[k] + ': ' + show(a[k]) + ' → ' + show(b[k])); }
   });
-  function linkStr(l) { return [l.type, l.title, l.url].join(' | '); }
+  function linkStr(l) { return (l.type ? '[' + l.type + '] ' : '') + l.url; }
   if (JSON.stringify(a.links.map(linkStr)) !== JSON.stringify(b.links.map(linkStr))) {
     keys.push('관련 링크');
-    text.push('· 관련 링크: ' + b.links.length + '개 — ' + (b.links.map(function (l) { return (l.type ? '[' + l.type + '] ' : '') + (l.title || l.url); }).join(' / ') || '(없음)'));
+    text.push('· 관련 링크: ' + b.links.length + '개 — ' + (b.links.map(linkStr).join(' / ') || '(없음)'));
   }
   if (b.photo !== a.photo && b.photo !== '' && !/googleusercontent/.test(b.photo)) { keys.push('프로필 사진'); text.push('· 프로필 사진: 새로 올림'); }
   if (a.photo && !b.photo) { keys.push('프로필 사진'); text.push('· 프로필 사진: 지움'); }
@@ -870,9 +870,9 @@ function applyProfile_(name, d) {
   var row = names.indexOf(name) + 2;
   if (row < 2) throw new Error('「강연자」 시트에 ' + name + ' 소장님이 없습니다.');
   var set = {
-    '영문 이름': d.nameEn, '메인 슬로건': d.slogan, '서브 슬로건': d.sub, '경력': d.history.join('\n'), '주요 이력': d.extra.join('\n'),
-    '저서·방송·언론': d.works.join('\n'), '관련 링크': d.links.map(function (l) { return [l.type, l.title, l.url].join(' | '); }).join('\n'),
-    '진행 지역': d.regions.join(', '), '하루 2회': d.twice, '프로필 사진 URL': d.photo, '현장 사진 URL': d.photos.join(', ')
+    '슬로건': d.slogan.join('\n'), '경력': d.history.join('\n'), '주요 이력': d.extra.join('\n'), '저서·방송·언론': d.works.join('\n'),
+    '관련 링크': d.links.map(function (l) { return l.type + ' | ' + l.url; }).join('\n'),
+    '프로필 사진 URL': d.photo, '현장 사진 URL': d.photos.join(', '), '우선 수락 동의': d.agreePriority ? 'Y' : 'N'
   };
   Object.keys(set).forEach(function (h) {
     var c = head.indexOf(h);
@@ -888,8 +888,8 @@ function applyProfile_(name, d) {
     tsh.deleteRow(i + 2);
   }
   var rows = d.topics.map(function (t, i) {
-    return [name, i + 1, hidden[t.name] ? 'N' : 'Y', t.area, t.cat, t.name, t.intro, t.points.join('\n'), t.targets.join(', '),
-      t.seasons.join(', '), t.time, t.formats.join(', '), t.size, t.extra].map(safe_);
+    return [name, i + 1, hidden[t.name] ? 'N' : 'Y', t.area, t.cats.join(', '), t.name, t.intro, t.points.join('\n'), t.targets.join(', '),
+      t.seasons.join(', ')].map(safe_);
   });
   if (rows.length) tsh.getRange(tsh.getLastRow() + 1, 1, rows.length, TOPIC_HEADERS.length).setValues(rows);
 }

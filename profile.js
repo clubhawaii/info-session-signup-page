@@ -6,18 +6,15 @@
   var C = window.APP_CONFIG || {};
   var DEMO = !C.APPS_SCRIPT_URL;
   var MAX_TOPICS = C.MAX_TOPICS || 5, MAX_PHOTOS = C.MAX_PHOTOS || 5;
-  var TWICE = ["가능", "협의", "어려움"];
+  var ETC = "기타";
 
   // 칸 정의 — 줄 단위(lines) 칸은 배열로 저장
   var FIELDS = {
-    nameEn: { kind: "input", max: 40, ph: "예) Han Seungsuk" },
-    slogan: { kind: "input", max: 30, ph: "예) 현장에서 완성한 입시전략", was: "지금 이미지" },
-    sub: { kind: "input", max: 50, ph: "예) 18년 학원 경영의 경험으로 입시를 성장 전략으로 바꾸다", was: "지금 이미지" },
-    history: { kind: "lines", rows: 6, ph: "현 ○○ 입시연구소 소장\n전 ○○학원 대표원장", was: "지금 이미지" },
+    slogan: { kind: "lines", rows: 2, ph: "예) 18년 학원 경영의 경험으로 입시를 성장 전략으로 바꾸다\n현장에서 완성한 입시전략" },
+    history: { kind: "lines", rows: 6, ph: "현 ○○ 입시연구소 소장\n전 ○○학원 대표원장" },
     extra: { kind: "lines", rows: 3, ph: "예) 고입 컨설팅 16년\n예) ○○ 자격 보유" },
     works: { kind: "lines", rows: 3, ph: "예) 『○○○○』 저자\n예) ○○방송 출연" }
   };
-  var FIELD_NAMES = { nameEn: "영문 이름", slogan: "메인 슬로건", sub: "서브 슬로건", history: "경력", extra: "주요 이력", works: "저서·방송·언론" };
 
   var P = {
     phone: "",
@@ -36,9 +33,11 @@
     });
   }
   function arr(v) { return Array.isArray(v) ? v.filter(Boolean) : String(v || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+  function list(v) { return Array.isArray(v) ? v.filter(Boolean) : String(v || "").split(/[,\n]/).map(function (s) { return s.trim(); }).filter(Boolean); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function digits(s) { return String(s || "").replace(/\D/g, ""); }
   function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function areaOf(name) { return (C.AREAS || []).filter(function (a) { return a.name === name; })[0]; }
 
   var toastTimer;
   function toast(msg) {
@@ -55,19 +54,32 @@
   }
 
   /* ---------- 들어오기 ---------- */
-  function emptyTopic() { return { area: "", cat: "", name: "", intro: "", points: [], targets: [], seasons: [], time: "", formats: [], size: "", extra: "" }; }
+  function emptyTopic() { return { area: "", cats: [], catEtc: "", name: "", intro: "", points: [], targets: [], seasons: [] }; }
+  // 카테고리: 영역 목록에 있는 것은 체크로, 없는 것은 「기타」 + 직접 입력으로
+  function readTopic(t, i) {
+    var x = emptyTopic(), area = areaOf(t.area), known = area ? area.cats : [];
+    x.area = String(t.area || "");
+    x.name = String(t.name || "");
+    x.intro = String(t.intro || "");
+    x.points = arr(t.points);
+    x.targets = list(t.targets);
+    x.seasons = list(t.seasons);
+    list(t.cats || t.cat).forEach(function (k) {
+      if (known.indexOf(k) >= 0) x.cats.push(k);
+      else if (k !== ETC) { if (x.cats.indexOf(ETC) < 0) x.cats.push(ETC); x.catEtc = x.catEtc ? x.catEtc + ", " + k : k; }
+    });
+    x._k = i;   // 처음 받은 주제 표시 — 「수정함」 비교용 (서버는 이 칸을 버림)
+    return x;
+  }
   function normalize(c) {
     return {
-      name: c.name || "", nameEn: c.nameEn || "", slogan: c.slogan || "", sub: c.sub || "",
+      name: c.name || "",
+      slogan: arr(c.slogan).concat(c.sub ? [c.sub] : []).slice(0, 2),
       history: arr(c.history), extra: arr(c.extra), works: arr(c.works),
-      links: (c.links || []).map(function (l) { return { type: l.type || "", title: l.title || "", url: l.url || "" }; }),
-      regions: arr(c.regions), twice: c.twice || "", photo: c.photo || "", photos: arr(c.photos), branding: c.branding || "",
-      topics: (c.topics || []).map(function (t, i) {
-        var x = emptyTopic();
-        Object.keys(x).forEach(function (k) { if (t[k] != null) x[k] = Array.isArray(x[k]) ? arr(t[k]) : String(t[k]); });
-        x._k = i;   // 처음 받은 주제 표시 — 「수정함」 비교용 (서버는 이 칸을 버림)
-        return x;
-      })
+      links: (c.links || []).map(function (l) { return { type: l.type || "", url: l.url || "" }; }),
+      photo: c.photo || "", photos: arr(c.photos), branding: c.branding || "",
+      agreePriority: !!c.agreePriority, agreePublish: false,   // 게시 동의는 제출할 때마다 다시 받음
+      topics: (c.topics || []).map(readTopic)
     };
   }
   function login(phone) {
@@ -121,26 +133,20 @@
     renderLinks();
     renderPhotos();
     renderTopics();
-    renderChecks($("regions"), "region", C.REGIONS || [], P.cur.regions, "checkbox");
-    renderChecks($("twice"), "twice", TWICE, P.cur.twice ? [P.cur.twice] : [], "radio");
-    $("f_memo").value = P.cur.memo || "";
+    $("agreePriority").checked = P.cur.agreePriority;
+    $("agreePublish").checked = P.cur.agreePublish;
     var b = $("brandImg");
-    b.innerHTML = P.orig.branding ? '<img src="' + esc(P.orig.branding) + '" alt="' + esc(P.orig.name) + ' 소개 이미지">' : '<span class="muted">등록된 소개 이미지가 없습니다.</span>';
+    b.innerHTML = P.orig.branding ? '<img src="' + esc(P.orig.branding) + '" alt="' + esc(P.orig.name) + ' 브랜딩 이미지">' : '<span class="muted">등록된 브랜딩 이미지가 없습니다.</span>';
     if (P.orig.branding) b.href = P.orig.branding; else b.removeAttribute("href");
     renderProgress();
   }
 
-  function fieldVal(k) { var v = P.cur[k]; return FIELDS[k].kind === "lines" ? v.join("\n") : v; }
   function renderField(k) {
     var f = FIELDS[k], box = document.querySelector('[data-f="' + k + '"]');
-    var label = box.querySelector("span").outerHTML;
-    var orig = P.orig[k], hasOrig = f.kind === "lines" ? orig.length : orig;
-    var input = f.kind === "lines"
-      ? '<textarea data-in="' + k + '" rows="' + Math.max(f.rows, (P.cur[k].length || 0) + 1) + '" placeholder="' + esc(f.ph) + '">' + esc(fieldVal(k)) + "</textarea>"
-      : '<input data-in="' + k + '" maxlength="' + f.max + '" placeholder="' + esc(f.ph) + '" value="' + esc(fieldVal(k)) + '">';
-    box.innerHTML = label +
-      (f.was && hasOrig ? '<div class="was"><b>' + f.was + "</b>" + esc(f.kind === "lines" ? orig.join("\n") : orig) + "</div>" : "") +
-      input + '<div class="fstate" data-st="' + k + '"></div>';
+    if (!box.dataset.head) box.dataset.head = box.innerHTML;   // 제목·안내 문구는 처음 것 그대로
+    box.innerHTML = box.dataset.head +
+      '<textarea data-in="' + k + '" rows="' + Math.max(f.rows, P.cur[k].length) + '" placeholder="' + esc(f.ph) + '">' + esc(P.cur[k].join("\n")) + "</textarea>" +
+      '<div class="fstate" data-st="' + k + '"></div>';
     markField(k);
   }
   function markField(k) {
@@ -153,9 +159,8 @@
     var types = C.LINK_TYPES || [];
     $("links").innerHTML = P.cur.links.length ? P.cur.links.map(function (l, i) {
       return '<div class="link-row" data-li="' + i + '">' +
-        '<select data-l="type"><option value="">종류</option>' + types.map(function (t) { return "<option" + (t === l.type ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
-        '<input data-l="title" placeholder="이름 (예: 고교 선택 설명회 영상)" value="' + esc(l.title) + '">' +
-        '<input data-l="url" type="url" placeholder="https://" value="' + esc(l.url) + '">' +
+        '<select data-l="type"><option value="">구분</option>' + types.map(function (t) { return "<option" + (t === l.type ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+        '<input data-l="url" type="url" placeholder="주소를 붙여 넣어 주세요 (https://…)" value="' + esc(l.url) + '">' +
         '<button type="button" class="x" data-ldel="' + i + '" aria-label="링크 빼기">×</button></div>';
     }).join("") : '<p class="muted small">등록된 링크가 없습니다.</p>';
   }
@@ -176,14 +181,13 @@
     $("maxPhotos").textContent = MAX_PHOTOS;
   }
 
-  function checks(name, opts, on, type) {
+  function checks(attr, opts, on, type) {
     return opts.map(function (o) {
-      return '<label class="ck"><input type="' + type + '" name="' + name + '" value="' + esc(o) + '"' + (on.indexOf(o) >= 0 ? " checked" : "") + "><span>" + esc(o) + "</span></label>";
+      return '<label class="ck"><input type="' + type + '" ' + attr + ' value="' + esc(o) + '"' + (on.indexOf(o) >= 0 ? " checked" : "") + "><span>" + esc(o) + "</span></label>";
     }).join("");
   }
-  function renderChecks(el, name, opts, on, type) { el.innerHTML = checks(name, opts, on, type); }
 
-  function topicChanged(t, i) {
+  function topicChanged(t) {
     var o = t._k == null ? null : P.orig.topics.filter(function (x) { return x._k === t._k; })[0];
     return !o ? "new" : same(o, t) ? "" : "chg";
   }
@@ -191,26 +195,23 @@
     var areas = C.AREAS || [];
     $("maxTopics").textContent = MAX_TOPICS;
     $("topics").innerHTML = P.cur.topics.map(function (t, i) {
-      var area = areas.filter(function (a) { return a.name === t.area; })[0];
-      var st = topicChanged(t, i);
+      var area = areaOf(t.area), st = topicChanged(t);
       return '<div class="topic-card" data-ti="' + i + '">' +
         '<div class="tc-top"><b>주제 ' + (i + 1) + "</b>" + (st === "new" ? '<span class="chg">새 주제</span>' : st ? '<span class="chg">수정함</span>' : "") +
           (area && area.page === "biz" ? '<span class="biz">비즈니스 교육 페이지에 올라갑니다</span>' : "") +
           '<button type="button" class="link small" data-tdel="' + i + '">이 주제 빼기</button></div>' +
         '<div class="fields">' +
-          '<label class="field"><span>영역 <em>필수</em></span><select data-t="area"><option value="">골라 주세요</option>' +
+          '<label class="field wide"><span>영역 <em>필수</em></span><select data-t="area"><option value="">골라 주세요</option>' +
             areas.map(function (a) { return "<option" + (a.name === t.area ? " selected" : "") + ">" + esc(a.name) + "</option>"; }).join("") + "</select></label>" +
-          '<label class="field"><span>카테고리 <em>필수</em></span><select data-t="cat"' + (area ? "" : " disabled") + '><option value="">' + (area ? "골라 주세요" : "영역을 먼저 골라 주세요") + "</option>" +
-            (area ? area.cats.concat(["기타"]) : []).map(function (k) { return "<option" + (k === t.cat ? " selected" : "") + ">" + esc(k) + "</option>"; }).join("") + "</select></label>" +
+          '<div class="field wide"><span>카테고리 <em>필수 · 여러 개 선택 가능</em></span>' +
+            (area ? '<div class="checks">' + checks('data-t="cats"', area.cats.concat([ETC]), t.cats, "checkbox") + "</div>" +
+              '<input class="cat-etc" data-t="catEtc" maxlength="30" placeholder="기타 카테고리를 적어 주세요 (예: 마인드셋)" value="' + esc(t.catEtc) + '"' + (t.cats.indexOf(ETC) >= 0 ? "" : " hidden") + ">"
+              : '<p class="muted small">영역을 먼저 골라 주세요.</p>') + "</div>" +
           '<label class="field wide"><span>주제명 <em>필수 · 원장님이 고르는 버튼에 들어갑니다 · 20자 이내</em></span><input data-t="name" maxlength="24" placeholder="예) 고교 선택의 정석" value="' + esc(t.name) + '"></label>' +
           '<label class="field wide"><span>한 줄 소개 <em>50자 이내</em></span><input data-t="intro" maxlength="60" placeholder="예) 우리 아이 성향과 진로로 결정하는 고교 선택" value="' + esc(t.intro) + '"></label>' +
           '<label class="field wide"><span>핵심 내용 <em>한 줄에 하나씩 2~3줄</em></span><textarea data-t="points" rows="3" placeholder="예) 특목·자사·일반고 장단점 비교">' + esc(t.points.join("\n")) + "</textarea></label>" +
-          '<div class="field wide"><span>대상 <em>필수 · 여러 개 선택</em></span><div class="checks">' + checks("t" + i + "targets", C.TOPIC_TARGETS || [], t.targets, "checkbox").replace(/<input /g, '<input data-t="targets" ') + "</div></div>" +
-          '<div class="field wide"><span>적합 시기 <em>여러 개 선택</em></span><div class="checks">' + checks("t" + i + "seasons", C.SEASONS || [], t.seasons, "checkbox").replace(/<input /g, '<input data-t="seasons" ') + "</div></div>" +
-          '<div class="field"><span>소요 시간</span><div class="checks">' + checks("t" + i + "time", C.DURATIONS || [], [t.time], "radio").replace(/<input /g, '<input data-t="time" ') + "</div></div>" +
-          '<div class="field"><span>진행 방식 <em>여러 개 선택</em></span><div class="checks">' + checks("t" + i + "formats", C.FORMATS || [], t.formats, "checkbox").replace(/<input /g, '<input data-t="formats" ') + "</div></div>" +
-          '<label class="field"><span>적정 인원 <em>선택</em></span><input data-t="size" placeholder="예) 20명 이내 (워크숍)" value="' + esc(t.size) + '"></label>' +
-          '<label class="field"><span>준비물·추가 비용 <em>선택</em></span><input data-t="extra" placeholder="예) 워크시트 제공, 인쇄는 학원" value="' + esc(t.extra) + '"></label>' +
+          '<div class="field wide"><span>대상 <em>필수 · 여러 개 선택</em></span><div class="checks">' + checks('data-t="targets"', C.TOPIC_TARGETS || [], t.targets, "checkbox") + "</div></div>" +
+          '<div class="field wide"><span>적합 시기 <em>여러 개 선택</em></span><div class="checks">' + checks('data-t="seasons"', C.SEASONS || [], t.seasons, "checkbox") + "</div></div>" +
         "</div></div>";
     }).join("");
     $("addTopic").hidden = P.cur.topics.length >= MAX_TOPICS;
@@ -218,17 +219,21 @@
       ? "예전 자료에서 주제 " + P.cur.topics.length + "개를 가져왔어요. 대표로 보여 줄 " + MAX_TOPICS + "개만 남기고 나머지는 「이 주제 빼기」로 빼 주세요." : "";
   }
 
-  function topicOk(t) { return t.area && t.cat && t.name.trim() && t.targets.length; }
+  function topicOk(t) {
+    var cats = t.cats.filter(function (k) { return k !== ETC; }).length || (t.cats.indexOf(ETC) >= 0 && t.catEtc.trim());
+    return t.area && cats && t.name.trim() && t.targets.length;
+  }
+  function hasPhoto() { return !!(P.newMain || P.cur.photo); }
   function renderProgress() {
     var changed = Object.keys(FIELDS).filter(function (k) { return !same(P.cur[k], P.orig[k]); }).length;
     var okTopics = P.cur.topics.filter(topicOk).length;
     var photoN = P.cur.photos.length + P.newPhotos.length;
     var items = [
-      { ok: true, t: "소개 문구", s: changed ? changed + "곳 수정" : "그대로" },
+      { ok: true, t: "소개 내용", s: changed ? changed + "곳 수정" : "그대로" },
       { ok: true, t: "관련 링크", s: P.cur.links.filter(function (l) { return l.url; }).length + "개" },
-      { ok: !!(P.newMain || P.cur.photo), t: "사진", s: (P.newMain || P.cur.photo ? "프로필 있음" : "프로필 없음") + " · 현장 " + photoN + "장" },
-      { ok: okTopics > 0 && okTopics === P.cur.topics.length, t: "대표 주제", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
-      { ok: P.cur.regions.length > 0, t: "진행 지역", s: P.cur.regions.length ? P.cur.regions.join(", ") : "선택 필요" }
+      { ok: hasPhoto(), t: "사진", s: (hasPhoto() ? "프로필 있음" : "프로필 사진 필요") + " · 현장 " + photoN + "장" },
+      { ok: okTopics > 0 && okTopics === P.cur.topics.length && P.cur.topics.length <= MAX_TOPICS, t: "대표 주제", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
+      { ok: P.cur.agreePublish, t: "게시 동의", s: P.cur.agreePublish ? "동의함" : "동의 필요" }
     ];
     $("progress").innerHTML = items.map(function (x) {
       return '<li class="' + (x.ok ? "ok" : "") + '"><b>' + x.t + "</b><span>" + esc(x.s) + "</span></li>";
@@ -261,8 +266,10 @@
   /* ---------- 제출 ---------- */
   function validate() {
     var errs = [];
-    each(document.querySelectorAll(".topic-card"), function (el) { el.classList.remove("err"); });
+    each(document.querySelectorAll(".topic-card, #secPhoto, #secAgree"), function (el) { el.classList.remove("err"); });
     $("topicMsg").textContent = "";
+    $("agreeMsg").textContent = "";
+    if (!hasPhoto()) { $("secPhoto").classList.add("err"); errs.push({ el: $("secPhoto"), msg: "프로필 사진을 올려 주세요." }); }
     if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "대표 주제를 1개 이상 적어 주세요." });
     if (P.cur.topics.length > MAX_TOPICS) errs.push({ el: $("secTopics"), msg: "대표 주제는 " + MAX_TOPICS + "개까지만 남겨 주세요. (지금 " + P.cur.topics.length + "개)" });
     P.cur.topics.forEach(function (t, i) {
@@ -272,7 +279,11 @@
         errs.push({ el: el, msg: "주제 " + (i + 1) + "의 영역·카테고리·주제명·대상을 채워 주세요." });
       }
     });
-    if (!P.cur.regions.length) errs.push({ el: $("regions"), msg: "진행 가능 지역을 골라 주세요." });
+    if (!P.cur.agreePublish) {
+      $("secAgree").classList.add("err");
+      $("agreeMsg").textContent = "웹 게시에 동의해야 제출할 수 있습니다.";
+      errs.push({ el: $("secAgree"), msg: "웹 게시 동의에 체크해 주세요." });
+    }
     if (errs.length) {
       if (errs[0].el.closest("#secTopics")) $("topicMsg").textContent = errs[0].msg;
       errs[0].el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -284,7 +295,12 @@
   function payload() {
     var c = clone(P.cur);
     c.links = c.links.filter(function (l) { return l.url.trim(); });
-    c.topics.forEach(function (t) { t.name = t.name.trim(); t.intro = t.intro.trim(); });
+    // 카테고리: 「기타」는 직접 적은 이름으로 바꿔서 보냄
+    c.topics = c.topics.map(function (t) {
+      var cats = t.cats.filter(function (k) { return k !== ETC; });
+      if (t.cats.indexOf(ETC) >= 0 && t.catEtc.trim()) cats = cats.concat(t.catEtc.split(",").map(function (s) { return s.trim(); }).filter(Boolean));
+      return { area: t.area, cats: cats, name: t.name.trim(), intro: t.intro.trim(), points: t.points, targets: t.targets, seasons: t.seasons };
+    });
     delete c.branding;
     return c;
   }
@@ -352,39 +368,36 @@
     form.addEventListener("input", function (e) {
       var t = e.target;
       if (t.dataset.in) {
-        var k = t.dataset.in;
-        P.cur[k] = FIELDS[k].kind === "lines" ? arr(t.value) : t.value;
-        markField(k);
-      } else if (t.dataset.l) {
-        P.cur.links[+t.closest("[data-li]").dataset.li][t.dataset.l] = t.value;
-      } else if (t.dataset.t && t.type !== "checkbox" && t.type !== "radio" && t.tagName !== "SELECT") {
+        P.cur[t.dataset.in] = arr(t.value);
+        markField(t.dataset.in);
+      } else if (t.dataset.l === "url") {
+        P.cur.links[+t.closest("[data-li]").dataset.li].url = t.value;
+      } else if (t.dataset.t && t.type !== "checkbox" && t.tagName !== "SELECT") {
         var tp = P.cur.topics[+t.closest("[data-ti]").dataset.ti];
         tp[t.dataset.t] = t.dataset.t === "points" ? arr(t.value) : t.value;
-      } else if (t.id === "f_memo") {
-        P.cur.memo = t.value;
       } else return;
       renderProgress();
       saveDraft();
     });
     form.addEventListener("change", function (e) {
       var t = e.target;
-      if (t.dataset.t && (t.type === "checkbox" || t.type === "radio" || t.tagName === "SELECT")) {
+      if (t.dataset.t && (t.type === "checkbox" || t.tagName === "SELECT")) {
         var card = t.closest("[data-ti]"), tp = P.cur.topics[+card.dataset.ti], k = t.dataset.t;
         if (t.type === "checkbox") tp[k] = Array.prototype.map.call(card.querySelectorAll('[data-t="' + k + '"]:checked'), function (x) { return x.value; });
         else tp[k] = t.value;
-        if (k === "area") { tp.cat = ""; renderTopics(); }
-        else topicBadge(card);
-      } else if (t.name === "region") {
-        P.cur.regions = Array.prototype.map.call(document.querySelectorAll('[name="region"]:checked'), function (x) { return x.value; });
-        if (P.cur.regions.indexOf("전국") >= 0 && t.value === "전국" && t.checked) {   // 전국을 고르면 나머지는 끔
-          P.cur.regions = ["전국"];
-          renderChecks($("regions"), "region", C.REGIONS || [], P.cur.regions, "checkbox");
-        } else if (t.value !== "전국" && t.checked && P.cur.regions.indexOf("전국") >= 0) {
-          P.cur.regions = P.cur.regions.filter(function (x) { return x !== "전국"; });
-          renderChecks($("regions"), "region", C.REGIONS || [], P.cur.regions, "checkbox");
-        }
-      } else if (t.name === "twice") {
-        P.cur.twice = t.value;
+        if (k === "area") {   // 영역을 바꾸면 그 영역에 없는 카테고리는 뺌
+          var area = areaOf(tp.area);
+          tp.cats = tp.cats.filter(function (c) { return c === ETC || (area && area.cats.indexOf(c) >= 0); });
+          renderTopics();
+        } else if (k === "cats") {
+          var etc = card.querySelector('[data-t="catEtc"]');
+          etc.hidden = tp.cats.indexOf(ETC) < 0;
+          if (!etc.hidden && t.value === ETC) etc.focus();
+          topicBadge(card);
+        } else topicBadge(card);
+      } else if (t.id === "agreePriority" || t.id === "agreePublish") {
+        P.cur[t.id] = t.checked;
+        if (t.checked) { $("secAgree").classList.remove("err"); $("agreeMsg").textContent = ""; }
       } else if (t.dataset.l === "type") {
         P.cur.links[+t.closest("[data-li]").dataset.li].type = t.value;
       } else return;
@@ -421,7 +434,7 @@
       saveDraft();
     });
     $("addLink").addEventListener("click", function () {
-      P.cur.links.push({ type: "", title: "", url: "" });
+      P.cur.links.push({ type: "", url: "" });
       renderLinks();
       var rows = $("links").querySelectorAll("[data-li]");
       rows[rows.length - 1].querySelector("select").focus();
@@ -438,7 +451,12 @@
       var f = e.target.files[0];
       e.target.value = "";
       if (!f) return;
-      shrink(f, 2400).then(function (p) { P.newMain = p; renderPhotos(); renderProgress(); }).catch(function (err) { toast(err.message); });
+      shrink(f, 2400).then(function (p) {
+        P.newMain = p;
+        $("secPhoto").classList.remove("err");
+        renderPhotos();
+        renderProgress();
+      }).catch(function (err) { toast(err.message); });
     });
     $("photosIn").addEventListener("change", function (e) {
       var files = Array.prototype.slice.call(e.target.files);
@@ -463,7 +481,7 @@
     });
   }
   function topicBadge(card) {
-    var i = +card.dataset.ti, st = topicChanged(P.cur.topics[i], i);
+    var st = topicChanged(P.cur.topics[+card.dataset.ti]);
     var top = card.querySelector(".tc-top"), badge = top.querySelector(".chg");
     if (badge) badge.remove();
     if (st) top.querySelector("b").insertAdjacentHTML("afterend", '<span class="chg">' + (st === "new" ? "새 주제" : "수정함") + "</span>");

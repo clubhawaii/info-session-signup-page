@@ -11,100 +11,88 @@
     coaches: [
       {
         name: "예시 강연자 A",
-        nameEn: "Example A",
         phone: "010-0000-0001",
         photo: "",
         branding: "",
-        slogan: "현장에서 검증한 고입 전략",
-        sub: "16년 고입 컨설팅 경험으로 우리 아이 고교 선택을 돕습니다",
+        slogan: ["16년 고입 컨설팅 경험으로 우리 아이 고교 선택을 돕습니다", "현장에서 검증한 고입 전략"],
         history: ["현 ○○ 입시연구소 소장", "전 ○○학원 대표원장", "『예시 도서』 저자"],
         extra: ["고입 컨설팅 16년"],
         works: ["『예시 도서』 (2024)"],
         links: [
-          { type: "유튜브", title: "고교 선택 설명회 하이라이트", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-          { type: "블로그", title: "입시연구소 블로그", url: "https://blog.naver.com/" }
+          { type: "유튜브", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+          { type: "블로그", url: "https://blog.naver.com/" }
         ],
-        regions: ["서울", "경기·인천"],
-        twice: "가능",
         photos: [],
         topics: [
           {
-            area: "학부모 설명회", cat: "고교선택", name: "고교 선택의 정석",
+            area: "학부모 설명회", cats: ["고교선택"], name: "고교 선택의 정석",
             intro: "우리 아이 성향과 진로로 결정하는 고교 선택",
             points: ["특목·자사·일반고 장단점 비교", "고교 유형별 학생부 기재 경향과 대입 유불리"],
-            targets: ["중등 학부모"], seasons: ["2학기 초", "겨울방학"], time: "90분", formats: ["강의", "질의응답"], size: "", extra: ""
+            targets: ["중등 학부모"], seasons: ["2학기 초", "겨울방학"]
           },
           {
-            area: "학부모 설명회", cat: "학년 전환", name: "예비고1 탐구 키워드 선점",
+            area: "학부모 설명회", cats: ["학년 전환"], name: "예비고1 탐구 키워드 선점",
             intro: "고등학교 입학 전 반드시 끝내야 할 고1 준비",
             points: ["중3 겨울방학 진로 탐색", "통합과학·통합사회 연계 탐구 주제 기획법"],
-            targets: ["중등 학부모", "중학생"], seasons: ["겨울방학"], time: "90분", formats: ["강의"], size: "", extra: ""
+            targets: ["중등 학부모", "중학생"], seasons: ["겨울방학"]
           },
           {
-            area: "학생 특강", cat: "자소서·면접", name: "고입 면접 실전 특강",
+            area: "학생 특강", cats: ["자소서·면접"], name: "고입 면접 실전 특강",
             intro: "제시문 기반 구술 면접 답변 구조 훈련",
             points: ["두괄식 답변 구조(논리+공감+대안)", "자사고 면접 기출 실습"],
-            targets: ["중학생"], seasons: ["2학기 초"], time: "120분", formats: ["워크숍·실습"], size: "20명 이내", extra: "실습 워크시트 제공(인쇄는 학원)"
+            targets: ["중학생"], seasons: ["2학기 초"]
           }
         ]
       },
       {
         name: "예시 강연자 B",
-        nameEn: "Example B",
         phone: "010-0000-0002",
         photo: "",
         branding: "",
-        slogan: "공부머리보다 공부습관",
-        sub: "초등부터 잡는 자기주도학습 로드맵",
+        slogan: ["초등부터 잡는 자기주도학습 로드맵", "공부머리보다 공부습관"],
         history: ["현 ○○교육 학습코칭 대표", "초등 학습습관 프로그램 개발"],
         extra: [],
         works: [],
         links: [],
-        regions: ["전국"],
-        twice: "가능",
         photos: [],
         topics: [
           {
-            area: "학부모 설명회", cat: "학년 전환", name: "예비중1 「중학교 가기 전에」",
+            area: "학부모 설명회", cats: ["학년 전환"], name: "예비중1 「중학교 가기 전에」",
             intro: "초등 6학년 겨울방학에 꼭 해야 할 준비",
             points: ["중학교 내신 구조 이해", "과목별 공부 순서"],
-            targets: ["초등 학부모"], seasons: ["겨울방학"], time: "90분", formats: ["강의"], size: "", extra: ""
+            targets: ["초등 학부모"], seasons: ["겨울방학"]
           },
           {
-            area: "학생 특강", cat: "공부법·자기주도학습", name: "시험 대비 공부법 특강",
+            area: "학생 특강", cats: ["공부법·자기주도학습"], name: "시험 대비 공부법 특강",
             intro: "시험 계획서와 결과서로 만드는 나만의 공부법",
             points: ["시험 4주 전 계획 세우기", "오답 정리법"],
-            targets: ["초등학생", "중학생"], seasons: ["1학기 초", "2학기 초"], time: "60분", formats: ["강의", "워크숍·실습"], size: "", extra: ""
+            targets: ["초등학생", "중학생"], seasons: ["1학기 초", "2학기 초"]
           }
         ]
       },
       {
         name: "예시 강연자 C",
-        nameEn: "Example C",
         phone: "010-0000-0003",
         photo: "",
         branding: "",
-        slogan: "입학사정관의 눈으로 보는 학생부",
-        sub: "15년 입학사정관 경험으로 대입 전략을 설계합니다",
+        slogan: ["15년 입학사정관 경험으로 대입 전략을 설계합니다", "입학사정관의 눈으로 보는 학생부"],
         history: ["전 ○○대학교 입학사정관 (15년)", "현 ○○입시연구소 대표"],
         extra: [],
         works: [],
         links: [],
-        regions: ["서울", "경기·인천", "충청"],
-        twice: "아니오",
         photos: [],
         topics: [
           {
-            area: "학부모 설명회", cat: "대입 전략", name: "수시·정시 구조와 학년별 로드맵",
+            area: "학부모 설명회", cats: ["대입 전략"], name: "수시·정시 구조와 학년별 로드맵",
             intro: "고1부터 고3까지 시기별로 해야 할 일",
             points: ["학생부종합전형 평가 방식", "학년별 준비 로드맵"],
-            targets: ["고등 학부모"], seasons: ["상시"], time: "120분", formats: ["강의", "질의응답"], size: "", extra: ""
+            targets: ["고등 학부모"], seasons: ["상시"]
           },
           {
-            area: "학부모 설명회", cat: "고교학점제·선택과목", name: "계열별 선택과목 로드맵",
+            area: "학부모 설명회", cats: ["고교학점제·선택과목"], name: "계열별 선택과목 로드맵",
             intro: "진로에 맞춘 선택과목과 세특 연계",
             points: ["계열별 필수 이수 과목", "세특 연계 구조"],
-            targets: ["중등 학부모", "고등 학부모"], seasons: ["겨울방학", "1학기 초"], time: "90분", formats: ["강의"], size: "", extra: ""
+            targets: ["중등 학부모", "고등 학부모"], seasons: ["겨울방학", "1학기 초"]
           }
         ]
       }
