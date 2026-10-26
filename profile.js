@@ -5,15 +5,14 @@
 
   var C = window.APP_CONFIG || {};
   var DEMO = !C.APPS_SCRIPT_URL;
-  var MAX_TOPICS = C.MAX_TOPICS || 5, MAX_PHOTOS = C.MAX_PHOTOS || 5;
+  var MAX_TOPICS = C.MAX_TOPICS || 5, MAX_PHOTOS = C.MAX_PHOTOS || 5, SLOGAN_MAX = C.SLOGAN_MAX || 50;
+  var AGREES = ["agreePrivacy", "agreePublish", "agreePriority"];
   var ETC = "기타";
 
-  // 칸 정의 — 줄 단위(lines) 칸은 배열로 저장
+  // 칸 정의 — 슬로건은 한 줄 글, 경력은 한 줄에 하나씩(배열)
   var FIELDS = {
-    slogan: { kind: "lines", rows: 2, ph: "예) 18년 학원 경영의 경험으로 입시를 성장 전략으로 바꾸다\n현장에서 완성한 입시전략" },
-    history: { kind: "lines", rows: 6, ph: "현 ○○ 입시연구소 소장\n전 ○○학원 대표원장" },
-    extra: { kind: "lines", rows: 3, ph: "예) 고입 컨설팅 16년\n예) ○○ 자격 보유" },
-    works: { kind: "lines", rows: 3, ph: "예) 『○○○○』 저자\n예) ○○방송 출연" }
+    slogan: { kind: "line", ph: "예) 분석과 전략, 데이터로 승부한다" },
+    history: { kind: "lines", rows: 7, ph: "현 ○○ 입시연구소 소장\n전 ○○학원 대표원장\n저서 『○○○○』\n○○방송 출연" }
   };
 
   var P = {
@@ -74,11 +73,11 @@
   function normalize(c) {
     return {
       name: c.name || "", title: c.title || "",
-      slogan: arr(c.slogan).concat(c.sub ? [c.sub] : []).slice(0, 2),
-      history: arr(c.history), extra: arr(c.extra), works: arr(c.works),
+      slogan: arr(c.slogan).concat(c.sub ? [c.sub] : []).join(" "),
+      history: arr(c.history).concat(arr(c.extra), arr(c.works)),   // 예전 「주요 이력·저서」 칸은 경력 아래로 합침
       links: (c.links || []).map(function (l) { return { type: l.type || "", url: l.url || "" }; }),
       photo: c.photo || "", photos: arr(c.photos),
-      agreePriority: false, agreePublish: false,   // 두 동의는 제출할 때마다 다시 받음
+      agreePrivacy: false, agreePublish: false, agreePriority: false,   // 동의는 제출할 때마다 다시 받음
       topics: (c.topics || []).map(readTopic)
     };
   }
@@ -104,7 +103,6 @@
     $("loginView").hidden = true;
     $("doneView").hidden = true;
     $("editView").hidden = false;
-    $("saveState").hidden = false;
     renderAll();
     window.scrollTo(0, 0);
   }
@@ -118,8 +116,6 @@
     saveTimer = setTimeout(function () {
       try {
         localStorage.setItem(KEY(), JSON.stringify({ base: JSON.stringify(P.orig), cur: P.cur }));
-        var d = new Date();
-        $("saveState").textContent = "임시 저장됨 " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
       } catch (e) { /* 저장 공간을 못 쓰는 환경 — 무시 */ }
     }, 400);
   }
@@ -133,8 +129,7 @@
     renderLinks();
     renderPhotos();
     renderTopics();
-    $("agreePriority").checked = P.cur.agreePriority;
-    $("agreePublish").checked = P.cur.agreePublish;
+    AGREES.forEach(function (id) { $(id).checked = P.cur[id]; });
     $("titleLine").hidden = !P.orig.title;
     $("titleText").textContent = P.orig.title;
     renderProgress();
@@ -144,7 +139,9 @@
     var f = FIELDS[k], box = document.querySelector('[data-f="' + k + '"]');
     if (!box.dataset.head) box.dataset.head = box.innerHTML;   // 제목·안내 문구는 처음 것 그대로
     box.innerHTML = box.dataset.head +
-      '<textarea data-in="' + k + '" rows="' + Math.max(f.rows, P.cur[k].length) + '" placeholder="' + esc(f.ph) + '">' + esc(P.cur[k].join("\n")) + "</textarea>" +
+      (f.kind === "line"
+        ? '<input data-in="' + k + '" maxlength="' + (SLOGAN_MAX - 1) + '" placeholder="' + esc(f.ph) + '" value="' + esc(P.cur[k]) + '">'
+        : '<textarea data-in="' + k + '" rows="' + Math.max(f.rows, P.cur[k].length) + '" placeholder="' + esc(f.ph) + '">' + esc(P.cur[k].join("\n")) + "</textarea>") +
       '<div class="fstate" data-st="' + k + '"></div>';
     markField(k);
   }
@@ -206,7 +203,7 @@
             (area ? '<div class="checks">' + checks('data-t="cats"', area.cats.concat([ETC]), t.cats, "checkbox") + "</div>" +
               '<input class="cat-etc" data-t="catEtc" maxlength="30" placeholder="어떤 카테고리인지 적어 주세요 (예: 신입 강사 온보딩)" value="' + esc(t.catEtc) + '"' + (t.cats.indexOf(ETC) >= 0 ? "" : " hidden") + ">"
               : '<p class="muted small">영역을 먼저 골라 주시면 카테고리가 나와요.</p>') + "</div>" +
-          '<label class="field wide"><span>주제명 <em>필수 · 원장님이 신청할 때 누르는 버튼에 들어가요 · 20자 이내</em></span><input data-t="name" maxlength="24" placeholder="예) 고교 선택의 정석" value="' + esc(t.name) + '"></label>' +
+          '<label class="field wide"><span>주제명 <em>필수 · 원장님이 보자마자 알 수 있게 직관적으로 · 20자 이내</em></span><input data-t="name" maxlength="24" placeholder="예) 고교 선택 설명회, 예비 고1 입학 준비, 중등 내신 공부법" value="' + esc(t.name) + '"></label>' +
           '<label class="field wide"><span>한 줄 소개 <em>주제 카드에 주제명 아래로 보여요 · 50자 이내</em></span><input data-t="intro" maxlength="60" placeholder="예) 우리 아이 성향과 진로로 결정하는 고교 선택" value="' + esc(t.intro) + '"></label>' +
           '<label class="field wide"><span>핵심 내용 <em>한 줄에 하나씩 2~3줄 작성해 주세요.</em></span><textarea data-t="points" rows="3" placeholder="예) 특목·자사·일반고 장단점 비교">' + esc(t.points.join("\n")) + "</textarea></label>" +
           '<div class="field wide"><span>대상 <em>필수 · 여러 개 골라도 돼요 · 원장님의 대상 필터에 쓰여요</em></span><div class="checks">' + checks('data-t="targets"', C.TOPIC_TARGETS || [], t.targets, "checkbox") + "</div></div>" +
@@ -223,6 +220,7 @@
     return t.area && cats && t.name.trim() && t.targets.length;
   }
   function hasPhoto() { return !!(P.newMain || P.cur.photo); }
+  function agreedAll() { return AGREES.every(function (id) { return P.cur[id]; }); }
   function renderProgress() {
     var changed = Object.keys(FIELDS).filter(function (k) { return !same(P.cur[k], P.orig[k]); }).length;
     var okTopics = P.cur.topics.filter(topicOk).length;
@@ -232,7 +230,7 @@
       { ok: true, t: "관련 링크", s: P.cur.links.filter(function (l) { return l.url; }).length + "개" },
       { ok: hasPhoto(), t: "사진", s: (hasPhoto() ? "프로필 있음" : "프로필 사진 필요") + " · 현장 " + photoN + "장" },
       { ok: okTopics > 0 && okTopics === P.cur.topics.length && P.cur.topics.length <= MAX_TOPICS, t: "대표 주제", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
-      { ok: P.cur.agreePriority && P.cur.agreePublish, t: "확인 및 동의", s: (P.cur.agreePriority ? 1 : 0) + (P.cur.agreePublish ? 1 : 0) + " / 2개 동의" }
+      { ok: agreedAll(), t: "확인 및 동의", s: AGREES.filter(function (id) { return P.cur[id]; }).length + " / 3개 동의" }
     ];
     $("progress").innerHTML = items.map(function (x) {
       return '<li class="' + (x.ok ? "ok" : "") + '"><b>' + x.t + "</b><span>" + esc(x.s) + "</span></li>";
@@ -268,6 +266,7 @@
     each(document.querySelectorAll(".topic-card, #secPhoto, #secAgree"), function (el) { el.classList.remove("err"); });
     $("topicMsg").textContent = "";
     $("agreeMsg").textContent = "";
+    if (P.cur.slogan.trim().length >= SLOGAN_MAX) errs.push({ el: document.querySelector('[data-in="slogan"]'), msg: "슬로건을 " + SLOGAN_MAX + "자보다 짧게 줄여 주세요. (지금 " + P.cur.slogan.trim().length + "자예요)" });
     if (!hasPhoto()) { $("secPhoto").classList.add("err"); errs.push({ el: $("secPhoto"), msg: "프로필 사진을 올려 주세요." }); }
     if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "대표 주제를 1개 이상 적어 주세요." });
     if (P.cur.topics.length > MAX_TOPICS) errs.push({ el: $("secTopics"), msg: "대표 주제는 " + MAX_TOPICS + "개까지만 남겨 주세요. (지금 " + P.cur.topics.length + "개예요)" });
@@ -278,10 +277,10 @@
         errs.push({ el: el, msg: "주제 " + (i + 1) + "의 영역·카테고리·주제명·대상을 채워 주세요." });
       }
     });
-    if (!P.cur.agreePriority || !P.cur.agreePublish) {
+    if (!agreedAll()) {
       $("secAgree").classList.add("err");
-      $("agreeMsg").textContent = "두 항목 모두 동의하셔야 제출할 수 있어요.";
-      errs.push({ el: $("secAgree"), msg: "확인 및 동의 두 항목에 모두 체크해 주세요." });
+      $("agreeMsg").textContent = "세 항목 모두 동의하셔야 제출할 수 있어요.";
+      errs.push({ el: $("secAgree"), msg: "확인 및 동의 세 항목에 모두 체크해 주세요." });
     }
     if (errs.length) {
       if (errs[0].el.closest("#secTopics")) $("topicMsg").textContent = errs[0].msg;
@@ -293,6 +292,7 @@
 
   function payload() {
     var c = clone(P.cur);
+    c.slogan = c.slogan.trim() ? [c.slogan.trim()] : [];   // 시트에는 한 줄로
     c.links = c.links.filter(function (l) { return l.url.trim(); });
     // 카테고리: 「기타」는 직접 적은 이름으로 바꿔서 보냄
     c.topics = c.topics.map(function (t) {
@@ -333,7 +333,6 @@
       if (!r.ok) throw new Error(r.error || "제출하지 못했어요. 잠시 후 다시 눌러 주세요.");
       clearDraft();
       $("editView").hidden = true;
-      $("saveState").hidden = true;
       $("doneView").hidden = false;
       window.scrollTo(0, 0);
     }).catch(function (e) {
@@ -367,7 +366,7 @@
     form.addEventListener("input", function (e) {
       var t = e.target;
       if (t.dataset.in) {
-        P.cur[t.dataset.in] = arr(t.value);
+        P.cur[t.dataset.in] = FIELDS[t.dataset.in].kind === "line" ? t.value : arr(t.value);
         markField(t.dataset.in);
       } else if (t.dataset.l === "url") {
         P.cur.links[+t.closest("[data-li]").dataset.li].url = t.value;
@@ -394,9 +393,9 @@
           if (!etc.hidden && t.value === ETC) etc.focus();
           topicBadge(card);
         } else topicBadge(card);
-      } else if (t.id === "agreePriority" || t.id === "agreePublish") {
+      } else if (AGREES.indexOf(t.id) >= 0) {
         P.cur[t.id] = t.checked;
-        if (P.cur.agreePriority && P.cur.agreePublish) { $("secAgree").classList.remove("err"); $("agreeMsg").textContent = ""; }
+        if (agreedAll()) { $("secAgree").classList.remove("err"); $("agreeMsg").textContent = ""; }
       } else if (t.dataset.l === "type") {
         P.cur.links[+t.closest("[data-li]").dataset.li].type = t.value;
       } else return;
@@ -490,5 +489,7 @@
   }
 
   $("demoBar").hidden = !DEMO;
+  each(document.querySelectorAll(".slogan-max"), function (el) { el.textContent = SLOGAN_MAX; });
+  each(document.querySelectorAll(".retention-pf"), function (el) { el.textContent = C.COACH_RETENTION || ""; });
   bind();
 })();

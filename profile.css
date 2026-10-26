@@ -162,3 +162,21 @@
 .title-line b { font-size: 15px; color: var(--blue); }
 .title-line small { font-size: 12px; color: var(--ink-60); }
 .side-card .progress { margin-top: 4px; }
+
+/* 경력 안내 · 주제명 안내 · 동의 자세히 보기 */
+.history-guide { margin: 0; font-size: 13px; color: var(--ink-60); }
+.name-guide { margin: 14px 0 0; border: 1px solid var(--blue-40); background: var(--blue-08); border-radius: var(--r-sm); padding: 14px 16px; font-size: 13px; }
+.name-guide > b { color: var(--blue); font-size: 14px; }
+.name-guide p { margin: 8px 0 6px; color: var(--ink-60); }
+.name-guide .bad { margin: 10px 0 0; font-size: 12px; }
+.name-ex { display: flex; flex-wrap: wrap; gap: 6px; }
+.name-ex span { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 4px 12px; font-weight: 600; color: var(--ink); }
+.agree-box { margin-top: 14px; }
+.agree-box .agree { margin-top: 0; }
+.agree-more { margin: 6px 0 0 30px; font-size: 13px; }
+.agree-more summary { cursor: pointer; color: var(--blue); font-weight: 700; }
+.agree-more table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.agree-more th, .agree-more td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+.agree-more th { width: 110px; background: rgba(17, 17, 17, .03); font-weight: 700; white-space: nowrap; }
+.agree-more p { margin: 8px 0 0; color: var(--ink-60); }
+@media (max-width: 640px) { .agree-more { margin-left: 0; } .agree-more th { width: 80px; white-space: normal; } }

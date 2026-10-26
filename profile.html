@@ -6,8 +6,8 @@
   <title>강연자 정보 입력</title>
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261026d">
-  <link rel="stylesheet" href="profile.css?v=20261026d">
+  <link rel="stylesheet" href="styles.css?v=20261026e">
+  <link rel="stylesheet" href="profile.css?v=20261026e">
 </head>
 <body class="pf">
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 아무 번호나 입력하면 예시 강연자로 들어가요. 제출해도 저장되지 않아요.</div>
@@ -15,7 +15,6 @@
   <header class="top">
     <div class="top-in">
       <a class="brand" href="./profile.html"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>강연자 정보 입력</span></a>
-      <span class="top-save" id="saveState" hidden></span>
     </div>
   </header>
 
@@ -23,7 +22,7 @@
   <main class="wrap pf-login" id="loginView">
     <div class="login-card">
       <h1>소장님, 안녕하세요!</h1>
-      <p>클럽하와이 「분야별 전문가 출강」 페이지에 소장님을 소개할 내용을 함께 준비하고 있어요.<br>지금 등록된 내용을 보시면서 바꾸고 싶은 부분만 고쳐 주시면 돼요.</p>
+      <p>클럽하와이 「분야별 전문가 출강」 페이지에<br>소장님을 소개할 내용을 함께 준비하고 있어요.<br>지금 등록된 내용을 보시면서,<br>바꾸고 싶은 부분만 고쳐 주시면 돼요.</p>
       <form id="loginForm" novalidate>
         <label class="field">
           <span>등록된 휴대폰 번호</span>
@@ -32,7 +31,7 @@
         </label>
         <button class="btn primary" type="submit" id="loginBtn">들어가기</button>
       </form>
-      <p class="login-help">번호가 맞지 않다고 나오면 본사 담당자에게 편하게 말씀해 주세요.</p>
+      <p class="login-help">번호가 맞지 않다고 나오면,<br>본사 담당자에게 편하게 말씀해 주세요.</p>
     </div>
   </main>
 
@@ -40,8 +39,8 @@
   <main class="wrap pf-main" id="editView" hidden>
     <div class="pf-head">
       <h1><span id="whoName"></span> 소장님 소개</h1>
-      <p>칸마다 지금 등록된 내용이 미리 들어 있어요. <b>바꾸고 싶은 부분만 고치신 뒤</b> 맨 아래 「제출하기」를 눌러 주세요. 쓰시는 동안 이 컴퓨터에 자동으로 임시 저장돼요.</p>
-      <p class="pf-pending" id="pendingNote" hidden>지난번에 제출하신 내용을 본사에서 확인하고 있어요. 지금 화면은 그 제출 내용이고, 다시 제출하시면 새 내용으로 바뀌어요.</p>
+      <p>칸마다 지금 등록된 내용이 미리 들어 있어요.<br><b>바꾸고 싶은 부분만 고치신 뒤,</b> 맨 아래 「제출하기」를 눌러 주세요.</p>
+      <p class="pf-pending" id="pendingNote" hidden>지난번에 제출하신 내용을 본사에서 확인하고 있어요.<br>지금 화면은 그 제출 내용이고, 다시 제출하시면 새 내용으로 바뀌어요.</p>
     </div>
 
     <div class="pf-grid">
@@ -49,29 +48,23 @@
         <!-- ① 소개 내용 -->
         <section class="pf-sec" id="secBrand">
           <h2><span>1</span>소개 내용</h2>
-          <p class="where"><b>이렇게 보여요</b>원장님들이 강연자를 고를 때 가장 먼저 보는 <b>강연자 카드</b>와 「자세히 보기」 화면 맨 위에 들어가요. 소장님의 첫인상이 되는 부분이에요.</p>
-          <p class="notice">아래 내용은 <b>이즈유에서 만들어 드린 브랜딩 이미지를 토대로 정리한 소장님 맞춤 소개</b>예요. 고치거나 더하고 싶은 부분만 수정해 주세요.</p>
+          <p class="where"><b>이렇게 보여요</b>원장님들이 강연자를 고를 때 가장 먼저 보는 <b>강연자 카드</b>와,<br>「자세히 보기」의 소개 화면에 들어가요.<br>소장님의 첫인상이 되는 부분이에요.</p>
+          <p class="notice">아래 내용은 <b>이즈유에서 만들어 드린 브랜딩 이미지를 토대로 정리한 소장님 맞춤 소개</b>예요.<br>고치거나 더하고 싶은 부분만 수정해 주세요.</p>
           <div class="fields">
             <label class="field wide"><span>이름</span><input id="f_name" readonly tabindex="-1"></label>
-            <div class="field wide" data-f="slogan"><span>슬로건 <em>두 줄까지 · 강연자 카드에 이름과 함께 보여요</em></span></div>
-            <div class="field wide" data-f="history"><span>경력 <em>한 줄에 하나씩 작성해 주세요.</em></span><p class="careful">작성하신 그대로 웹에 올라가요. 오탈자나 빠진 내용이 없는지 한 번 더 확인해 주세요.</p><div class="title-line" id="titleLine" hidden><b id="titleText"></b><small>클럽하와이 직함은 경력 맨 위에 항상 보여요. 본사에서 정하는 부분이라 따로 고치지 않으셔도 돼요.</small></div></div>
+            <div class="field wide" data-f="slogan"><span>슬로건 <em>한 줄 · <span class="slogan-max"></span>자 미만 · 강연자 카드에 이름과 함께 보여요</em></span></div>
+            <div class="field wide" data-f="history"><span>경력 <em>한 줄에 하나씩 작성해 주세요.</em></span>
+              <p class="history-guide">경력은 이 칸에서 고쳐 주세요.<br>자격, 저서, 방송 출연처럼 소장님의 전문성을 보여 주는 내용이 더 있다면,<br>아래에 이어서 추가로 작성해 주세요.</p>
+              <p class="careful">작성하신 그대로 웹에 올라가요.<br>오탈자나 빠진 내용이 없는지 한 번 더 확인해 주세요.</p>
+              <div class="title-line" id="titleLine" hidden><b id="titleText"></b><small>클럽하와이 직함은 경력 맨 위에 항상 보여요.<br>본사에서 정하는 부분이라 따로 고치지 않으셔도 돼요.</small></div>
+            </div>
           </div>
         </section>
 
-        <!-- ② 더 넣을 내용 -->
+        <!-- ② 링크 -->
         <section class="pf-sec">
-          <h2><span>2</span>소개에 더 넣을 내용 <small>선택</small></h2>
-          <p class="where"><b>이렇게 보여요</b>「자세히 보기」의 <b>소개</b> 탭에서 경력 아래에 이어서 보여요. 자격, 저서, 방송 출연처럼 소장님의 전문성을 보여 주는 내용이 많을수록 원장님들이 더 믿고 신청하세요.</p>
-          <div class="fields">
-            <div class="field wide" data-f="extra"><span>주요 이력·자격 <em>한 줄에 하나씩 작성해 주세요.</em></span></div>
-            <div class="field wide" data-f="works"><span>저서·방송·언론 <em>한 줄에 하나씩 작성해 주세요.</em></span></div>
-          </div>
-        </section>
-
-        <!-- ③ 링크 -->
-        <section class="pf-sec">
-          <h2><span>3</span>관련 링크 <small>선택</small></h2>
-          <p class="where"><b>이렇게 보여요</b>「자세히 보기」의 <b>영상·링크</b> 탭에 들어가요. <b>유튜브 영상은 페이지 안에서 바로 재생</b>되고, 다른 링크는 누르면 해당 페이지로 이동하는 버튼으로 보여요. 실제 강의 모습을 보고 나면 원장님들이 훨씬 쉽게 결정하세요.</p>
+          <h2><span>2</span>관련 링크 <small>선택</small></h2>
+          <p class="where"><b>이렇게 보여요</b>「자세히 보기」의 <b>영상·링크</b> 탭에 들어가요.<br><b>유튜브 영상은 페이지 안에서 바로 재생</b>되고,<br>다른 링크는 누르면 해당 페이지로 이동하는 버튼으로 보여요.<br>실제 강의 모습을 보고 나면, 원장님들이 훨씬 쉽게 결정하세요.</p>
           <div class="link-guide">
             <b>이런 링크를 넣어 주세요</b>
             <ul>
@@ -82,19 +75,19 @@
               <li><b>홈페이지</b> 소장님 연구소·학원 홈페이지</li>
             </ul>
           </div>
-          <p class="sub">구분을 고르고 주소만 붙여 넣어 주세요.</p>
+          <p class="sub">구분을 고르고, 주소만 붙여 넣어 주세요.</p>
           <div class="link-rows" id="links"></div>
           <button type="button" class="btn ghost sm" id="addLink">+ 링크 추가</button>
         </section>
 
-        <!-- ④ 사진 -->
+        <!-- ③ 사진 -->
         <section class="pf-sec" id="secPhoto">
-          <h2><span>4</span>사진</h2>
-          <p class="where"><b>이렇게 보여요</b><b>프로필 사진</b>은 강연자 카드와 「자세히 보기」 맨 위에, <b>강의 현장 사진</b>은 「영상·링크」 탭에 들어가요. 올리신 사진은 본사 구글 드라이브에 자동으로 저장돼요. (한 장당 15MB까지)</p>
+          <h2><span>3</span>사진</h2>
+          <p class="where"><b>이렇게 보여요</b><b>프로필 사진</b>은 강연자 카드와 「자세히 보기」 맨 위에,<br><b>강의 현장 사진</b>은 「영상·링크」 탭에 들어가요.<br>올리신 사진은 본사 구글 드라이브에 자동으로 저장돼요. (한 장당 15MB까지)</p>
           <div class="photo-blocks">
             <div class="photo-block">
               <h3>프로필 사진 <em class="req">필수</em></h3>
-              <p class="hint">얼굴이 잘 보이는 밝은 사진 1장을 올려 주세요.</p>
+              <p class="hint">얼굴이 잘 보이는 밝은 사진 1장을<br>올려 주세요.</p>
               <div class="pf-photo" id="photoMain"></div>
               <label class="btn ghost sm file-btn">사진 올리기<input type="file" id="photoMainIn" accept="image/*" hidden></label>
             </div>
@@ -107,24 +100,33 @@
           </div>
         </section>
 
-        <!-- ⑤ 대표 주제 -->
+        <!-- ④ 대표 주제 -->
         <section class="pf-sec" id="secTopics">
-          <h2><span>5</span>대표 주제 <em class="req">필수</em></h2>
-          <p class="where"><b>이렇게 보여요</b>강연자 카드에 「대표 주제」로 보이고, 원장님이 신청할 때 <b>이 주제 중에서 골라요.</b> 원장님이 「주제로 찾기」로 고교선택, 대입 전략 같은 주제를 고르면 그 주제를 등록한 소장님만 보이니, 자신 있는 강연을 꼭 적어 주세요.</p>
-          <p class="sub"><b>1개 이상, 최대 <span id="maxTopics">5</span>개</b>까지 적어 주세요. 주제명은 짧게, 한 줄 소개와 핵심 내용 2~3줄이면 충분해요.</p>
+          <h2><span>4</span>대표 주제 <em class="req">필수</em></h2>
+          <p class="where"><b>이렇게 보여요</b>강연자 카드에 「대표 주제」로 보이고, 원장님이 신청할 때 <b>이 주제 중에서 골라요.</b><br>원장님이 「주제로 찾기」로 고교선택, 대입 전략 같은 주제를 고르면,<br>그 주제를 등록한 소장님만 보이니 자신 있는 강연을 꼭 적어 주세요.</p>
+          <p class="sub"><b>1개 이상, 최대 <span id="maxTopics">5</span>개</b>까지 적어 주세요.<br>주제명은 짧게, 한 줄 소개와 핵심 내용 2~3줄이면 충분해요.</p>
+          <div class="name-guide">
+            <b>주제명은 원장님들이 보자마자 이해할 수 있게, 직관적으로 지어 주세요.</b>
+            <p>이런 이름이 좋아요</p>
+            <div class="name-ex">
+              <span>고교 선택 설명회</span><span>예비 고1 입학 준비</span><span>학생부종합전형 A to Z</span><span>중등 내신 공부법</span>
+              <span>선택과목 고르는 법</span><span>의대 입시 로드맵</span><span>고입 면접 대비</span><span>초등 공부 습관 만들기</span>
+            </div>
+            <p class="bad">이런 이름은 피해 주세요 — 「OO의 비밀」, 「합격을 부르는 5가지」처럼 무슨 강연인지 바로 알기 어려운 이름</p>
+          </div>
           <div class="area-guide">
             <b>영역은 이렇게 골라 주세요</b>
             <ul>
-              <li><b>학부모 설명회 · 학생 특강</b> — 입시·학업·진로처럼 학부모님과 학생을 위한 강연이에요. 지금 여는 「설명회 신청」 페이지에 올라가요.</li>
-              <li><b>강사·조직원 교육 · 원장 경영 교육 · 단체·연합회 특강</b> — 상담·CS, 마인드셋, 마케팅, 경영 전략처럼 원장님·강사·기관을 위한 강연이에요. 곧 열리는 「비즈니스 교육」 페이지에 올라가요.</li>
-              <li>맞는 카테고리가 없으면 <b>기타</b>를 고르고 직접 적어 주세요.</li>
+              <li><b>학부모 설명회 · 학생 특강</b> — 입시·학업·진로처럼 학부모님과 학생을 위한 강연이에요.<br>지금 여는 「설명회 신청」 페이지에 올라가요.</li>
+              <li><b>강사·조직원 교육 · 원장 경영 교육 · 단체·연합회 특강</b> — 상담·CS, 마인드셋, 마케팅, 경영 전략처럼 원장님·강사·기관을 위한 강연이에요.<br>곧 열리는 「비즈니스 교육」 페이지에 올라가요.</li>
+              <li>맞는 카테고리가 없으면, <b>기타</b>를 고르고 직접 적어 주세요.</li>
             </ul>
           </div>
           <details class="example">
             <summary>작성 예시 보기</summary>
             <div class="ex-card">
               <div class="ex-row"><b>영역 · 카테고리</b>학부모 설명회 · 고교선택, 학년 전환</div>
-              <div class="ex-row"><b>주제명</b>고교 선택의 정석</div>
+              <div class="ex-row"><b>주제명</b>고교 선택 설명회</div>
               <div class="ex-row"><b>한 줄 소개</b>우리 아이 성향과 진로로 결정하는 고교 선택</div>
               <div class="ex-row"><b>핵심 내용</b>특목·자사·일반고 장단점 비교<br>고교 유형별 학생부 기재 경향과 대입 유불리</div>
               <div class="ex-row"><b>대상 · 시기</b>중등 학부모 · 2학기 초, 겨울방학</div>
@@ -135,22 +137,47 @@
           <button type="button" class="btn outline sm" id="addTopic">+ 대표 주제 추가</button>
         </section>
 
-        <!-- ⑥ 동의 -->
+        <!-- ⑤ 동의 -->
         <section class="pf-sec" id="secAgree">
-          <h2><span>6</span>확인 및 동의 <em class="req">필수</em></h2>
-          <p class="sub">두 항목 모두 동의하셔야 제출할 수 있어요.</p>
-          <label class="agree"><input type="checkbox" id="agreePriority"><span><b>[필수] 출강 우선 수락 및 일정 준수</b><br>클럽하와이를 통해 배정된 설명회는 다른 일정보다 우선하여 수락하며, 확정된 일정은 불가피한 사유 없이 변경하거나 취소하지 않을 것에 동의합니다.</span></label>
-          <label class="agree"><input type="checkbox" id="agreePublish"><span><b>[필수] 소개 내용 게시</b><br>작성한 소개 내용과 사진이 클럽하와이 웹(설명회·교육 신청 페이지)에 강연자 소개로 게시되는 것에 동의합니다.</span></label>
+          <h2><span>5</span>확인 및 동의 <em class="req">필수</em></h2>
+          <p class="sub">세 항목 모두 동의하셔야 제출할 수 있어요.</p>
+          <div class="agree-box">
+            <label class="agree"><input type="checkbox" id="agreePrivacy"><span><b>[필수] 개인정보 수집·이용 동의</b></span></label>
+            <details class="agree-more">
+              <summary>자세히 보기</summary>
+              <table>
+                <tr><th>수집 항목</th><td>이름, 휴대폰 번호, 프로필·강의 현장 사진, 슬로건, 경력, 관련 링크, 대표 주제</td></tr>
+                <tr><th>이용 목적</th><td>강연자 소개 페이지 제작·게시,<br>설명회·교육 신청 시 출강 요청 알림(알림톡) 발송, 일정 조율 연락</td></tr>
+                <tr><th>보유·이용 기간</th><td><span class="retention-pf"></span></td></tr>
+              </table>
+              <p>동의를 거부하실 수 있어요.<br>다만 거부하시면 강연자 소개 게시와 출강 연결이 어려워요.</p>
+            </details>
+          </div>
+          <div class="agree-box">
+            <label class="agree"><input type="checkbox" id="agreePublish"><span><b>[필수] 소개 내용·사진 게시 동의</b><br>작성한 소개 내용과 사진이,<br>클럽하와이 웹(설명회·교육 신청 페이지)에 강연자 소개로 게시되는 것에 동의합니다.</span></label>
+            <details class="agree-more">
+              <summary>자세히 보기</summary>
+              <table>
+                <tr><th>게시 항목</th><td>이름, 프로필·강의 현장 사진, 슬로건, 경력, 관련 링크, 대표 주제<br><b>휴대폰 번호는 게시하지 않아요.</b></td></tr>
+                <tr><th>게시 위치</th><td>클럽하와이 웹 「분야별 전문가 출강」 설명회·교육 신청 페이지 (누구나 볼 수 있음)</td></tr>
+                <tr><th>게시 기간</th><td>클럽하와이 강연자로 활동하시는 동안</td></tr>
+              </table>
+              <p>사진은 초상이 포함된 정보로, 동의하신 범위 안에서만 사용해요.<br>게시 중단이나 수정을 원하시면 본사 담당자에게 말씀해 주세요.</p>
+            </details>
+          </div>
+          <div class="agree-box">
+            <label class="agree"><input type="checkbox" id="agreePriority"><span><b>[필수] 출강 우선 수락 및 일정 준수</b><br>클럽하와이를 통해 배정된 설명회는 다른 일정보다 우선하여 수락하며,<br>확정된 일정은 불가피한 사유 없이 변경하거나 취소하지 않을 것에 동의합니다.</span></label>
+          </div>
           <p class="msg" id="agreeMsg"></p>
         </section>
 
         <div class="pf-submit">
           <button type="submit" class="btn primary" id="submitBtn">제출하기</button>
-          <p class="hint">제출하신 내용은 본사에서 확인한 뒤 소개 페이지에 반영해 드려요. 같은 번호로 언제든 다시 들어와 고치실 수 있어요.</p>
+          <p class="hint">제출하신 내용은 본사에서 확인한 뒤 소개 페이지에 반영해 드려요.<br>같은 번호로 언제든 다시 들어와 고치실 수 있어요.</p>
         </div>
       </form>
 
-      <!-- 오른쪽: 브랜딩 이미지 · 진행 상황 -->
+      <!-- 오른쪽: 작성 현황 -->
       <aside class="pf-side">
         <div class="side-card">
           <h3>작성 현황</h3>
@@ -166,16 +193,16 @@
     <div class="login-card">
       <div class="done-ico">✓</div>
       <h1>제출이 완료됐어요</h1>
-      <p>소중한 시간 내 주셔서 감사합니다. 본사에서 확인한 뒤 소개 페이지에 반영해 드릴게요.<br>고치고 싶은 내용이 생기면 같은 번호로 언제든 다시 들어와 주세요.</p>
+      <p>소중한 시간 내 주셔서 감사합니다.<br>본사에서 확인한 뒤 소개 페이지에 반영해 드릴게요.<br>고치고 싶은 내용이 생기면,<br>같은 번호로 언제든 다시 들어와 주세요.</p>
       <button type="button" class="btn ghost" id="again">내용 다시 보기</button>
     </div>
   </main>
 
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="config.js?v=20261026d"></script>
-  <script src="sample-data.js?v=20261026d"></script>
+  <script src="config.js?v=20261026e"></script>
+  <script src="sample-data.js?v=20261026e"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="profile.js?v=20261026d"></script>
+  <script src="profile.js?v=20261026e"></script>
 </body>
 </html>

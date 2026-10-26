@@ -102,7 +102,7 @@
       });
       return {
         name: c.name, photo: c.photo || "", slogan: lines(c.slogan),
-        history: lines(c.title).concat(lines(c.history)), extra: lines(c.extra), works: lines(c.works),   // 클럽하와이 직함은 경력 맨 위
+        history: lines(c.title).concat(lines(c.history), lines(c.extra), lines(c.works)),   // 클럽하와이 직함은 경력 맨 위
         links: (c.links || []).filter(function (l) { return l && l.url; }), photos: list(c.photos),
         topics: topics, targets: targets, bizOnly: all.length > 0 && !topics.length
       };
@@ -347,9 +347,7 @@
   }
   function openDetail(c) {
     detailFor = c;
-    var intro = (c.history.length ? "<h4>경력</h4>" + ul(c.history) : "") +
-      (c.extra.length ? "<h4>주요 이력</h4>" + ul(c.extra) : "") +
-      (c.works.length ? "<h4>저서·방송·언론</h4>" + ul(c.works) : "");
+    var intro = c.history.length ? "<h4>경력</h4>" + ul(c.history) : "";
     if (!intro) intro = '<p class="muted">준비 중입니다.</p>';
     var topics = c.topics.length ? c.topics.map(topicCard).join("") : '<p class="muted">준비 중입니다.</p>';
     // 유튜브 링크는 바로 재생, 나머지 링크는 버튼으로

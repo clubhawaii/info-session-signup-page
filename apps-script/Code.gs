@@ -51,12 +51,12 @@ var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원�
 // 강연자 — 줄 단위 칸(경력·주요 이력·저서·관련 링크)은 한 줄에 하나씩. 관련 링크 한 줄 = 「종류 | 이름 | 주소」
 // 슬로건은 두 줄까지(셀 안 줄바꿈). 관련 링크 한 줄 = 「구분 | 주소」
 // 클럽하와이 직함은 본사가 정하는 줄 — 경력 맨 위에 항상 보이고, 소장님 입력 페이지에서는 고칠 수 없음
-var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '주요 이력', '저서·방송·언론', '관련 링크',
+var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '관련 링크',
   '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
 // 대표 주제 — 강연자 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
 var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
-var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '우선 수락 동의', '게시 동의', '반영일시', '데이터'];
+var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '개인정보 동의', '게시 동의', '우선 수락 동의', '반영일시', '데이터'];
 var SUBMIT_ST = { WAIT: '확인 대기', DONE: '반영 완료', SKIP: '반영 안 함' };
 // 소장님이 올린 사진을 모을 드라이브 폴더 이름 (내 드라이브 맨 위에 자동으로 만듦)
 var PHOTO_FOLDER = '강연자 사진';
@@ -693,7 +693,7 @@ function coachFromRow_(r, topics) {
   var name = String(r['이름']).trim();
   return {
     name: name, title: String(r['클럽하와이 직함'] || '').trim(), slogan: lines_(r['슬로건']),
-    history: lines_(r['경력']), extra: lines_(r['주요 이력']), works: lines_(r['저서·방송·언론']),
+    history: lines_(r['경력']),
     links: lines_(r['관련 링크']).map(function (l) {
       var i = l.indexOf('|');
       return i >= 0 ? { type: l.slice(0, i).trim(), url: l.slice(i + 1).trim() } : { type: '', url: l };
@@ -766,7 +766,7 @@ function profileSubmit_(d) {
   if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
   var data = cleanProfile_(d.data || {});
   if (!data.topics.length) return { ok: false, error: '대표 주제를 1개 이상 적어 주세요.' };
-  if (!data.agreePriority || !data.agreePublish) return { ok: false, error: '확인 및 동의 두 항목에 모두 체크해 주세요.' };
+  if (!data.agreePrivacy || !data.agreePriority || !data.agreePublish) return { ok: false, error: '확인 및 동의 세 항목에 모두 체크해 주세요.' };
   if (!data.photo) return { ok: false, error: '프로필 사진을 올려 주세요.' };
   var name = String(hit.r['이름']).trim();
   var before = coachFromRow_(hit.r, topicsByCoach_(false));
@@ -775,7 +775,7 @@ function profileSubmit_(d) {
   // 같은 강연자의 확인 대기 제출이 있으면 새 내용으로 덮어씀 (여러 번 제출해도 한 줄)
   var wait = lastSubmit_(name, SUBMIT_ST.WAIT);
   var row = [new Date(), name, SUBMIT_ST.WAIT, diff.keys.join(', ') || '바뀐 내용 없음', diff.text.join('\n'),
-    data.agreePriority ? 'Y' : 'N', data.agreePublish ? 'Y' : 'N', '', JSON.stringify(data)];
+    data.agreePrivacy ? 'Y' : 'N', data.agreePublish ? 'Y' : 'N', data.agreePriority ? 'Y' : 'N', '', JSON.stringify(data)];
   if (wait) sh.getRange(wait.row, 1, 1, row.length).setValues([row]);
   else sh.appendRow(row);
   SpreadsheetApp.getActive().getSheetByName(SH.COACH).getRange(hit.row, COACH_HEADERS.indexOf('최근 제출') + 1).setValue(new Date());
@@ -795,11 +795,11 @@ function cleanProfile_(x) {
   function arr(v, n) { return (Array.isArray(v) ? v : []).map(function (s) { return str(s, n); }).filter(String); }
   return {
     slogan: arr(x.slogan, 80).slice(0, 2),
-    history: arr(x.history, 200).slice(0, 20), extra: arr(x.extra, 200).slice(0, 20), works: arr(x.works, 200).slice(0, 20),
+    history: arr(x.history, 200).slice(0, 30),
     links: (Array.isArray(x.links) ? x.links : []).map(function (l) {
       return { type: str(l.type, 20).replace(/\|/g, '/'), url: str(l.url, 500) };
     }).filter(function (l) { return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(l.url); }).slice(0, 20),
-    agreePriority: x.agreePriority === true, agreePublish: x.agreePublish === true,
+    agreePrivacy: x.agreePrivacy === true, agreePriority: x.agreePriority === true, agreePublish: x.agreePublish === true,
     photo: /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(x.photo) || !x.photo ? str(x.photo, 300) : '',
     photos: arr(x.photos, 300).filter(function (u) { return /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(u); }).slice(0, 10),
     topics: (Array.isArray(x.topics) ? x.topics : []).map(function (t) {
@@ -813,7 +813,7 @@ function cleanProfile_(x) {
 
 /** 본사가 읽기 쉬운 변경 내용: 「항목: 전 → 후」 */
 function profileDiff_(a, b) {
-  var names = { slogan: '슬로건', history: '경력', extra: '주요 이력', works: '저서·방송·언론' };
+  var names = { slogan: '슬로건', history: '경력' };
   var keys = [], text = [];
   function show(v) { return Array.isArray(v) ? (v.length ? v.join(' / ') : '(없음)') : (v || '(없음)'); }
   Object.keys(names).forEach(function (k) {
@@ -870,7 +870,7 @@ function applyProfile_(name, d) {
   var row = names.indexOf(name) + 2;
   if (row < 2) throw new Error('「강연자」 시트에 ' + name + ' 소장님이 없습니다.');
   var set = {
-    '슬로건': d.slogan.join('\n'), '경력': d.history.join('\n'), '주요 이력': d.extra.join('\n'), '저서·방송·언론': d.works.join('\n'),
+    '슬로건': d.slogan.join(' '), '경력': d.history.join('\n'),
     '관련 링크': d.links.map(function (l) { return l.type + ' | ' + l.url; }).join('\n'),
     '프로필 사진 URL': d.photo, '현장 사진 URL': d.photos.join(', '), '우선 수락 동의': d.agreePriority ? 'Y' : 'N'
   };
