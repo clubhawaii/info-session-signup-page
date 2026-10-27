@@ -195,9 +195,9 @@
     $("topics").innerHTML = P.cur.topics.map(function (t, i) {
       var area = areaOf(t.area), st = topicChanged(t);
       return '<div class="topic-card" data-ti="' + i + '">' +
-        '<div class="tc-top"><b>주제 ' + (i + 1) + "</b>" + (st === "new" ? '<span class="chg">새 주제</span>' : st ? '<span class="chg">수정함</span>' : "") +
+        '<div class="tc-top"><b>설명회 ' + (i + 1) + "</b>" + (st === "new" ? '<span class="chg">새 설명회</span>' : st ? '<span class="chg">수정함</span>' : "") +
           (area && area.page === "biz" ? '<span class="biz">비즈니스 교육 페이지에 올라가요</span>' : "") +
-          '<button type="button" class="link small" data-tdel="' + i + '">이 주제 빼기</button></div>' +
+          '<button type="button" class="link small" data-tdel="' + i + '">이 설명회 빼기</button></div>' +
         '<div class="fields">' +
           '<label class="field wide"><span>영역 <em>필수</em></span><select data-t="area"><option value="">골라 주세요</option>' +
             areas.map(function (a) { return "<option" + (a.name === t.area ? " selected" : "") + ">" + esc(a.name) + "</option>"; }).join("") + "</select></label>" +
@@ -205,8 +205,8 @@
             (area ? '<div class="checks">' + checks('data-t="cats"', area.cats.concat([ETC]), t.cats, "checkbox") + "</div>" +
               '<input class="cat-etc" data-t="catEtc" maxlength="30" placeholder="어떤 카테고리인지 적어 주세요 (예: 신입 강사 온보딩)" value="' + esc(t.catEtc) + '"' + (t.cats.indexOf(ETC) >= 0 ? "" : " hidden") + ">"
               : '<p class="muted small">영역을 먼저 골라 주시면 카테고리가 나와요.</p>') + "</div>" +
-          '<label class="field wide"><span>주제명 <em>필수 · 원장님이 보자마자 알 수 있게 직관적으로 · 20자 이내</em></span><input data-t="name" maxlength="24" placeholder="예) 고교 선택 설명회, 예비 고1 입학 준비, 중등 내신 공부법" value="' + esc(t.name) + '"></label>' +
-          '<label class="field wide"><span>한 줄 소개 <em>주제 카드에 주제명 아래로 보여요 · 50자 이내</em></span><input data-t="intro" maxlength="60" placeholder="예) 우리 아이 성향과 진로로 결정하는 고교 선택" value="' + esc(t.intro) + '"></label>' +
+          '<label class="field wide"><span>설명회 이름 <em>필수 · 대상·지역·전문 분야가 드러나게 · 30자 이내</em></span><input data-t="name" maxlength="32" placeholder="예) 경기지역 특성화고 고입설명회" value="' + esc(t.name) + '"></label>' +
+          '<label class="field wide"><span>한 줄 소개 <em>설명회 이름 아래로 보여요 · 50자 이내</em></span><input data-t="intro" maxlength="60" placeholder="예) 우리 아이 성향과 진로로 결정하는 고교 선택" value="' + esc(t.intro) + '"></label>' +
           '<label class="field wide"><span>핵심 내용 <em>한 줄에 하나씩 2~3줄 작성해 주세요.</em></span><textarea data-t="points" rows="3" placeholder="예) 특목·자사·일반고 장단점 비교">' + esc(t.points.join("\n")) + "</textarea></label>" +
           '<div class="field wide"><span>대상 <em>필수 · 여러 개 골라도 돼요 · 원장님의 대상 필터에 쓰여요</em></span><div class="checks">' + checks('data-t="targets"', C.TOPIC_TARGETS || [], t.targets, "checkbox") + "</div></div>" +
           '<div class="field wide"><span>적합 시기 <em>여러 개 골라도 돼요</em></span><div class="checks">' + checks('data-t="seasons"', C.SEASONS || [], t.seasons, "checkbox") + "</div></div>" +
@@ -214,7 +214,7 @@
     }).join("");
     $("addTopic").hidden = P.cur.topics.length >= MAX_TOPICS;
     $("topicMsg").textContent = P.cur.topics.length > MAX_TOPICS
-      ? "예전 자료에서 주제 " + P.cur.topics.length + "개를 가져왔어요. 대표로 보여 드릴 " + MAX_TOPICS + "개만 남기고, 나머지는 「이 주제 빼기」로 빼 주세요." : "";
+      ? "예전 자료에서 설명회 " + P.cur.topics.length + "개를 가져왔어요. 대표로 보여 드릴 " + MAX_TOPICS + "개만 남기고, 나머지는 「이 설명회 빼기」로 빼 주세요." : "";
   }
 
   function topicOk(t) {
@@ -231,7 +231,7 @@
       { ok: true, t: "소개 내용", s: changed ? changed + "곳 수정" : "그대로" },
       { ok: true, t: "관련 링크", s: P.cur.links.filter(function (l) { return l.url; }).length + "개" },
       { ok: hasPhoto(), t: "사진", s: (hasPhoto() ? "프로필 있음" : "프로필 사진 필요") + " · 현장 " + photoN + "장" },
-      { ok: okTopics > 0 && okTopics === P.cur.topics.length && P.cur.topics.length <= MAX_TOPICS, t: "대표 주제", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
+      { ok: okTopics > 0 && okTopics === P.cur.topics.length && P.cur.topics.length <= MAX_TOPICS, t: "내 설명회", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
       { ok: agreedAll(), t: "확인 및 동의", s: AGREES.filter(function (id) { return P.cur[id]; }).length + " / 3개 동의" }
     ];
     $("progress").innerHTML = items.map(function (x) {
@@ -270,13 +270,13 @@
     $("agreeMsg").textContent = "";
     if (P.cur.slogan.trim().length >= SLOGAN_MAX) errs.push({ el: document.querySelector('[data-in="slogan"]'), msg: "슬로건을 " + SLOGAN_MAX + "자보다 짧게 줄여 주세요. (지금 " + P.cur.slogan.trim().length + "자예요)" });
     if (!hasPhoto()) { $("secPhoto").classList.add("err"); errs.push({ el: $("secPhoto"), msg: "프로필 사진을 올려 주세요." }); }
-    if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "대표 주제를 1개 이상 적어 주세요." });
-    if (P.cur.topics.length > MAX_TOPICS) errs.push({ el: $("secTopics"), msg: "대표 주제는 " + MAX_TOPICS + "개까지만 남겨 주세요. (지금 " + P.cur.topics.length + "개예요)" });
+    if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "설명회를 1개 이상 적어 주세요." });
+    if (P.cur.topics.length > MAX_TOPICS) errs.push({ el: $("secTopics"), msg: "설명회는 " + MAX_TOPICS + "개까지만 남겨 주세요. (지금 " + P.cur.topics.length + "개예요)" });
     P.cur.topics.forEach(function (t, i) {
       if (!topicOk(t)) {
         var el = document.querySelector('[data-ti="' + i + '"]');
         el.classList.add("err");
-        errs.push({ el: el, msg: "주제 " + (i + 1) + "의 영역·카테고리·주제명·대상을 채워 주세요." });
+        errs.push({ el: el, msg: "설명회 " + (i + 1) + "의 영역·카테고리·설명회 이름·대상을 채워 주세요." });
       }
     });
     if (!agreedAll()) {

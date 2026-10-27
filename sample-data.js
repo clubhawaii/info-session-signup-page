@@ -98,32 +98,44 @@
         ]
       }
     ],
+    // 확정된 일정 — time이 비어 있으면 그날 하루 전체
     blocked: [
-      { coach: "예시 강연자 A", date: plus(18) },
-      { coach: "예시 강연자 A", date: plus(25) },
-      { coach: "예시 강연자 B", date: plus(20) }
+      { coach: "예시 강연자 A", date: plus(18), time: "" },
+      { coach: "예시 강연자 A", date: plus(25), time: "14:00" },
+      { coach: "예시 강연자 B", date: plus(20), time: "10:00" }
     ],
-    // 강연자 응답 페이지(coach.html) 미리보기용 요청 1건
+    // 소장님 응답 페이지(coach.html) 미리보기용 요청 1건
     request: {
       id: "SEM-20261020-001",
       coach: "예시 강연자 A",
-      rank: 1,
+      product: "고교 선택의 정석",
       academy: "클럽하와이",
-      address: "서울 강남구 대치동 123",
       venue: "서울 강남구 대치동 123 (학원)",
       target: "중등 학부모",
       attendees: "30",
-      kind: "대표 주제 설명회",
-      topics: "고교 선택의 정석",
       request: "고입 준비 위주로 부탁드립니다.",
-      flexible: true,
-      options: [
-        { date: plus(22), time: "14:00" },
-        { date: plus(29), time: "10:30" },
-        { date: plus(32), time: "19:00" }
-      ],
+      date: plus(25),
+      time: "19:00",
       deadline: new Date(Date.now() + 20 * 3600 * 1000).toISOString(),
-      status: "강연자 확인중"
+      answer: "응답 대기",
+      others: [{ time: "14:00", state: "확정", clash: false }]
+    },
+    // 원장님 결과 페이지(choose.html) 미리보기용 결과 1건
+    result: {
+      id: "SEM-20261020-001",
+      academy: "클럽하와이",
+      director: "홍길동",
+      date: plus(25),
+      time: "19:00",
+      request: "고입 준비 위주로 부탁드립니다.",
+      status: "원장님 선택 대기",
+      chosen: "",
+      answers: [
+        { coach: "예시 강연자 A", product: "고교 선택의 정석", answer: "가능", memo: "" },
+        { coach: "예시 강연자 C", product: "수시·정시 구조와 학년별 로드맵", answer: "가능", memo: "" },
+        { coach: "예시 강연자 B", product: "예비중1 「중학교 가기 전에」", answer: "시간 조율 필요", memo: "오후 4시 시작이면 가능합니다" },
+        { coach: "예시 강연자 D", product: "", answer: "응답 없음(불가)", memo: "" }
+      ]
     }
   };
 })();

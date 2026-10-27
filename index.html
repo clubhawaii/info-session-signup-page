@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>학생·학부모 설명회 신청</title>
-  <meta name="description" content="학생·학부모 설명회 — 희망 날짜와 강연자를 1~3순위로 골라 신청하시면, 담당자가 일정을 조율해 3일 안에 연락드립니다.">
+  <meta name="description" content="학생·학부모 설명회 — 소장님과 설명회, 날짜·시작 시간을 골라 신청하시면 소장님이 24시간 안에 직접 답해 드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261026h">
+  <link rel="stylesheet" href="styles.css?v=20261027a">
 </head>
 <body>
-  <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">강연자 응답 화면 보기 →</a></div>
+  <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="choose.html">원장님 결과 화면</a></div>
 
   <header class="top">
     <div class="top-in">
@@ -21,12 +21,12 @@
   <main class="wrap">
     <div class="head" id="pageHead">
       <p class="intro"><b>클럽하와이 전문가가 원장님 학원으로 직접 찾아갑니다.</b><br>학원에서 학부모·학생 대상 설명회를 진행해 드려요.</p>
-      <p>희망 날짜와 강연자를 1~3순위로 골라 주세요. 담당자가 일정을 조율해 3일 안에 연락드립니다.</p>
+      <p>원하시는 소장님과 설명회를 고르고, 날짜와 시작 시간을 알려 주세요. 소장님이 <b>24시간 안에</b> 직접 답해 드립니다.</p>
 
       <ol class="steps" id="steps">
-        <li data-step="1"><b>1</b><span>희망 날짜</span></li>
-        <li data-step="2"><b>2</b><span>강연자</span></li>
-        <li data-step="3"><b>3</b><span>설명회 주제</span></li>
+        <li data-step="1"><b>1</b><span>소장님</span></li>
+        <li data-step="2"><b>2</b><span>설명회</span></li>
+        <li data-step="3"><b>3</b><span>날짜·시간</span></li>
         <li data-step="4"><b>4</b><span>신청 정보</span></li>
       </ol>
     </div>
@@ -34,13 +34,35 @@
     <div class="layout">
       <div class="main">
 
-        <!-- 1. 희망 날짜 -->
+        <!-- 1. 소장님 -->
         <section class="panel" id="step1">
-          <h2>희망 날짜 3개를 골라 주세요</h2>
-          <p class="sub">고르신 3개 날짜 중 <b>하루</b>로 설명회 날짜가 정해집니다. 강연자 일정을 확인해 1순위부터 순서대로 맞춰 드려요.</p>
-          <p class="sub">설명회는 진행일 최소 2주 전까지 신청할 수 있습니다. 학부모 모집을 위해 3~4주 전 신청을 권장합니다.<br>2주 안의 급한 일정은 <a class="inline-link" data-contact href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>로 문의해 주세요.</p>
+          <h2>설명회를 맡길 소장님을 골라 주세요</h2>
+          <p class="sub">여러 분을 함께 고를 수 있어요. 고르신 소장님께 <b>각각 출강 요청 알림톡</b>이 가고,<br>가능하다고 답한 소장님 중 한 분을 나중에 고르시면 됩니다.</p>
 
-          <div class="slots" id="slots"></div>
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="q" type="search" placeholder="소장님 이름이나 설명회 이름으로 검색" autocomplete="off">
+          </div>
+          <div class="chips" id="filters"></div>
+          <div class="cat-row" id="catRow" hidden>
+            <span>주제로 찾기</span>
+            <div class="chips" id="catFilters"></div>
+          </div>
+          <div class="coach-list" id="coachList"></div>
+          <p class="empty" id="coachEmpty" hidden>조건에 맞는 소장님이 없습니다.</p>
+        </section>
+
+        <!-- 2. 설명회 -->
+        <section class="panel" id="step2" hidden>
+          <h2>소장님별로 원하시는 설명회를 골라 주세요</h2>
+          <p class="sub">소장님마다 <b>설명회 하나</b>를 골라 주세요. 소장님이 직접 준비한 설명회입니다.</p>
+          <div id="products"></div>
+        </section>
+
+        <!-- 3. 날짜·시간 -->
+        <section class="panel" id="step3" hidden>
+          <h2>희망 날짜와 시작 시간을 알려 주세요</h2>
+          <p class="sub">설명회는 진행일 최소 2주 전까지 신청할 수 있습니다. 학부모 모집을 위해 3~4주 전 신청을 권장합니다.<br>2주 안의 급한 일정은 <a class="inline-link" data-contact href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>로 문의해 주세요.</p>
 
           <div class="picker">
             <div class="cal">
@@ -54,64 +76,25 @@
               <p class="cal-msg" id="calMsg" aria-live="polite"></p>
             </div>
             <div class="times">
-              <div class="times-head"><strong id="timeTitle">시작 시간</strong></div>
-              <div class="seg" id="timeSeg">
-                <button type="button" data-part="am">오전</button>
-                <button type="button" data-part="pm">오후</button>
-                <button type="button" data-part="ev">저녁</button>
+              <div class="times-head"><strong>시작 시간</strong></div>
+              <p class="hint" id="dateLabel">먼저 달력에서 날짜를 골라 주세요.</p>
+              <div class="time-input">
+                <select id="tH" aria-label="시"></select><b>:</b>
+                <select id="tM" aria-label="분"></select>
               </div>
-              <div class="time-grid" id="timeGrid"></div>
-              <p class="hint" id="timeHint">먼저 날짜를 골라 주세요.</p>
+              <p class="hint" id="timeHint"></p>
             </div>
           </div>
+          <div class="notice warn" id="clashNotice" hidden></div>
           <div class="notice" id="soonNotice" hidden>
-            3주 안의 날짜가 있습니다. 확정·결제 시점에 진행일까지 2주가 남지 않으면 결제 후 취소할 때 환불 비율이 낮아집니다.
+            3주 안의 날짜입니다. 확정·결제 시점에 진행일까지 2주가 남지 않으면 결제 후 취소할 때 환불 비율이 낮아집니다.
             <button type="button" class="link" data-open="policy">취소·환불 규정 보기</button>
           </div>
-        </section>
 
-        <!-- 2. 강연자 -->
-        <section class="panel" id="step2" hidden>
-          <h2>강연자 3명을 순서대로 골라 주세요</h2>
-          <p class="sub">누르는 순서대로 1·2·3순위가 됩니다. 1순위 강연자 일정이 안 되면 2순위, 3순위 순서로 확인합니다.</p>
-
-          <div class="slots rank-slots" id="coachSlots"></div>
-          <label class="check flex-opt">
-            <input type="checkbox" id="flexible">
-            <span>1순위 강연자를 꼭 희망합니다 <small>(강연자 일정에 맞춰 설명회 날짜가 바뀌는 것에 동의)</small></span>
+          <label class="field req-field"><span>요청사항 <em>선택</em></span>
+            <textarea id="request" rows="4" maxlength="1000" placeholder="예) 학부모님 질의응답 시간을 길게 해 주세요.&#10;예) 빔프로젝터·마이크가 없어요.&#10;예) 우리 지역 고교 상황을 함께 다뤄 주세요."></textarea>
+            <small class="field-note">요청사항은 <b>담당자가 확인한 뒤 연락드립니다.</b></small>
           </label>
-
-          <div class="search">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input id="q" type="search" placeholder="강연자 이름 검색" autocomplete="off">
-          </div>
-          <div class="chips" id="filters"></div>
-          <div class="cat-row" id="catRow" hidden>
-            <span>주제로 찾기</span>
-            <div class="chips" id="catFilters"></div>
-          </div>
-          <div class="coach-list" id="coachList"></div>
-          <p class="empty" id="coachEmpty" hidden>조건에 맞는 강연자가 없습니다.</p>
-        </section>
-
-        <!-- 3. 설명회 주제 -->
-        <section class="panel" id="step3" hidden>
-          <h2>어떤 설명회를 원하세요?</h2>
-          <p class="sub">설명회는 두 가지 중 <b>하나</b>로 진행합니다. 종류를 고르고 원하는 주제를 알려 주세요.</p>
-
-          <!-- ① 종류 고르기 (둘 중 하나) -->
-          <h3 class="sub-step"><span>1</span>설명회 종류를 하나 골라 주세요</h3>
-          <div class="kinds" id="kinds" role="radiogroup" aria-label="설명회 종류"></div>
-
-          <div class="topic-box" id="topicBox" hidden>
-            <h3 class="sub-step"><span>2</span><b id="topicTitle">주제</b></h3>
-            <p class="sub" id="topicSub"></p>
-            <div id="topics"></div>
-            <label class="field">
-              <span id="topicMemoLabel">원하시는 내용 <em>선택</em></span>
-              <textarea id="topicMemo" rows="3" placeholder="예) 2028 대입 개편에 맞춘 고1 교과 선택 안내"></textarea>
-            </label>
-          </div>
         </section>
 
         <!-- 4. 신청 정보 -->
@@ -137,7 +120,7 @@
               <label class="field"><span>학원명</span><input name="academy" required autocomplete="organization" placeholder="예) 클럽하와이"></label>
               <label class="field"><span>원장님 성함</span><input name="director" required autocomplete="name"></label>
               <label class="field"><span>휴대폰 번호</span><input name="phone" id="phone" required inputmode="numeric" autocomplete="tel" maxlength="13" placeholder="010-0000-0000">
-                <small class="field-note">신청 후 담당자가 이 번호로 3일 안에 연락드립니다.</small></label>
+                <small class="field-note">소장님 응답 결과를 이 번호로 알림톡 보내 드립니다.</small></label>
               <label class="field"><span>예상 참석 인원 <em>선택</em></span><input name="attendees" id="attendees" inputmode="numeric" maxlength="4" placeholder="숫자만 입력 (예: 30)"></label>
               <div class="field wide">
                 <span>설명회 대상 <em>여러 개 고를 수 있어요</em></span>
@@ -165,7 +148,16 @@
                   <input name="vaddr2" placeholder="상세 주소·장소 이름 (예: ○○구민회관 2층 강당)">
                 </div>
               </div>
-              <label class="field wide"><span>요청사항 <em>선택</em></span><textarea name="request" rows="4" placeholder="예) 희망 날짜 3일 모두 설명회를 진행하고 싶어요.&#10;예) 같은 날 오전·오후 2회(초등·중등 따로) 진행하고 싶어요.&#10;예) 빔프로젝터·마이크가 없어요."></textarea></label>
+            </div>
+
+            <div class="howto" id="howto">
+              <h3>신청 후 이렇게 진행돼요</h3>
+              <ol>
+                <li><b>고르신 소장님께 각각 알림톡이 갑니다.</b> 소장님은 <b><span class="resp-h">24</span>시간 안에</b> 「가능 · 시간 조율 필요 · 불가」 중 하나로 답합니다.</li>
+                <li><b><span class="resp-h">24</span>시간 안에 답하지 않은 소장님은 「불가」로 안내</b>됩니다.</li>
+                <li>모든 소장님이 답하거나 <span class="resp-h">24</span>시간이 지나면, <b>결과를 알림톡 한 번으로 모아서</b> 보내 드립니다.</li>
+                <li>가능하다고 답한 소장님이 여러 분이면 <b>알림톡 링크에서 한 분을 고르시면</b> 됩니다. 담당자가 확정 일정과 금액을 안내드려요.</li>
+              </ol>
             </div>
 
             <div class="agree">
@@ -179,7 +171,7 @@
               <label class="check"><input type="checkbox" name="agreeThird" required><span>개인정보 제3자 제공에 동의합니다 <em>필수</em></span></label>
               <details class="fold">
                 <summary>내용 보기</summary>
-                <p>제공받는 자: 설명회 강연자 (신청서에서 고른 강연자와, 일정 조율 과정에서 안내드리는 강연자)<br>
+                <p>제공받는 자: 신청서에서 고르신 소장님(설명회 강연자)<br>
                 제공 항목: 학원명, 학원 주소, 설명회 진행 장소, 설명회 일정·종류·주제·대상, 예상 참석 인원, 요청사항<br>
                 제공 목적: 설명회 일정 확인 및 강의 준비<br>
                 보유 기간: 설명회 종료 시까지 (보관 기간: <span class="retention"></span>)<br>
@@ -215,12 +207,13 @@
         <section class="panel done" id="done" hidden>
           <div class="done-icon"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
           <h2>신청이 완료되었습니다</h2>
-          <p class="lead">소장님께서 일정을 확인하고 계십니다.<br>3일 안에 담당자가 연락드리겠습니다.</p>
+          <p class="lead">고르신 소장님께 출강 요청 알림톡을 보냈습니다.<br><b id="doneDue"></b>까지 결과를 알림톡으로 모아서 보내 드릴게요.</p>
           <dl class="done-sum" id="doneSum"></dl>
           <ol class="flow">
-            <li class="on"><b>신청 완료</b><span>신청 내용이 담당자에게 전달되었어요</span></li>
-            <li><b>강연자 날짜 및 주제 확정</b><span>1순위 강연자부터 일정과 주제를 확인해요</span></li>
-            <li><b>담당자 연락 · 결제 안내</b><span>3일 안에 확정 일정과 금액을 안내드려요</span></li>
+            <li class="on"><b>신청 완료</b><span>소장님께 각각 출강 요청 알림톡이 갔어요</span></li>
+            <li><b>소장님 응답</b><span><span class="resp-h">24</span>시간 안에 가능·시간 조율 필요·불가로 답해요 (응답이 없으면 불가)</span></li>
+            <li><b>결과 안내 · 소장님 선택</b><span>결과를 알림톡 한 번으로 보내 드리고, 가능한 소장님 중 한 분을 고르세요</span></li>
+            <li><b>담당자 연락 · 결제 안내</b><span>확정 일정과 금액을 안내드려요</span></li>
             <li><b>설명회 진행</b></li>
           </ol>
         </section>
@@ -230,9 +223,8 @@
       <aside class="side" id="side">
         <div class="card sum">
           <h3>신청 내역</h3>
-          <div class="sum-block" id="sumDates"></div>
-          <div class="sum-block" id="sumCoaches"></div>
-          <div class="sum-block" id="sumKind"></div>
+          <div class="sum-block" id="sumPicks"></div>
+          <div class="sum-block" id="sumWhen"></div>
           <div class="sum-price">
             <span>예상 금액</span>
             <strong id="sumPrice"></strong>
@@ -299,9 +291,9 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261026h"></script>
-  <script src="sample-data.js?v=20261026h"></script>
+  <script src="config.js?v=20261027a"></script>
+  <script src="sample-data.js?v=20261027a"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="app.js?v=20261026h"></script>
+  <script src="app.js?v=20261027a"></script>
 </body>
 </html>

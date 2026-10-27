@@ -1,26 +1,26 @@
-// 학생·학부모 설명회 신청 — 희망 날짜 1~3순위 → 강연자 1~3순위 → 설명회 종류·주제 → 신청 정보 → 완료
+// 학생·학부모 설명회 신청 — 소장님(여러 명) → 소장님별 설명회 하나 → 날짜 하나·시작 시간·요청사항 → 신청 정보 → 완료
+// 신청하면 고른 소장님께 각각 알림톡이 가고, 소장님은 RESPONSE_HOURS 안에 가능·시간 조율 필요·불가로 답함(무응답 = 불가)
 (function () {
   "use strict";
 
   var C = window.APP_CONFIG || {};
   var DEMO = !C.APPS_SCRIPT_URL;
-  var RANKS = ["1순위", "2순위", "3순위"];
   var DOW = "일월화수목금토";
-  var LEAVE_IT = "강연자 추천에 맡길게요";
+  var HOURS = C.RESPONSE_HOURS || 24;
+  var OVERLAP = (C.OVERLAP_HOURS || 3) * 60;   // 분
 
   var S = {
     coaches: [],
-    blocked: {},          // "강연자|YYYY-MM-DD" → true
+    blocked: [],          // { coach, date, time } — time이 비어 있으면 그날 하루 전체
     filter: "전체",
     cat: "전체",          // 주제로 찾기
     q: "",
-    ranks: [],            // 고른 강연자 이름 (순위 순서)
-    slots: [{ d: "", t: "" }, { d: "", t: "" }, { d: "", t: "" }],
-    active: 0,
-    part: "am",
+    picked: [],           // 고른 소장님 이름 (누른 순서)
+    product: {},          // 소장님 이름 → 고른 설명회 이름
+    date: "",
+    time: "",
     month: null,
-    kind: "",
-    topics: [],
+    kind: ((C.KINDS || [])[0] || {}).id,
     step: 1,
     sending: false
   };
@@ -58,6 +58,9 @@
     var p = t.split(":"), h = +p[0], m = +p[1];
     return (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + "시" + (m ? " " + m + "분" : "");
   }
+  function hhmm(d) { return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function krDue(d) { return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ") " + krTime(hhmm(d)); }
+  function mins(t) { var p = String(t).split(":"); return +p[0] * 60 + +p[1]; }
   function daysFromToday(s) { return Math.round((parse(s) - today()) / 864e5); }
   var MIN_DATE = addDays(today(), C.MIN_DAYS || 14);
 
@@ -96,7 +99,7 @@
     S.coaches = (d.coaches || []).map(function (c) {
       var all = (c.topics || []).filter(function (t) { return t.name; });
       var topics = all.filter(function (t) { return areaPage(t.area) !== "biz"; });
-      // 대상 태그는 대표 주제의 대상을 모아서 만듦
+      // 대상 태그는 설명회의 대상을 모아서 만듦
       var targets = (C.TARGETS || []).filter(function (x) {
         return topics.some(function (t) { return list(t.targets).indexOf(x) >= 0; });
       });
@@ -106,14 +109,31 @@
         links: (c.links || []).filter(function (l) { return l && l.url; }), photos: list(c.photos),
         topics: topics, targets: targets, bizOnly: all.length > 0 && !topics.length
       };
-    }).filter(function (c) { return !c.bizOnly; })   // 비즈니스 교육 주제만 있는 강연자는 이 페이지에서 뺌
+    }).filter(function (c) { return !c.bizOnly; })   // 비즈니스 교육 설명회만 있는 소장님은 이 페이지에서 뺌
       .sort(function (a, b) { return a.name.localeCompare(b.name, "ko"); });
-    S.blocked = {};
-    (d.blocked || []).forEach(function (b) { S.blocked[b.coach + "|" + b.date] = true; });
+    S.blocked = (d.blocked || []).map(function (b) { return { coach: b.coach, date: b.date, time: b.time || "" }; });
+    // 저장해 둔 선택 중 지금 없는 소장님·설명회는 정리
+    S.picked = S.picked.filter(findCoach);
+    Object.keys(S.product).forEach(function (n) {
+      var c = findCoach(n);
+      if (!c || S.picked.indexOf(n) < 0 || !c.topics.some(function (t) { return t.name === S.product[n]; })) delete S.product[n];
+    });
   }
-  function needCoaches() { return Math.min(3, S.coaches.length || 3); }
 
-  /* ---------- 가격 비교 (3단계, 고른 종류 기준) ---------- */
+  /* ---------- 일정 겹침 ---------- */
+  // 그 날짜·시간에 이미 확정된 일정이 있으면 그 일정을 돌려줌 (시간이 없는 일정 = 그날 하루 전체)
+  function clashOf(name, date, time) {
+    if (!date) return null;
+    return S.blocked.filter(function (b) {
+      if (b.coach !== name || b.date !== date) return false;
+      if (!b.time || !time) return !b.time;
+      return Math.abs(mins(b.time) - mins(time)) < OVERLAP;
+    })[0] || null;
+  }
+  function dayOff(name, date) { return S.blocked.some(function (b) { return b.coach === name && b.date === date && !b.time; }); }
+  function clashed() { return S.picked.filter(function (n) { return clashOf(n, S.date, S.time); }); }
+
+  /* ---------- 가격 비교 (4단계) ---------- */
   function fixed(range) { return range && range[0] === range[1] ? range[0] : 0; }
   var ICON_USER = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   var ICON_GEM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg>';
@@ -138,107 +158,14 @@
     $("travelFee").textContent = man(C.TRAVEL_FEE || 0) + "만원";
   }
 
-  /* ---------- 1단계: 희망 날짜 ---------- */
-  function renderSlots() {
-    $("slots").innerHTML = S.slots.map(function (s, i) {
-      return '<div class="slot' + (i === S.active ? " on" : "") + '" role="button" tabindex="0" data-slot="' + i + '">' +
-        '<div class="rk">' + RANKS[i] + "</div>" +
-        (s.d ? '<div class="v">' + esc(krDate(s.d)) + '</div><div class="t">' + (s.t ? esc(krTime(s.t)) : "시간 선택") + "</div>" +
-          '<button type="button" class="x" data-clear="' + i + '" aria-label="' + RANKS[i] + ' 지우기">×</button>'
-          : '<div class="v none">날짜 선택</div><div class="t">&nbsp;</div>') +
-        "</div>";
-    }).join("");
-  }
-
-  function renderCal() {
-    var m = S.month;
-    $("monthLabel").textContent = m.getFullYear() + "년 " + (m.getMonth() + 1) + "월";
-    var first = new Date(m.getFullYear(), m.getMonth(), 1);
-    var last = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-    var t = ymd(today());
-    var html = "";
-    for (var i = 0; i < first.getDay(); i++) html += "<span></span>";
-    for (var d = 1; d <= last; d++) {
-      var dt = new Date(m.getFullYear(), m.getMonth(), d), s = ymd(dt);
-      var early = dt < MIN_DATE;
-      var nos = [];   // 같은 날짜를 여러 순위로 고를 수 있음
-      S.slots.forEach(function (x, k) { if (x.d === s) nos.push(k); });
-      var cls = "day" + (s === t ? " today" : "") + (nos.length ? " pick" : "") + (nos.indexOf(S.active) >= 0 ? " cur" : "");
-      html += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (early ? " disabled" : "") + ">" + d +
-        (nos.length ? '<span class="no">' + nos.map(function (k) { return k + 1; }).join("·") + "</span>" : "") + "</button>";
-    }
-    $("calDays").innerHTML = html;
-    $("prevMonth").disabled = m <= new Date(today().getFullYear(), today().getMonth(), 1);
-  }
-
-  function partOf(t) { var h = +t.split(":")[0]; return h < 12 ? "am" : h < 18 ? "pm" : "ev"; }
-
-  function renderTimes() {
-    var s = S.slots[S.active];
-    $("timeTitle").textContent = RANKS[S.active] + " 시작 시간";
-    each($("timeSeg").children, function (b) { b.classList.toggle("on", b.dataset.part === S.part); });
-    $("timeGrid").innerHTML = (C.TIMES || []).filter(function (t) { return partOf(t) === S.part; }).map(function (t) {
-      return '<button type="button" class="tbtn' + (s.t === t ? " on" : "") + '" data-t="' + t + '"' + (s.d ? "" : " disabled") + ">" + t + "</button>";
-    }).join("");
-    $("timeHint").textContent = s.d ? krDate(s.d) + " 몇 시에 시작할까요?" : "먼저 달력에서 날짜를 골라 주세요.";
-  }
-
-  function renderDates() {
-    renderSlots();
-    renderCal();
-    renderTimes();
-    $("soonNotice").hidden = !S.slots.some(function (s) { return s.d && daysFromToday(s.d) < (C.WARN_DAYS || 21); });
-    renderSummary();
-  }
-
-  function setActive(i) {
-    S.active = i;
-    var s = S.slots[i];
-    S.part = s.t ? partOf(s.t) : "am";   // 시간을 아직 안 고른 순위는 오전부터
-    if (s.d) { var d = parse(s.d); S.month = new Date(d.getFullYear(), d.getMonth(), 1); }
-    $("calMsg").textContent = "";
-    renderDates();
-  }
-
-  function pickDate(s) {
-    if (parse(s) < MIN_DATE) { $("calMsg").textContent = "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
-    $("calMsg").textContent = "";
-    var slot = S.slots[S.active];
-    slot.d = s;
-    slot.t = "";   // 날짜를 고르면 시간도 직접 다시 눌러야 다음 순위로 넘어감
-    renderDates();
-  }
-
-  function pickTime(t) {
-    $("calMsg").textContent = "";
-    S.slots[S.active].t = t;
-    renderDates();
-    advance();
-  }
-
-  // 지금 칸이 채워지면 다음 빈 칸으로
-  function advance() {
-    var s = S.slots[S.active];
-    if (!s.d || !s.t) return;
-    for (var k = 1; k <= 3; k++) {
-      var n = (S.active + k) % 3;
-      if (!S.slots[n].d || !S.slots[n].t) { setTimeout(function () { setActive(n); }, 180); return; }
-    }
-  }
-
-  function datesDone() { return S.slots.every(function (s) { return s.d && s.t; }); }
-
-  /* ---------- 2단계: 강연자 ---------- */
+  /* ---------- 1단계: 소장님 ---------- */
   function findCoach(name) { return S.coaches.filter(function (c) { return c.name === name; })[0]; }
-  function busyCount(c) { return S.slots.filter(function (s) { return s.d && S.blocked[c.name + "|" + s.d]; }).length; }
-  // 시트에서 「일정확정」된 날짜는 막힘 — 희망 날짜가 모두 막힌 강연자는 고를 수 없음
-  function fullyBusy(c) { return !!c && S.slots.every(function (s) { return s.d && S.blocked[c.name + "|" + s.d]; }); }
 
   function renderFilters() {
     $("filters").innerHTML = ["전체"].concat(C.TARGETS || []).map(function (o) {
       return '<button type="button" class="chip' + (o === S.filter ? " on" : "") + '" data-f="' + esc(o) + '">' + esc(o) + "</button>";
     }).join("");
-    // 주제로 찾기 — 강연자들의 대표 주제에 실제로 있는 카테고리만
+    // 주제로 찾기 — 소장님들의 설명회에 실제로 있는 카테고리만
     var cats = [];
     (C.AREAS || []).forEach(function (a) {
       if (a.page === "biz") return;
@@ -254,70 +181,48 @@
   function hasCat(t, k) { return list(t.cats || t.cat).indexOf(k) >= 0; }
   function coachTopicsLine(c) {
     if (!c.topics.length) return "";
-    var hit = S.cat === "전체" ? [] : c.topics.filter(function (t) { return hasCat(t, S.cat); });
+    var q = S.q.trim();
+    var hit = c.topics.filter(function (t) { return (S.cat !== "전체" && hasCat(t, S.cat)) || (q && t.name.indexOf(q) >= 0); });
     var rest = c.topics.filter(function (t) { return hit.indexOf(t) < 0; });
     var show = hit.concat(rest).slice(0, 3);
-    return '<div class="coach-topics"><span>대표 주제</span>' + show.map(function (t) {
+    return '<div class="coach-topics"><span>설명회</span>' + show.map(function (t) {
       return hit.indexOf(t) >= 0 ? "<b>" + esc(t.name) + "</b>" : "<i>" + esc(t.name) + "</i>";
     }).join("") + (c.topics.length > 3 ? "<i>외 " + (c.topics.length - 3) + "개</i>" : "") + "</div>";
   }
 
-  function renderCoachSlots() {
-    $("coachSlots").innerHTML = [0, 1, 2].map(function (i) {
-      var n = S.ranks[i], next = i === S.ranks.length;
-      return '<div class="slot' + (next ? " on" : "") + '">' + '<div class="rk">' + RANKS[i] + " 강연자</div>" +
-        (n ? '<div class="v">' + esc(n) + '</div><button type="button" class="x" data-unrank="' + esc(n) + '" aria-label="' + RANKS[i] + ' 빼기">×</button>'
-          : '<div class="v none">' + (next ? "골라 주세요" : "미선택") + "</div>") + "</div>";
-    }).join("");
-  }
-
+  var TICK = '<span class="tick"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>';
   function renderCoaches() {
     var q = S.q.trim();
     var shown = S.coaches.filter(function (c) {
-      return (S.filter === "전체" || c.targets.indexOf(S.filter) >= 0) && (!q || c.name.indexOf(q) >= 0) &&
+      return (S.filter === "전체" || c.targets.indexOf(S.filter) >= 0) &&
+        (!q || c.name.indexOf(q) >= 0 || c.topics.some(function (t) { return t.name.indexOf(q) >= 0; })) &&
         (S.cat === "전체" || c.topics.some(function (t) { return hasCat(t, S.cat); }));
     });
-    var before = S.ranks.length;
-    S.ranks = S.ranks.filter(function (n) { return !fullyBusy(findCoach(n)); });   // 날짜를 바꿔 모두 막힌 강연자는 순위에서 뺌
-    if (S.ranks.length < before) toast("희망 날짜에 이미 일정이 있는 강연자를 순위에서 뺐습니다.");
     $("coachEmpty").hidden = shown.length > 0;
     $("coachList").innerHTML = shown.map(function (c) {
-      var r = S.ranks.indexOf(c.name), busy = busyCount(c), off = fullyBusy(c);
-      return '<div class="coach' + (r >= 0 ? " on" : "") + (off ? " off" : "") + '" role="button" tabindex="0" aria-pressed="' + (r >= 0) + '"' + (off ? ' aria-disabled="true"' : "") + ' data-c="' + esc(c.name) + '">' +
+      var on = S.picked.indexOf(c.name) >= 0;
+      return '<div class="coach' + (on ? " on" : "") + '" role="button" tabindex="0" aria-pressed="' + on + '" data-c="' + esc(c.name) + '">' +
         avatar(c) +
         '<div class="coach-info"><div class="coach-name">' + esc(c.name) + "</div>" +
         '<div class="coach-sum">' + esc(c.slogan.join(" ") || c.history[0] || "") + "</div>" + coachTopicsLine(c) +
         '<div class="tags">' + c.targets.map(function (t) { return '<span class="tag">' + esc(t) + "</span>"; }).join("") + "</div>" +
-        (off ? '<div class="busy full">희망 날짜에 모두 일정이 있어 고를 수 없어요</div>'
-          : busy ? '<div class="busy">희망 날짜 중 ' + busy + "개는 이미 일정이 있어 그 날짜엔 진행할 수 없어요</div>" : "") +
-        '<button type="button" class="link coach-more" data-more="' + esc(c.name) + '">자세히 보기</button></div>' +
-        '<span class="rank-badge">' + (r >= 0 ? RANKS[r] : "") + "</span></div>";
+        '<button type="button" class="link coach-more" data-more="' + esc(c.name) + '">자세히 보기</button></div>' + TICK + "</div>";
     }).join("");
-    renderCoachSlots();
   }
 
-  // 「1순위 강연자를 꼭 희망」 체크 중이면 2·3순위도 1순위와 같은 강연자로 채움
-  function syncFlexible() {
-    if ($("flexible").checked) S.ranks = S.ranks.length ? [S.ranks[0], S.ranks[0], S.ranks[0]] : [];
-    else S.ranks = S.ranks.slice(0, 1);
-  }
-
-  function toggleRank(c) {
-    var i = S.ranks.indexOf(c.name);
-    if (i < 0 && fullyBusy(c)) { toast(c.name + " 강연자는 희망 날짜에 모두 일정이 있어요. 날짜를 바꾸거나 다른 강연자를 골라 주세요."); return; }
-    if ($("flexible").checked) S.ranks = i >= 0 ? [] : [c.name, c.name, c.name];   // 같은 강연자를 누르면 빼고, 다른 강연자면 1순위를 바꿈
-    else if (i >= 0) S.ranks.splice(i, 1);
-    else if (S.ranks.length >= 3) { toast("3명을 모두 골랐습니다. 바꾸려면 위에서 한 명을 빼 주세요."); return; }
-    else S.ranks.push(c.name);
-    // 대표 주제는 고른 강연자의 주제에서 고르므로, 빠진 강연자의 주제는 지운다
-    var allowed = topicChoices();
-    S.topics = S.topics.filter(function (t) { return allowed.indexOf(t) >= 0; });
+  function togglePick(c) {
+    if (!c) return;
+    var i = S.picked.indexOf(c.name);
+    if (i >= 0) { S.picked.splice(i, 1); delete S.product[c.name]; }
+    else {
+      S.picked.push(c.name);
+      if (c.topics.length === 1) S.product[c.name] = c.topics[0].name;   // 설명회가 하나뿐이면 미리 골라 둠
+    }
     renderCoaches();
     renderSummary();
   }
 
-  /* ---------- 강연자 상세 ---------- */
-  var detailFor = null;
+  /* ---------- 소장님 상세 ---------- */
   function youtubeId(u) {
     var m = String(u || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
     return m ? m[1] : "";
@@ -333,7 +238,7 @@
       (meta.length ? '<div class="tc-meta">' + meta.map(esc).join("<i></i>") + "</div>" : "") + "</div>";
   }
   function openDetail(c) {
-    detailFor = c;
+    if (!c) return;
     var intro = c.history.length ? "<h4>경력</h4>" + ul(c.history) : "";
     if (!intro) intro = '<p class="muted">준비 중입니다.</p>';
     var topics = c.topics.length ? c.topics.map(topicCard).join("") : '<p class="muted">준비 중입니다.</p>';
@@ -353,111 +258,146 @@
       '<div class="profile">' + avatar(c, "lg") + '<div class="nm">' + esc(c.name) + "</div>" +
         (c.slogan.length ? '<div class="slogan">' + c.slogan.map(esc).join("<br>") + "</div>" : "") + "</div>" +
       // 탭은 바로가기 — 내용은 한 페이지에 이어서 보이고, 탭을 누르면 그 부분으로 이동
-      '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 주제 ' + c.topics.length + '</button><button type="button" data-tab="2">영상·링크</button></div>' +
+      '<div class="tabs" role="tablist"><button type="button" class="on" data-tab="0">소개</button><button type="button" data-tab="1">설명회 ' + c.topics.length + '</button><button type="button" data-tab="2">영상·링크</button></div>' +
       '<section class="tab-pane" data-pane="0"><h3 class="pane-title">소개</h3>' + intro + "</section>" +
-      '<section class="tab-pane" data-pane="1"><h3 class="pane-title">설명회 주제</h3>' + topics + "</section>" +
+      '<section class="tab-pane" data-pane="1"><h3 class="pane-title">설명회</h3>' + topics + "</section>" +
       '<section class="tab-pane" data-pane="2"><h3 class="pane-title">영상·링크</h3>' + media + "</section>";
     $("coachModal").showModal();
     $("coachDetail").scrollTop = 0;
   }
 
-  /* ---------- 3단계: 설명회 종류·주제 ---------- */
-  function topicChoices() {
-    if (S.kind === "custom") return C.CUSTOM_TOPICS || [];
-    var out = [];
-    S.ranks.forEach(function (n) {
-      var c = findCoach(n);
-      (c ? c.topics : []).forEach(function (t) { if (out.indexOf(t.name) < 0) out.push(t.name); });
-    });
-    return out.concat([LEAVE_IT]);
+  /* ---------- 2단계: 소장님별 설명회 ---------- */
+  function productCard(c, t) {
+    var on = S.product[c.name] === t.name;
+    var meta = [list(t.targets).join(", "), list(t.seasons).join(", ")].filter(Boolean);
+    var cats = list(t.cats || t.cat);
+    return '<button type="button" class="product' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-pc="' + esc(c.name) + '" data-pt="' + esc(t.name) + '">' +
+      '<span class="radio"></span><span class="pd-body">' +
+      (cats.length ? '<span class="tc-cat">' + esc(cats.join(" · ")) + "</span>" : "") +
+      "<b>" + esc(t.name) + "</b>" + (t.intro ? '<span class="pd-intro">' + esc(t.intro) + "</span>" : "") +
+      (meta.length ? '<span class="tc-meta">' + meta.map(esc).join("<i></i>") + "</span>" : "") + "</span></button>";
   }
-
-  function renderKinds() {
-    if (!S.kind && (C.KINDS || []).length) S.kind = C.KINDS[0].id;   // 처음엔 대표 주제 설명회가 골라진 상태
-    $("kinds").innerHTML = (C.KINDS || []).map(function (k) {
-      var on = S.kind === k.id;
-      return '<button type="button" role="radio" aria-checked="' + on + '" class="kind' + (on ? " on" : "") + '" data-kind="' + k.id + '">' +
-        '<span class="radio"></span><span class="kind-body"><b>' + esc(k.name) + "</b><span>" + esc(k.desc) + "</span>" +
-        '<span class="kind-meta">' + esc(k.time) + "</span></span>" +
-        (on ? '<span class="kind-picked">선택됨</span>' : "") + "</button>";
+  function renderProducts() {
+    $("products").innerHTML = S.picked.map(function (n) {
+      var c = findCoach(n);
+      if (!c) return "";
+      return '<div class="pgroup"><div class="pg-head">' + avatar(c, "sm") + "<div><b>" + esc(n) + " 소장님</b><span>" +
+        (S.product[n] ? "골랐어요" : c.topics.length ? "설명회 하나를 골라 주세요" : "") + '</span></div><button type="button" class="link" data-more="' + esc(n) + '">자세히 보기</button></div>' +
+        (c.topics.length ? '<div class="products" role="radiogroup">' + c.topics.map(function (t) { return productCard(c, t); }).join("") + "</div>"
+          : '<p class="muted pd-none">설명회를 준비 중인 소장님입니다. 원하시는 내용을 다음 단계 요청사항에 적어 주세요.</p>') + "</div>";
     }).join("");
-    var k = kindOf(S.kind);
-    $("topicBox").hidden = !k;
-    if (!k) return;
-    var custom = S.kind === "custom";
-    $("topicTitle").textContent = custom ? "어떤 내용이 필요하세요?" : "원하시는 주제를 골라 주세요";
-    $("topicSub").textContent = custom ? "여러 개 고를 수 있습니다. 주제 확인 후 비용을 협의해서 안내드립니다." : "고르신 강연자들의 대표 주제입니다. 여러 개 고를 수 있고, 최종 주제는 담당자가 강연자와 조율해 안내드립니다.";
-    $("topicMemoLabel").innerHTML = custom ? "원하시는 내용 <em>필수</em>" : "더 알려 주실 내용 <em>선택</em>";
-    function chips(arr) {
-      return '<div class="chips wrap-chips">' + arr.map(function (t) {
-        return '<button type="button" class="chip' + (S.topics.indexOf(t) >= 0 ? " on" : "") + '" data-topic="' + esc(t) + '">' + esc(t) + "</button>";
-      }).join("") + "</div>";
-    }
-    if (custom) { $("topics").innerHTML = chips(topicChoices()); return; }
-    // 대표 주제는 강연자별로 묶어서 — 어느 강연자의 주제인지 보이게
-    var seen = [];
-    $("topics").innerHTML = S.ranks.map(function (n, i) {
-      var c = findCoach(n);
-      if (seen.indexOf(n) >= 0 || !c || !c.topics.length) return "";
-      seen.push(n);
-      return '<div class="topic-group"><div class="tg-name">' + RANKS[i] + " · " + esc(n) + "</div>" +
-        chips(c.topics.map(function (t) { return t.name; })) + "</div>";
-    }).join("") + chips([LEAVE_IT]);
+  }
+  function productsDone() {
+    return S.picked.length > 0 && S.picked.every(function (n) { var c = findCoach(n); return S.product[n] || (c && !c.topics.length); });
   }
 
-  function topicDone() {
-    if (!S.kind || !S.topics.length) return false;
-    return S.kind !== "custom" || !!$("topicMemo").value.trim();
+  /* ---------- 3단계: 날짜 하나 · 시작 시간 ---------- */
+  function renderCal() {
+    var m = S.month;
+    $("monthLabel").textContent = m.getFullYear() + "년 " + (m.getMonth() + 1) + "월";
+    var first = new Date(m.getFullYear(), m.getMonth(), 1);
+    var last = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    var t = ymd(today());
+    var html = "";
+    for (var i = 0; i < first.getDay(); i++) html += "<span></span>";
+    for (var d = 1; d <= last; d++) {
+      var dt = new Date(m.getFullYear(), m.getMonth(), d), s = ymd(dt);
+      // 고른 소장님 모두가 그날 하루 전체 일정이 있으면 막음
+      var full = S.picked.length > 0 && S.picked.every(function (n) { return dayOff(n, s); });
+      var cls = "day" + (s === t ? " today" : "") + (s === S.date ? " pick cur" : "") + (full ? " blocked" : "");
+      html += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (dt < MIN_DATE || full ? " disabled" : "") + ">" + d + "</button>";
+    }
+    $("calDays").innerHTML = html;
+    $("prevMonth").disabled = m <= new Date(today().getFullYear(), today().getMonth(), 1);
   }
+
+  function fillTimeSelects() {
+    var r = C.START_HOURS || [8, 21], step = C.MINUTE_STEP || 10;
+    var hs = ['<option value="">시</option>'], ms = ['<option value="">분</option>'];
+    for (var h = r[0]; h <= r[1]; h++) hs.push('<option value="' + String(h).padStart(2, "0") + '">' + (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + "시</option>");
+    for (var m = 0; m < 60; m += step) ms.push('<option value="' + String(m).padStart(2, "0") + '">' + String(m).padStart(2, "0") + "분</option>");
+    $("tH").innerHTML = hs.join("");
+    $("tM").innerHTML = ms.join("");
+  }
+
+  function renderWhen() {
+    renderCal();
+    var p = S.time ? S.time.split(":") : ["", ""];
+    $("tH").value = p[0];
+    $("tM").value = p[1];
+    $("tH").disabled = $("tM").disabled = !S.date;
+    $("dateLabel").innerHTML = S.date ? "<b>" + esc(krDate(S.date)) + "</b> 몇 시에 시작할까요?" : "먼저 달력에서 날짜를 골라 주세요.";
+    $("timeHint").textContent = S.date && !S.time ? "시와 분을 골라 주세요." : S.time ? krTime(S.time) + " 시작" : "";
+    var bad = clashed();
+    $("clashNotice").hidden = !bad.length;
+    $("clashNotice").innerHTML = bad.map(function (n) {
+      var b = clashOf(n, S.date, S.time);
+      return "<p><b>" + esc(n) + " 소장님</b>은 " + (b.time ? krTime(b.time) + "에 이미 확정된 설명회가 있어 이 시간은 어려워요." : "이날 이미 일정이 있어요.") +
+        ' <button type="button" class="link" data-unpick="' + esc(n) + '">이 소장님 빼기</button></p>';
+    }).join("") + (bad.length ? '<p class="muted">시작 시간을 바꾸거나 소장님을 빼 주세요. (확정된 일정 앞뒤 ' + (OVERLAP / 60) + "시간은 겹치는 것으로 봅니다)</p>" : "");
+    $("soonNotice").hidden = !(S.date && daysFromToday(S.date) < (C.WARN_DAYS || 21));
+    renderSummary();
+  }
+
+  function pickDate(s) {
+    if (parse(s) < MIN_DATE) { $("calMsg").textContent = "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
+    S.date = s;
+    var off = S.picked.filter(function (n) { return dayOff(n, s); });
+    $("calMsg").textContent = off.length ? off.join(", ") + " 소장님은 이날 일정이 있어요." : "";
+    renderWhen();
+  }
+  function setTime() {
+    var h = $("tH").value, m = $("tM").value;
+    if (h && !m) m = "00";   // 시만 고르면 정각으로
+    S.time = h && m ? h + ":" + m : "";
+    renderWhen();
+  }
+  function whenDone() { return !!(S.date && S.time) && !clashed().length && S.picked.length > 0; }
 
   /* ---------- 신청 내역 / 하단 바 ---------- */
   function memberVal() { return ($("form").elements.member || {}).value; }
 
   function priceText() {
     var k = kindOf(S.kind), m = memberVal();
-    if (!k || !S.topics.length) return "0원";   // 설명회 주제를 고르기 전에는 0원
+    if (!k || !S.picked.length) return "0원";
     if (m === "비회원") return priceOf(k.nonmember);
     if (m === "회원") return priceOf(k.member);
     return "회원 " + priceOf(k.member) + " · 비회원 " + priceOf(k.nonmember);   // 회원 여부는 4단계에서 고름
   }
 
   function summaryHtml() {
-    var dates = '<h4>희망 날짜</h4><ul class="sum-list">' + S.slots.map(function (s, i) {
-      return '<li><span class="rk">' + RANKS[i] + "</span>" + (s.d ? '<span class="v">' + esc(krDate(s.d)) + (s.t ? " · " + esc(krTime(s.t)) : "") + "</span>" : '<span class="v none">미선택</span>') + "</li>";
-    }).join("") + "</ul>";
-    var coaches = '<h4>강연자</h4><ul class="sum-list">' + [0, 1, 2].map(function (i) {
-      return '<li><span class="rk">' + RANKS[i] + "</span>" + (S.ranks[i] ? '<span class="v">' + esc(S.ranks[i]) + "</span>" : '<span class="v none">미선택</span>') + "</li>";
-    }).join("") + "</ul>" + ($("flexible").checked ? '<p class="sum-flag">1순위 강연자 일정에 맞춰 날짜 조정 가능</p>' : "");
-    var k = kindOf(S.kind);
-    var kind = '<h4>설명회</h4><p class="sum-kind">' + (k ? esc(k.name) + (S.topics.length ? '<span>' + esc(S.topics.join(", ")) + "</span>" : "") : '<span class="none">미선택</span>') + "</p>";
-    return { dates: dates, coaches: coaches, kind: kind };
+    var picks = "<h4>소장님 · 설명회 <small>" + S.picked.length + "명</small></h4>" + (S.picked.length ? '<ul class="sum-picks">' + S.picked.map(function (n) {
+      var c = findCoach(n), p = S.product[n] || (c && !c.topics.length ? "요청사항으로 상의" : S.step >= 2 ? "설명회 미선택" : "");
+      return '<li><b>' + esc(n) + "</b>" + (p ? '<span class="' + (S.product[n] || !c || !c.topics.length ? "" : "none") + '">' + esc(p) + "</span>" : "") + "</li>";
+    }).join("") + "</ul>" : '<p class="sum-kind"><span class="none">소장님을 골라 주세요</span></p>');
+    var when = '<h4>희망 일정</h4><p class="sum-kind">' + (S.date ? esc(krDate(S.date)) + (S.time ? "<span>" + esc(krTime(S.time)) + " 시작</span>" : "") : '<span class="none">미선택</span>') + "</p>";
+    return { picks: picks, when: when };
   }
 
   function stepState() {
     if (S.step === 1) {
-      var n = S.slots.filter(function (s) { return s.d && s.t; }).length;
-      return { ok: datesDone(), label: "다음", txt: "<b>희망 날짜 " + n + " / 3</b>" + (datesDone() ? "모두 골랐어요" : RANKS[S.active] + "을 골라 주세요") };
+      var n = S.picked.length;
+      return { ok: n > 0, label: "다음", txt: "<b>소장님 " + n + "명</b>" + (n ? "여러 분을 함께 고를 수 있어요" : "소장님을 골라 주세요") };
     }
     if (S.step === 2) {
-      var need = needCoaches();
-      return { ok: S.ranks.length >= need, label: "다음", txt: "<b>강연자 " + S.ranks.length + " / " + need + "</b>" + (S.ranks.length >= need ? "모두 골랐어요" : RANKS[S.ranks.length] + "을 골라 주세요") };
+      var left = S.picked.filter(function (x) { var c = findCoach(x); return !S.product[x] && c && c.topics.length; }).length;
+      return { ok: productsDone(), label: "다음", txt: "<b>설명회</b>" + (left ? left + "명의 소장님 설명회를 골라 주세요" : "모두 골랐어요") };
     }
     if (S.step === 3) {
-      var k = kindOf(S.kind);
-      return { ok: topicDone(), label: "다음", txt: "<b>" + (k ? esc(k.name) : "설명회 종류") + "</b>" + (topicDone() ? "주제를 골랐어요" : k ? "주제를 골라 주세요" : "종류를 골라 주세요") };
+      return { ok: whenDone(), label: "다음", txt: "<b>" + (S.date ? esc(krDate(S.date)) : "희망 날짜") + "</b>" +
+        (!S.date ? "날짜를 골라 주세요" : !S.time ? "시작 시간을 골라 주세요" : clashed().length ? "일정이 겹치는 소장님이 있어요" : esc(krTime(S.time)) + " 시작") };
     }
-    var left = formErrors().length;
-    return { ok: !S.sending && !left, soft: true, label: S.sending ? "신청 중…" : "신청하기",
-      txt: left ? "<b>필수 항목 " + left + "개 남음</b>모두 입력하면 신청할 수 있어요" : "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
+    var left4 = formErrors().length;
+    return { ok: !S.sending && !left4, soft: true, label: S.sending ? "신청 중…" : "신청하기",
+      txt: left4 ? "<b>필수 항목 " + left4 + "개 남음</b>모두 입력하면 신청할 수 있어요" : "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
   }
 
   function renderSummary() {
     var h = summaryHtml();
-    $("sumDates").innerHTML = h.dates;
-    $("sumCoaches").innerHTML = h.coaches;
-    $("sumKind").innerHTML = h.kind;
+    $("sumPicks").innerHTML = h.picks;
+    $("sumWhen").innerHTML = h.when;
     $("sumPrice").textContent = priceText();
-    $("mSum").innerHTML = '<div class="sum-block">' + h.dates + '</div><div class="sum-block">' + h.coaches + '</div><div class="sum-block">' + h.kind + "</div>";
+    $("mSum").innerHTML = '<div class="sum-block">' + h.picks + '</div><div class="sum-block">' + h.when + "</div>";
 
     var st = stepState();
     // 4단계는 눌러 보면 빠진 항목을 빨갛게 알려 주도록, 막지 않고 흐리게만 둔다
@@ -470,7 +410,7 @@
     save();
     each(document.querySelectorAll("[data-prev]"), function (b) { b.hidden = S.step === 1; });
     $("barTxt").innerHTML = st.txt;
-    $("sumNote").textContent = S.step === 4 ? "신청 후 담당자가 3일 안에 연락드립니다. 신청만으로 확정되지는 않습니다." : "신청만으로 일정이 확정되지는 않습니다.";
+    $("sumNote").textContent = "소장님이 " + HOURS + "시간 안에 답하고, 결과를 알림톡으로 모아서 보내 드려요. 신청만으로 확정되지는 않습니다.";
     if (S.step === 4) renderMember();
   }
 
@@ -480,15 +420,15 @@
     $("memberSeg").innerHTML =
       '<button type="button" class="mcard' + (m === "회원" ? " on" : "") + '" data-v="회원"><span class="radio"></span><span class="mc-body"><b>클럽하와이 회원</b><span class="mc-tag">회원가</span></span><strong>' + priceOf(k.member) + "</strong></button>" +
       '<button type="button" class="mcard' + (m === "비회원" ? " on" : "") + '" data-v="비회원"><span class="radio"></span><span class="mc-body"><b>비회원</b><span class="mc-tag gray">비회원가</span></span><strong>' + priceOf(k.nonmember) + "</strong></button>" +
-      '<p class="mc-note">' + esc(k.name) + " 기준 · VAT 별도" + (k.note ? " · " + esc(k.note) : "") + "<br>회원 여부는 담당자 연락 때 확인합니다.</p>";
+      '<p class="mc-note">설명회 1회 기준 · VAT 별도<br>회원 여부는 담당자 연락 때 확인합니다.</p>';
     renderPricing();
   }
 
   /* ---------- 단계 이동 ---------- */
   function go(step) {
-    if (step >= 2 && !datesDone()) step = 1;
-    else if (step >= 3 && S.ranks.length < needCoaches()) step = 2;
-    else if (step >= 4 && !topicDone()) step = 3;
+    if (step >= 2 && !S.picked.length) step = 1;
+    else if (step >= 3 && !productsDone()) step = 2;
+    else if (step >= 4 && !whenDone()) step = 3;
     S.step = step;
     ["step1", "step2", "step3", "step4", "done"].forEach(function (id, i) { $(id).hidden = i + 1 !== step; });
     each($("steps").children, function (li) {
@@ -500,13 +440,12 @@
     $("side").hidden = finished;
     $("bar").hidden = finished;
     $("pageHead").hidden = finished;
-    if (step === 1) {
+    if (step === 1) renderCoaches();
+    if (step === 2) renderProducts();
+    if (step === 3) {
       if (!S.month) S.month = new Date(MIN_DATE.getFullYear(), MIN_DATE.getMonth(), 1);
-      var firstEmpty = S.slots.findIndex(function (s) { return !s.d || !s.t; });
-      setActive(firstEmpty < 0 ? 0 : firstEmpty);
+      renderWhen();
     }
-    if (step === 2) renderCoaches();
-    if (step === 3) renderKinds();
     renderSummary();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -586,13 +525,10 @@
       member: v("member"), target: v("target"),
       address: address,
       venue: form.elements.venueSame.checked ? address + " (학원)" : v("vaddr1") + " " + v("vaddr2") + (v("vzip") ? " (" + v("vzip") + ")" : ""),
-      attendees: v("attendees"), request: v("request"),
-      options: S.slots.map(function (s) { return { date: s.d, time: s.t }; }),
-      coaches: S.ranks.slice(),
-      flexible: $("flexible").checked,
-      kind: kindOf(S.kind).name,
-      topics: S.topics.slice(),
-      topicMemo: $("topicMemo").value.trim()
+      attendees: v("attendees"), request: $("request").value.trim(),
+      date: S.date, time: S.time,
+      picks: S.picked.map(function (n) { return { coach: n, product: S.product[n] || "" }; }),
+      kind: kindOf(S.kind).name
     };
   }
 
@@ -603,12 +539,12 @@
     S.sending = true;
     renderSummary();
     var req = DEMO
-      ? new Promise(function (ok) { setTimeout(function () { ok({ ok: true, id: "SEM-" + ymd(today()).replace(/-/g, "") + "-000" }); }, 700); })
+      ? new Promise(function (ok) { setTimeout(function () { ok({ ok: true, id: "SEM-" + ymd(today()).replace(/-/g, "") + "-000", due: new Date(Date.now() + HOURS * 3600e3).toISOString() }); }, 700); })
       : fetch(C.APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })
         .then(function (r) { return r.json(); });
     req.then(function (res) {
       if (!res.ok) throw new Error(res.error || "");
-      showDone(res.id, body);
+      showDone(res, body);
     }).catch(function (e) {
       S.sending = false;
       renderSummary();
@@ -616,23 +552,19 @@
     });
   }
 
-  // 순위 글자와 내용을 칸으로 나눠 보여 줌
-  function rankList(items) {
-    return '<ul class="done-rk">' + items.map(function (t, i) {
-      return '<li><span class="rk">' + RANKS[i] + '</span><span>' + esc(t) + "</span></li>";
-    }).join("") + "</ul>";
-  }
-
-  function showDone(id, b) {
+  function showDone(res, b) {
     S.sending = false;
     S.finished = true;
     try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {}
+    $("doneDue").textContent = krDue(new Date(res.due || Date.now() + HOURS * 3600e3));
     $("doneSum").innerHTML =
-      "<dt>신청번호</dt><dd>" + esc(id) + "</dd>" +
+      "<dt>신청번호</dt><dd>" + esc(res.id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
-      "<dt>희망 날짜</dt><dd>" + rankList(b.options.map(function (o) { return krDate(o.date) + " " + krTime(o.time); })) + "</dd>" +
-      "<dt>강연자</dt><dd>" + rankList(b.coaches) + "</dd>" +
-      "<dt>설명회</dt><dd>" + esc(b.kind) + (b.topics.length ? "<br>" + esc(b.topics.join(", ")) : "") + "</dd>";
+      "<dt>희망 일정</dt><dd>" + esc(krDate(b.date)) + " " + esc(krTime(b.time)) + " 시작</dd>" +
+      '<dt>소장님 · 설명회</dt><dd><ul class="done-picks">' + b.picks.map(function (p) {
+        return "<li><b>" + esc(p.coach) + "</b><span>" + esc(p.product || "요청사항으로 상의") + "</span></li>";
+      }).join("") + "</ul></dd>" +
+      (b.request ? "<dt>요청사항</dt><dd>" + esc(b.request) + '<small class="muted">담당자가 확인한 뒤 연락드립니다.</small></dd>' : "");
     go(5);
   }
 
@@ -680,28 +612,6 @@
   /* ---------- 이벤트 ---------- */
   function bind() {
     // 1단계
-    $("slots").addEventListener("click", function (e) {
-      var x = e.target.closest("[data-clear]");
-      if (x) { S.slots[+x.dataset.clear] = { d: "", t: "" }; setActive(+x.dataset.clear); return; }
-      var s = e.target.closest("[data-slot]");
-      if (s) setActive(+s.dataset.slot);
-    });
-    $("calDays").addEventListener("click", function (e) {
-      var d = e.target.closest("[data-d]");
-      if (d) pickDate(d.dataset.d);
-    });
-    $("prevMonth").addEventListener("click", function () { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); });
-    $("nextMonth").addEventListener("click", function () { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); });
-    $("timeSeg").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-part]");
-      if (b) { S.part = b.dataset.part; renderTimes(); }
-    });
-    $("timeGrid").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-t]");
-      if (b && !b.disabled) pickTime(b.dataset.t);
-    });
-
-    // 2단계
     $("q").addEventListener("input", function (e) { S.q = e.target.value; renderCoaches(); });
     $("filters").addEventListener("click", function (e) {
       var b = e.target.closest("[data-f]");
@@ -718,25 +628,13 @@
       renderCoaches();
     });
     $("coachList").addEventListener("click", function (e) {
-      var more = e.target.closest("[data-more]");
-      if (more) { openDetail(findCoach(more.dataset.more)); return; }
+      if (e.target.closest("[data-more]")) return;   // 자세히 보기는 아래 공통 처리
       var card = e.target.closest("[data-c]");
-      if (card) toggleRank(findCoach(card.dataset.c));
+      if (card) togglePick(findCoach(card.dataset.c));
     });
     $("coachList").addEventListener("keydown", function (e) {
       var card = e.target.closest("[data-c]");
-      if (card && e.target === card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleRank(findCoach(card.dataset.c)); }
-    });
-    $("coachSlots").addEventListener("click", function (e) {
-      var x = e.target.closest("[data-unrank]");
-      if (x) toggleRank(findCoach(x.dataset.unrank));
-    });
-    $("flexible").addEventListener("change", function () {
-      syncFlexible();
-      var allowed = topicChoices();
-      S.topics = S.topics.filter(function (t) { return allowed.indexOf(t) >= 0; });
-      renderCoaches();
-      renderSummary();
+      if (card && e.target === card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); togglePick(findCoach(card.dataset.c)); }
     });
     $("coachDetail").addEventListener("click", function (e) {
       var t = e.target.closest("[data-tab]");
@@ -758,26 +656,31 @@
       each($("coachDetail").querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b.dataset.tab === k); });
     }
 
-    // 3단계
-    $("kinds").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-kind]");
-      if (!b || S.kind === b.dataset.kind) return;
-      S.kind = b.dataset.kind;
-      S.topics = [];
-      renderKinds();
-      renderSummary();
-    });
-    $("topics").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-topic]");
+    // 2단계
+    $("products").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-pc]");
       if (!b) return;
-      var t = b.dataset.topic, i = S.topics.indexOf(t);
-      if (i >= 0) S.topics.splice(i, 1);
-      else if (t === LEAVE_IT) S.topics = [t];        // '맡길게요'는 다른 주제와 함께 고르지 않음
-      else { S.topics = S.topics.filter(function (x) { return x !== LEAVE_IT; }); S.topics.push(t); }
-      renderKinds();
+      S.product[b.dataset.pc] = b.dataset.pt;
+      renderProducts();
       renderSummary();
     });
-    $("topicMemo").addEventListener("input", renderSummary);
+
+    // 3단계
+    $("calDays").addEventListener("click", function (e) {
+      var d = e.target.closest("[data-d]");
+      if (d && !d.disabled) pickDate(d.dataset.d);
+    });
+    $("prevMonth").addEventListener("click", function () { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); });
+    $("nextMonth").addEventListener("click", function () { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); });
+    $("tH").addEventListener("change", setTime);
+    $("tM").addEventListener("change", setTime);
+    $("clashNotice").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-unpick]");
+      if (!b) return;
+      togglePick(findCoach(b.dataset.unpick));
+      renderWhen();
+    });
+    $("request").addEventListener("input", save);
 
     // 4단계
     $("memberSeg").addEventListener("click", function (e) {
@@ -825,6 +728,8 @@
 
     // 공통
     document.addEventListener("click", function (e) {
+      var more = e.target.closest("[data-more]");
+      if (more) { openDetail(findCoach(more.dataset.more)); return; }
       var nb = e.target.closest("[data-next]");
       if (nb && nb.classList.contains("is-off")) { check(); return; }
       if (nb) next();
@@ -846,8 +751,8 @@
   }
 
   /* ---------- 입력 내용 보관 (같은 탭에서 새로고침해도 이어서) ---------- */
-  var SAVE_KEY = "seminar-signup-v1";
-  var KEEP = ["member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2", "request"];
+  var SAVE_KEY = "seminar-signup-v2";
+  var KEEP = ["member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2"];
   function save() {
     if (S.finished) return;
     try {
@@ -855,28 +760,25 @@
       KEEP.forEach(function (n) { f[n] = form.elements[n].value; });
       f.venueSame = form.elements.venueSame.checked;
       sessionStorage.setItem(SAVE_KEY, JSON.stringify({
-        step: S.step, slots: S.slots, ranks: S.ranks, kind: S.kind, topics: S.topics,
-        flexible: $("flexible").checked, topicMemo: $("topicMemo").value, form: f
+        step: S.step, picked: S.picked, product: S.product, date: S.date, time: S.time, request: $("request").value, form: f
       }));
     } catch (e) {}
   }
   function restore() {
     var d = null;
     try { d = JSON.parse(sessionStorage.getItem(SAVE_KEY) || "null"); } catch (e) {}
-    if (!d || !Array.isArray(d.slots) || d.slots.length !== 3) return 1;
-    S.slots = d.slots.map(function (s) { return { d: String(s.d || ""), t: String(s.t || "") }; });
-    S.ranks = Array.isArray(d.ranks) ? d.ranks.slice(0, 3) : [];
-    S.kind = d.kind || "";
-    S.topics = Array.isArray(d.topics) ? d.topics : [];
-    $("flexible").checked = !!d.flexible;
-    $("topicMemo").value = d.topicMemo || "";
+    if (!d || !Array.isArray(d.picked)) return 1;
+    S.picked = d.picked.map(String);
+    S.product = d.product && typeof d.product === "object" ? d.product : {};
+    S.date = /^\d{4}-\d{2}-\d{2}$/.test(d.date) && parse(d.date) >= MIN_DATE ? d.date : "";
+    S.time = /^\d{2}:\d{2}$/.test(d.time) ? d.time : "";
+    $("request").value = d.request || "";
     var form = $("form"), f = d.form || {};
     KEEP.forEach(function (n) { if (f[n] != null) form.elements[n].value = f[n]; });
     form.elements.venueSame.checked = !!f.venueSame;
     $("venueBox").hidden = !!f.venueSame;
     renderTargets();
-    var first = S.slots.filter(function (s) { return s.d; })[0];
-    if (first) { var p = parse(first.d); S.month = new Date(p.getFullYear(), p.getMonth(), 1); }
+    if (S.date) { var p = parse(S.date); S.month = new Date(p.getFullYear(), p.getMonth(), 1); }
     return Math.min(4, Math.max(1, +d.step || 1));
   }
 
@@ -884,25 +786,24 @@
   function init() {
     $("demoBar").hidden = !DEMO;
     each(document.querySelectorAll(".retention"), function (el) { el.textContent = C.PRIVACY_RETENTION || ""; });
+    each(document.querySelectorAll(".resp-h"), function (el) { el.textContent = HOURS; });
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
     renderTargets();
+    fillTimeSelects();
     if (C.CONTACT_URL) {
       each(document.querySelectorAll("[data-contact]"), function (a) { a.href = C.CONTACT_URL; });
       $("contactTop").hidden = false;
       $("helpCard").hidden = false;
     }
     bind();
-    renderFilters();
-    go(restore());   // 새로고침·화면 갱신이 있어도 입력한 내용과 단계를 이어서 보여 줌
-    $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오는 중…</p>';
+    var step = restore();   // 새로고침·화면 갱신이 있어도 입력한 내용과 단계를 이어서 보여 줌
+    $("coachList").innerHTML = '<p class="empty">소장님 정보를 불러오는 중…</p>';
     load().then(function (d) {
       useData(d);
-      renderFilters();   // 주제로 찾기는 강연자 주제가 있어야 그릴 수 있음
-      renderCoaches();
-      if (S.step === 3) renderKinds();
-      renderSummary();
+      renderFilters();   // 주제로 찾기는 소장님 설명회가 있어야 그릴 수 있음
+      go(step);
     }).catch(function () {
-      $("coachList").innerHTML = '<p class="empty">강연자 정보를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>';
+      $("coachList").innerHTML = '<p class="empty">소장님 정보를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>';
     });
   }
 

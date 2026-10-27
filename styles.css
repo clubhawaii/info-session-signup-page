@@ -373,7 +373,6 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .flex-opt { align-items: flex-start; margin: 12px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink-60); line-height: 1.5; }
 .flex-opt input { width: 16px; height: 16px; margin-top: 2px; flex: none; }
 .flex-opt small { font-size: 12px; font-weight: 500; color: var(--ink-40); }
-.coach .tick { display: none; }
 .rank-badge { position: absolute; top: 14px; right: 14px; min-width: 22px; height: 22px; border-radius: 11px; border: 1px solid var(--ink-25); background: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; padding: 0 2px; }
 .coach.on .rank-badge { background: var(--blue); border-color: var(--blue); color: #fff; padding: 0 8px; }
 .busy { margin-top: 6px; font-size: 12px; color: var(--ink-60); }
@@ -551,3 +550,65 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 @media (max-width: 640px) {
   .modal-body .tabs { top: -56px; margin: 0 -20px 4px; padding: 12px 20px 12px 56px; }
 }
+
+/* ── 2026-10-27 개편: 소장님 → 설명회 → 날짜·시간 ── */
+/* 1단계: 소장님 여러 명 선택 (오른쪽 위 체크) */
+.coach .coach-info { padding-right: 24px; }
+
+/* 2단계: 소장님별 설명회(상품) 하나 */
+.pgroup { margin-top: 22px; }
+.pgroup:first-child { margin-top: 18px; }
+.pg-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.pg-head > div:not(.avatar) { flex: 1; min-width: 0; display: grid; }
+.pg-head b { font-size: 16px; font-weight: 800; }
+.pg-head span { font-size: 13px; color: var(--ink-60); }
+.pg-head .link { font-size: 13px; flex: none; }
+.products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.product { display: flex; gap: 12px; align-items: flex-start; text-align: left; border: 1px solid var(--line); border-radius: var(--r); background: #fff; padding: 16px; min-width: 0; }
+.product:hover { border-color: var(--ink-25); }
+.product.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; background: var(--blue-08); }
+.product .radio { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; border: 1px solid var(--ink-25); background: #fff; }
+.product.on .radio { border: 6px solid var(--blue); }
+.pd-body { display: grid; gap: 3px; min-width: 0; }
+.pd-body b { font-size: 16px; font-weight: 800; line-height: 1.4; }
+.pd-intro { font-size: 13px; color: var(--ink-60); }
+.pd-body .tc-meta { margin-top: 4px; }
+.pd-none { margin: 0; font-size: 14px; }
+
+/* 3단계: 시작 시간 직접 고르기 */
+.time-input { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.time-input select { flex: 1; min-width: 0; height: 48px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 0 10px; background: #fff; font-weight: 600; }
+.time-input select:focus { border-color: var(--blue); outline: none; }
+.time-input select:disabled { opacity: .45; }
+.times .hint b { color: var(--ink); }
+.notice.warn { background: var(--red-12); }
+.notice.warn p { margin: 0 0 4px; }
+.notice.warn .link { color: var(--red); font-weight: 700; }
+.notice .muted { color: var(--ink-60); }
+.req-field { margin-top: 22px; }
+.req-field .field-note b { color: var(--blue); }
+
+/* 신청 내역: 소장님 · 설명회 */
+.sum-block h4 small { font-weight: 600; color: var(--ink-40); margin-left: 4px; }
+.sum-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sum-picks li { display: grid; font-size: 14px; }
+.sum-picks b { font-weight: 700; }
+.sum-picks span { font-size: 13px; color: var(--ink-60); }
+.sum-picks span.none { color: var(--ink-25); }
+
+/* 4단계: 신청 후 진행 안내 */
+.howto { margin: 26px 0 0; padding: 18px 20px; border-radius: var(--r); background: var(--blue-08); }
+.howto h3 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
+.howto ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.howto b { font-weight: 700; }
+
+/* 완료 */
+.done-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.done-picks li { display: grid; }
+.done-picks span { font-size: 13px; color: var(--ink-60); }
+.done-sum small { display: block; margin-top: 2px; }
+
+@media (max-width: 640px) {
+  .products { grid-template-columns: minmax(0, 1fr); }
+}
+#step3 .picker { margin-top: 20px; }
