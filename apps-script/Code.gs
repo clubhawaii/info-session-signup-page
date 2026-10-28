@@ -48,6 +48,7 @@ var ST = {
 var STATUS = Object.keys(ST).map(function (k) { return ST[k]; });
 var NEEDS_HQ = [ST.CHOSEN, ST.NONE];   // 본사가 다음 행동을 해야 하는 상태
 // 소장님 한 분의 응답
+var NO_PHONE_MEMO = '연락처가 없어 요청을 보내지 못함';
 var ANS = { WAIT: '응답 대기', OK: '가능', ADJ: '시간 조율 필요', NO: '불가', NONE: '응답 없음(불가)', PICKED: '원장님이 선택', RELEASED: '다른 소장님으로 진행' };
 
 var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '진행 장소', '회원 여부', '설명회 대상', '예상 참석 인원',
@@ -331,14 +332,17 @@ function apply_(d) {
     var token = Utilities.getUuid().replace(/-/g, '');
     var ar = ash.getLastRow() + 1;
     ash.getRange(ar, acol_('희망일'), 1, 2).setNumberFormat('@');
-    ash.getRange(ar, 1, 1, ANS_HEADERS.length).setValues([[id, safe_(p.coach), safe_(p.product), d.date, d.time, safe_(d.academy), now, due, ANS.WAIT, '', '', '', token]]);
+    // 연락처가 없으면 요청을 못 보내니 기한까지 기다리지 않고 바로 불가로 둔다
     var phone = coachPhone_(p.coach);
+    ash.getRange(ar, 1, 1, ANS_HEADERS.length).setValues([[id, safe_(p.coach), safe_(p.product), d.date, d.time, safe_(d.academy), now, due,
+      phone ? ANS.WAIT : ANS.NO, phone ? '' : now, phone ? '' : NO_PHONE_MEMO, '', token]]);
     if (!phone) { failed.push(p.coach); log_('COACH_REQUEST', p.coach, '', '미발송(연락처 없음)', ''); return; }
     notify_('COACH_REQUEST', p.coach, phone, coachVars_(v, p.coach, p.product, token));
   });
   if (failed.length) v['소장님설명회'] += '\n※ 연락처가 없어 요청을 못 보낸 소장님: ' + failed.join(', ');
   notify_('DIRECTOR_RECEIVED', String(d.director), d.phone, v);
   notifyHQ_('HQ_NEW', v);
+  if (failed.length) refreshApp_(id);   // 모두 답한 상태가 됐으면 결과를 바로 보냄
   return { ok: true, id: id, due: due.toISOString() };
 }
 
@@ -893,7 +897,7 @@ function profileSubmit_(d) {
   var hit = coachByPhone_(d.phone);
   if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
   var data = cleanProfile_(d.data || {});
-  if (!data.topics.length) return { ok: false, error: '대표 주제를 1개 이상 적어 주세요.' };
+  if (!data.topics.length) return { ok: false, error: '설명회를 1개 이상 적어 주세요.' };
   if (!data.agreePrivacy || !data.agreePriority || !data.agreePublish) return { ok: false, error: '확인 및 동의 세 항목에 모두 체크해 주세요.' };
   if (!data.photo) return { ok: false, error: '프로필 사진을 올려 주세요.' };
   var name = String(hit.r['이름']).trim();
@@ -935,7 +939,7 @@ function cleanProfile_(x) {
         area: str(t.area, 30), cats: arr(t.cats, 30).map(function (c) { return c.replace(/,/g, ' '); }).slice(0, 10), name: str(t.name, 40),
         intro: str(t.intro, 120), points: arr(t.points, 200).slice(0, 8), targets: arr(t.targets, 20), seasons: arr(t.seasons, 20)
       };
-    }).filter(function (t) { return t.name; }).slice(0, 10)
+    }).filter(function (t) { return t.name; })
   };
 }
 

@@ -1,11 +1,11 @@
-// 강연자 정보 입력 — 휴대폰 번호로 들어와 지금 등록된 소개·대표 주제를 보면서 고쳐 제출
+// 강연자 정보 입력 — 휴대폰 번호로 들어와 지금 등록된 소개·설명회를 보면서 고쳐 제출
 // 제출 내용은 시트 「프로필 제출」에 쌓이고, 본사가 확인 후 「강연자」·「대표 주제」에 반영합니다.
 (function () {
   "use strict";
 
   var C = window.APP_CONFIG || {};
   var DEMO = !C.APPS_SCRIPT_URL;
-  var MAX_TOPICS = C.MAX_TOPICS || 5, MAX_PHOTOS = C.MAX_PHOTOS || 5, SLOGAN_MAX = C.SLOGAN_MAX || 50;
+  var MAX_PHOTOS = C.MAX_PHOTOS || 5, SLOGAN_MAX = C.SLOGAN_MAX || 50;
   var AGREES = ["agreePrivacy", "agreePublish", "agreePriority"];
   var ETC = "기타";
 
@@ -191,7 +191,6 @@
   }
   function renderTopics() {
     var areas = C.AREAS || [];
-    $("maxTopics").textContent = MAX_TOPICS;
     $("topics").innerHTML = P.cur.topics.map(function (t, i) {
       var area = areaOf(t.area), st = topicChanged(t);
       return '<div class="topic-card" data-ti="' + i + '">' +
@@ -212,9 +211,6 @@
           '<div class="field wide"><span>적합 시기 <em>여러 개 골라도 돼요</em></span><div class="checks">' + checks('data-t="seasons"', C.SEASONS || [], t.seasons, "checkbox") + "</div></div>" +
         "</div></div>";
     }).join("");
-    $("addTopic").hidden = P.cur.topics.length >= MAX_TOPICS;
-    $("topicMsg").textContent = P.cur.topics.length > MAX_TOPICS
-      ? "예전 자료에서 설명회 " + P.cur.topics.length + "개를 가져왔어요. 대표로 보여 드릴 " + MAX_TOPICS + "개만 남기고, 나머지는 「이 설명회 빼기」로 빼 주세요." : "";
   }
 
   function topicOk(t) {
@@ -231,7 +227,7 @@
       { ok: true, t: "소개 내용", s: changed ? changed + "곳 수정" : "그대로" },
       { ok: true, t: "관련 링크", s: P.cur.links.filter(function (l) { return l.url; }).length + "개" },
       { ok: hasPhoto(), t: "사진", s: (hasPhoto() ? "프로필 있음" : "프로필 사진 필요") + " · 현장 " + photoN + "장" },
-      { ok: okTopics > 0 && okTopics === P.cur.topics.length && P.cur.topics.length <= MAX_TOPICS, t: "내 설명회", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
+      { ok: okTopics > 0 && okTopics === P.cur.topics.length, t: "내 설명회", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
       { ok: agreedAll(), t: "확인 및 동의", s: AGREES.filter(function (id) { return P.cur[id]; }).length + " / 3개 동의" }
     ];
     $("progress").innerHTML = items.map(function (x) {
@@ -271,7 +267,6 @@
     if (P.cur.slogan.trim().length >= SLOGAN_MAX) errs.push({ el: document.querySelector('[data-in="slogan"]'), msg: "슬로건을 " + SLOGAN_MAX + "자보다 짧게 줄여 주세요. (지금 " + P.cur.slogan.trim().length + "자예요)" });
     if (!hasPhoto()) { $("secPhoto").classList.add("err"); errs.push({ el: $("secPhoto"), msg: "프로필 사진을 올려 주세요." }); }
     if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "설명회를 1개 이상 적어 주세요." });
-    if (P.cur.topics.length > MAX_TOPICS) errs.push({ el: $("secTopics"), msg: "설명회는 " + MAX_TOPICS + "개까지만 남겨 주세요. (지금 " + P.cur.topics.length + "개예요)" });
     P.cur.topics.forEach(function (t, i) {
       if (!topicOk(t)) {
         var el = document.querySelector('[data-ti="' + i + '"]');
@@ -440,7 +435,6 @@
       rows[rows.length - 1].querySelector("select").focus();
     });
     $("addTopic").addEventListener("click", function () {
-      if (P.cur.topics.length >= MAX_TOPICS) return;
       P.cur.topics.push(emptyTopic());
       renderTopics();
       renderProgress();
