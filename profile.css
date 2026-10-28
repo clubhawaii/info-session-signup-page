@@ -158,6 +158,9 @@
 .link-guide + .sub { margin-top: 14px !important; }
 .link-guide .no { margin: 8px 0 0; color: var(--red, #d33); }
 .link-warn { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--red, #d33); }
+.link-warn.ok { color: #1a7f45; }
+.link-warn.wait { color: var(--ink-60); }
+.link-guide a { color: var(--blue); }
 .link-row.bad input, .link-row.bad select { border-color: var(--red, #d33); }
 .agree { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); line-height: 1.6; }
 .agree span b { color: var(--ink); }

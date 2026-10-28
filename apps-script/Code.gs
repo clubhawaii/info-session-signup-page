@@ -75,8 +75,9 @@ var CONF_ROWS = [
   ['결제 방법', '', '확정·결제 안내 알림톡에 들어갑니다. 예) 계좌이체 ○○은행 000-0000-0000 (예금주 ○○○). 비워 두면 「담당자가 따로 안내드립니다」로 나갑니다.']
 ];
 var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내용'];
-// 소장님이 넣을 수 있는 링크 구분 (config.js의 LINK_TYPES와 같게) — 기준 밖 링크는 저장·노출하지 않음
-var LINK_TYPES = ['클럽하와이 유튜브', '클럽하와이 블로그', '본인 강의 영상', '방송·기사', '저서'];
+// 소장님이 넣을 수 있는 링크 — 클럽하와이 유튜브·블로그에 있는 본인 영상·글만 (config.js와 같게). 기준 밖 링크는 저장·노출하지 않음
+var LINK_TYPES = ['클럽하와이 유튜브', '클럽하와이 블로그'];
+var CH_YOUTUBE = '@ISYOUHAWAII', CH_YOUTUBE_ID = 'UCpPQizkoUXzT-xN_ELtEMfA', CH_BLOG = 'isyou0943';
 
 /*
  * 알림톡 문구 — 카카오 템플릿 검수에 이 글을 그대로 등록합니다(#{…}는 변수).
@@ -971,6 +972,11 @@ function profileSubmit_(d) {
   var hit = coachByPhone_(d.phone);
   if (!hit) return { ok: false, error: '번호를 확인하지 못했습니다. 다시 들어와 주세요.' };
   var data = cleanProfile_(d.data || {});
+  for (var k = 0; k < data.links.length; k++) {
+    if (data.links[k].type !== '클럽하와이 유튜브') continue;
+    var bad = ytChannelProblem_(data.links[k].url);
+    if (bad) return { ok: false, error: '링크 ' + (k + 1) + ': ' + bad };
+  }
   if (!data.topics.length) return { ok: false, error: '설명회를 1개 이상 적어 주세요.' };
   if (!data.agreePrivacy || !data.agreePriority || !data.agreePublish) return { ok: false, error: '확인 및 동의 세 항목에 모두 체크해 주세요.' };
   if (!data.photo) return { ok: false, error: '프로필 사진을 올려 주세요.' };
@@ -989,19 +995,31 @@ function profileSubmit_(d) {
   return { ok: true };
 }
 
+function ytId_(u) { var m = String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/); return /youtube\.com|youtu\.be/i.test(u) && m ? m[1] : ''; }
+function blogOk_(u) {
+  var id = CH_BLOG.toLowerCase(), x = String(u).toLowerCase();
+  if (x.indexOf('blog.naver.com') < 0) return false;
+  return x.indexOf('blog.naver.com/' + id + '/') >= 0 && /\/\d{5,}/.test(x) || x.indexOf('blogid=' + id) >= 0 && /logno=\d+/.test(x);
+}
+/** 링크 모양 검사 — 클럽하와이 유튜브 영상 하나 / 클럽하와이 블로그 글 하나 */
 function linkProblem_(l, types) {
-  var u = String(l.url || "").trim(), t = l.type;
-  if (!u) return "";
-  if (types.indexOf(t) < 0) return "구분을 골라 주세요.";
-  if (!/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(u)) return "주소를 확인해 주세요.";
-  if (/instagram\.com|facebook\.com|tiktok\.com|open\.kakao\.com|pf\.kakao\.com|smartstore\.naver\.com|forms\.gle|docs\.google\.com\/forms|linktr\.ee/i.test(u)) return "SNS·상담·구매 링크는 넣을 수 없어요.";
-  var yt = /youtube\.com|youtu\.be/i.test(u), vid = /(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)[\w-]{11}/.test(u);
-  if (yt && !vid) return "유튜브 채널 주소가 아니라 영상 하나의 주소를 넣어 주세요.";
-  if ((t === "클럽하와이 유튜브" || t === "본인 강의 영상") && !vid) return "유튜브 영상 하나의 주소를 넣어 주세요.";
-  var blog = /blog\.naver\.com|tistory\.com|brunch\.co\.kr/i.test(u);
-  if (t === "클럽하와이 블로그" && !(blog && /\/\d{5,}|logNo=\d+/.test(u))) return "블로그 홈이 아니라 클럽하와이 블로그 글 하나의 주소를 넣어 주세요.";
-  if (blog && t !== "클럽하와이 블로그") return "개인 블로그는 넣을 수 없어요. 클럽하와이 블로그 글이면 구분을 「클럽하와이 블로그」로 골라 주세요.";
-  return "";
+  var u = String(l.url || '').trim(), t = l.type;
+  if (!u || types.indexOf(t) < 0) return '구분';
+  if (t === '클럽하와이 유튜브' && !ytId_(u)) return '클럽하와이 유튜브 영상 하나의 주소가 아닙니다.';
+  if (t === '클럽하와이 블로그' && !blogOk_(u)) return '클럽하와이 블로그 글 하나의 주소가 아닙니다.';
+  return '';
+}
+/** 유튜브 영상이 클럽하와이 채널 영상인지 (oEmbed) — 문제가 없으면 '' */
+function ytChannelProblem_(u) {
+  try {
+    var res = UrlFetchApp.fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://youtu.be/' + ytId_(u)), { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return '영상을 확인할 수 없어요. 클럽하와이 유튜브에 공개된 영상인지 확인해 주세요.';
+    var j = JSON.parse(res.getContentText()), a = String(j.author_url || '').toLowerCase();
+    if (a.slice(-CH_YOUTUBE.length - 1) === '/' + CH_YOUTUBE.toLowerCase() || a.indexOf(CH_YOUTUBE_ID.toLowerCase()) >= 0) return '';
+    return '클럽하와이 유튜브 채널의 영상이 아니에요. (이 영상의 채널: ' + j.author_name + ')';
+  } catch (e) {
+    return '';   // 확인 서버 문제면 막지 않음 — 본사가 반영 전에 확인
+  }
 }
 
 /** 받은 값을 정해진 모양으로만 남김 (모르는 칸은 버림, 글자 수 제한) */
