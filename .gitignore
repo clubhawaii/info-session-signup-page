@@ -16,3 +16,6 @@ dist/
 이즈유 프로필 브랜딩 이미지/
 seed/
 local-data.js
+
+# 내부 산출물 (정리 PDF·예시 엑셀 등)
+outputs/
