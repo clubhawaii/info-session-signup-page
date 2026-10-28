@@ -6,8 +6,8 @@
   <title>강연자 정보 입력</title>
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261028a">
-  <link rel="stylesheet" href="profile.css?v=20261028a">
+  <link rel="stylesheet" href="styles.css?v=20261028c">
+  <link rel="stylesheet" href="profile.css?v=20261028c">
 </head>
 <body class="pf">
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 아무 번호나 입력하면 예시 강연자로 들어가요. 제출해도 저장되지 않아요.</div>
@@ -173,7 +173,7 @@
 
         <div class="pf-submit">
           <button type="submit" class="btn primary" id="submitBtn">제출하기</button>
-          <p class="hint">제출하신 내용은 본사에서 확인한 뒤 소개 페이지에 반영해 드려요.<br>같은 번호로 언제든 다시 들어와 고치실 수 있어요.</p>
+          <p class="hint"><b>제출하셔도 바로 보이지 않아요.</b> 본사에서 확인한 뒤 원장님 신청 화면에 반영해 드려요.<br>같은 번호로 언제든 다시 들어와 고치실 수 있어요. 반영은 마지막으로 제출하신 내용으로 됩니다.</p>
         </div>
       </form>
 
@@ -193,16 +193,25 @@
     <div class="login-card">
       <div class="done-ico">✓</div>
       <h1>제출이 완료됐어요</h1>
-      <p>소중한 시간 내 주셔서 감사합니다.<br>본사에서 확인한 뒤 소개 페이지에 반영해 드릴게요.<br>고치고 싶은 내용이 생기면,<br>같은 번호로 언제든 다시 들어와 주세요.</p>
+      <p>소중한 시간 내 주셔서 감사합니다.<br><b>제출하신 내용은 바로 보이지 않고,</b><br>본사에서 확인한 뒤 원장님 신청 화면에 반영해 드릴게요.<br>고치고 싶은 내용이 생기면 같은 번호로 다시 들어와 주세요.<br>마지막으로 제출하신 내용으로 반영됩니다.</p>
+      <div class="req-guide">
+        <b>출강 요청이 오면 이렇게 응답해 주세요</b>
+        <ul>
+          <li>원장님이 소장님을 고르시면 알림톡으로 출강 요청이 가요.</li>
+          <li>요청을 받은 때부터 <b>24시간 안에</b> 「가능 / 시간 조율 필요 / 불가」 중 하나로 답해 주세요. <b>밤·주말도 포함</b>해서 셉니다.</li>
+          <li>기한 안에 답이 없으면 <b>「불가」로 처리</b>돼요.</li>
+          <li><b>한 번 보낸 응답은 바꿀 수 없어요.</b> 바꾸셔야 하면 본사 담당자에게 연락해 주세요.</li>
+        </ul>
+      </div>
       <button type="button" class="btn ghost" id="again">내용 다시 보기</button>
     </div>
   </main>
 
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="config.js?v=20261028a"></script>
-  <script src="sample-data.js?v=20261028a"></script>
+  <script src="config.js?v=20261028c"></script>
+  <script src="sample-data.js?v=20261028c"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="profile.js?v=20261028a"></script>
+  <script src="profile.js?v=20261028c"></script>
 </body>
 </html>

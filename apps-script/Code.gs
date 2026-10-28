@@ -1,32 +1,29 @@
 /**
  * 강연자 설명회 신청 페이지 — 구글시트 연동 스크립트
- * 흐름: 원장님 신청(소장님 여러 명 + 소장님별 설명회 하나 + 날짜 하나·시작 시간 + 요청사항)
+ * 흐름: 원장님 신청(소장님 최대 MAX_PICKS명 + 소장님별 설명회 하나 + 날짜 하나·시작 시간 + 요청사항)
  *       → 고른 소장님께 각각 출강 요청 알림톡(RESPONSE_HOURS 안에 응답, 마감 REMIND_HOURS 전 독촉 한 번) + 원장님 접수 알림 + 본사 알림
  *       → 소장님이 coach.html에서 「가능 / 시간 조율 필요 / 불가」 (기한 안에 답이 없으면 「응답 없음(불가)」)
- *       → 모든 소장님이 답하거나 기한이 지나면 원장님께 결과를 알림톡 한 통으로 (가능한 소장님이 있으면 choose.html 링크)
- *       → 원장님이 한 분을 고르면 본사·선택된 소장님·나머지 소장님께 알림 → 담당자가 확정 연락 후 상태 「일정확정」 → 결제안내 → 결제완료 → 진행완료
+ *       → 가능·시간 조율 응답은 그때마다 본사에 알림, 모두 답하거나 기한이 지나면 본사에 응답 마감 알림
+ *       → 본사 담당자가 소장님·원장님과 직접 조율 → 시트에 확정 내용·금액을 넣고 메뉴 「확정·결제 안내 보내기」
+ *         (원장님께 확정·결제 안내, 확정 소장님께 확정 안내, 나머지 소장님께 다른 소장님으로 진행 안내)
+ *       → 결제완료 → 진행완료
+ * 원장님은 신청할 때 말고는 본사 담당자와 직접 조율합니다(원장님이 소장님을 고르는 화면 없음).
  * 같은 소장님 같은 날 일정: 시작 시간 앞뒤 OVERLAP_HOURS 안이면 겹침. 확정 일정과 겹치면 원장님 신청을 막고, 대기 중인 요청과 겹치면 소장님 화면에 표시만 함.
+ * 본사 알림 받을 사람은 시트 「본사 알림」에, 결제 방법은 「설정」에 적습니다(이 파일은 공개 저장소에 있어 번호를 적지 않음).
  * 설치 방법은 README.md의 "구글시트 연결" 참고.
  */
 
-// ▼ 본사 알림 받을 사람 (알림톡). 번호가 빈 줄은 건너뜁니다.
-var HQ = [
-  { name: '담당자', phone: '' },
-  { name: '이사님', phone: '' },
-  { name: '대표님', phone: '' }
-];
-// ▼ 본사 알림 메일 (선택, 여러 개면 쉼표로)
-var HQ_EMAIL = '';
-// ▼ 소장님 응답 페이지 · 원장님 결과(소장님 선택) 페이지 주소
+// ▼ 소장님 응답 페이지 주소
 var COACH_PAGE_URL = 'https://clubhawaii.github.io/info-session-signup-page/coach.html';
-var CHOOSE_PAGE_URL = 'https://clubhawaii.github.io/info-session-signup-page/choose.html';
-// ▼ 소장님 응답 기한(시간) — 지나면 「응답 없음(불가)」. config.js의 RESPONSE_HOURS와 같게
+// ▼ 원장님이 한 번에 고를 수 있는 소장님 수 (config.js의 MAX_PICKS와 같게)
+var MAX_PICKS = 3;
+// ▼ 소장님 응답 기한(시간, 밤·주말 포함) — 지나면 「응답 없음(불가)」. config.js의 RESPONSE_HOURS와 같게
 var RESPONSE_HOURS = 24;
 // ▼ 마감 몇 시간 전에 아직 답이 없는 소장님께 독촉 알림톡을 한 번 보낼지
 var REMIND_HOURS = 6;
 // ▼ 같은 날 일정 겹침 기준(시간) — config.js의 OVERLAP_HOURS와 같게
 var OVERLAP_HOURS = 3;
-// ▼ 결제 기한: 상태를 「결제안내」로 바꾼 때부터 (시간). 기한이 주말에 걸리면 월요일 같은 시각으로 미룸
+// ▼ 결제 기한: 확정·결제 안내를 보낸 때부터 (시간). 기한이 주말에 걸리면 월요일 같은 시각으로 미룸
 var PAY_HOURS = 24;
 // ▼ 진행일까지 최소 남아야 하는 날 수 (config.js의 MIN_DAYS와 같게)
 var MIN_DAYS = 14;
@@ -38,31 +35,31 @@ var MIN_DAYS = 14;
  * 설정 전이거나 템플릿 ID가 없으면 보내지 않고 「알림기록」 시트에 "미발송(설정 전)"으로 문구만 남깁니다.
  */
 
-var SH = { APPS: '신청내역', ANS: '소장님 응답', COACH: '강연자', TOPIC: '대표 주제', SUBMIT: '프로필 제출', BLOCK: '예약불가', LOG: '알림기록' };
+var SH = { APPS: '신청내역', ANS: '소장님 응답', COACH: '강연자', TOPIC: '설명회', SUBMIT: '프로필 제출', BLOCK: '예약불가', HQ: '본사 알림', CONF: '설정', LOG: '알림기록' };
 var TZ = 'Asia/Seoul';
 // 신청 한 건의 상태
 var ST = {
-  ASKING: '소장님 응답 대기', RESULT: '원장님 선택 대기', CHOSEN: '원장님 선택 완료', NONE: '가능한 소장님 없음',
+  ASKING: '소장님 응답 대기', RESULT: '본사 조율 중', NONE: '가능한 소장님 없음',
   CONFIRMED: '일정확정', PAY: '결제안내', PAID: '결제완료', DONE: '진행완료', CANCEL: '취소'
 };
 var STATUS = Object.keys(ST).map(function (k) { return ST[k]; });
-var NEEDS_HQ = [ST.CHOSEN, ST.NONE];   // 본사가 다음 행동을 해야 하는 상태
+var NEEDS_HQ = [ST.RESULT, ST.NONE];   // 본사가 다음 행동을 해야 하는 상태
 // 소장님 한 분의 응답
 var NO_PHONE_MEMO = '연락처가 없어 요청을 보내지 못함';
-var ANS = { WAIT: '응답 대기', OK: '가능', ADJ: '시간 조율 필요', NO: '불가', NONE: '응답 없음(불가)', PICKED: '원장님이 선택', RELEASED: '다른 소장님으로 진행' };
+var ANS = { WAIT: '응답 대기', OK: '가능', ADJ: '시간 조율 필요', NO: '불가', NONE: '응답 없음(불가)', PICKED: '확정', RELEASED: '다른 소장님으로 진행' };
 
 var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '진행 장소', '회원 여부', '설명회 대상', '예상 참석 인원',
-  '희망일', '시작 시간', '요청사항', '요청사항 확인', '신청 소장님', '응답 기한', '응답 현황', '결과 안내 일시',
-  '원장님 선택', '선택 일시', '확정 강연자', '확정 설명회', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
-  '결제 안내 문구', '담당자', '메모', '결제 기한 알림', '원장님 토큰'];
+  '희망일', '시작 시간', '요청사항', '요청사항 확인', '신청 소장님', '응답 기한', '응답 현황', '응답 마감 일시',
+  '확정 강연자', '확정 설명회', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
+  '결제 안내 문구', '확정 안내 일시', '담당자', '메모', '결제 기한 알림'];
 // 소장님 응답 — 신청 한 건에 고른 소장님 수만큼 줄이 생김
 var ANS_HEADERS = ['신청번호', '소장님', '설명회', '희망일', '시작 시간', '학원명', '요청 일시', '응답 기한', '응답', '응답 일시', '소장님 메모', '독촉 알림', '응답 토큰'];
 // 강연자 — 줄 단위 칸(경력·관련 링크)은 한 줄에 하나씩. 슬로건은 셀 안 줄바꿈. 관련 링크 한 줄 = 「구분 | 주소」
 // 클럽하와이 직함은 본사가 정하는 줄 — 경력 맨 위에 항상 보이고, 소장님 입력 페이지에서는 고칠 수 없음
 var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '관련 링크',
   '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
-// 대표 주제(= 소장님 설명회 상품) — 소장님 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
-var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '주제명', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
+// 설명회(= 소장님 상품) — 소장님 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
+var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '설명회 이름', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
 var SUBMIT_HEADERS = ['제출일시', '강연자', '상태', '바뀐 항목', '변경 내용', '개인정보 동의', '게시 동의', '우선 수락 동의', '반영일시', '데이터'];
 var SUBMIT_ST = { WAIT: '확인 대기', DONE: '반영 완료', SKIP: '반영 안 함' };
@@ -70,6 +67,13 @@ var SUBMIT_ST = { WAIT: '확인 대기', DONE: '반영 완료', SKIP: '반영 �
 var PHOTO_FOLDER = '강연자 사진';
 // 예약불가 — 시작 시간이 비어 있으면 그날 하루 전체가 막힘
 var BLOCK_HEADERS = ['강연자', '날짜', '사유', '신청번호', '시작 시간'];
+// 본사 알림 — 한 줄에 한 사람. 휴대폰이 있으면 알림톡, 메일이 있으면 메일
+var HQ_HEADERS = ['이름', '휴대폰', '메일', '메모'];
+// 설정 — 항목 이름은 바꾸지 말고 「값」만 고칩니다
+var CONF_HEADERS = ['항목', '값', '설명'];
+var CONF_ROWS = [
+  ['결제 방법', '', '확정·결제 안내 알림톡에 들어갑니다. 예) 계좌이체 ○○은행 000-0000-0000 (예금주 ○○○). 비워 두면 「담당자가 따로 안내드립니다」로 나갑니다.']
+];
 var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내용'];
 
 /*
@@ -77,39 +81,53 @@ var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내
  * 문구를 바꾸면 템플릿도 다시 검수받아야 합니다.
  */
 var TEMPLATES = {
+  // ── 원장님 ──
   DIRECTOR_RECEIVED:
     '[클럽하와이] 설명회 신청이 접수되었습니다\n\n#{원장님} 원장님, 신청해 주셔서 감사합니다.\n\n' +
     '■ 신청번호: #{신청번호}\n■ 희망 일정: #{일정}\n■ 신청 소장님: #{소장님목록}\n\n' +
-    '고르신 소장님께 각각 출강 요청을 보냈습니다. 소장님은 #{응답기한}까지 가능 여부를 답하며, 그때까지 답이 없으면 「불가」로 안내됩니다.\n' +
-    '모든 소장님이 답하거나 기한이 지나면 결과를 알림톡 한 통으로 보내 드립니다.\n\n요청사항은 담당자가 확인한 뒤 연락드립니다.',
+    '고르신 소장님들께 일정이 되는지 먼저 확인하고 있습니다.\n가능한 소장님과 조율한 뒤 담당자가 최대한 빠르게 연락드리겠습니다.\n\n' +
+    '요청사항도 담당자가 확인한 뒤 함께 안내드립니다.',
+  DIRECTOR_CONFIRMED:
+    '[클럽하와이] 설명회 일정 확정 및 결제 안내\n\n#{원장님} 원장님, 설명회 일정이 확정되었습니다.\n\n' +
+    '■ 소장님: #{확정강연자}\n■ 설명회: #{확정설명회}\n■ 일정: #{확정일시}\n■ 장소: #{장소}\n\n' +
+    '■ 결제 금액: #{결제금액}\n■ 결제 기한: #{결제기한}\n■ 결제 방법: #{결제방법}\n\n' +
+    '■ 취소·환불: #{환불규정}\n\n궁금한 점은 담당자에게 편하게 연락 주세요.',
+  // ── 소장님 ──
   COACH_REQUEST:
     '[클럽하와이] 설명회 출강 요청\n\n#{소장님}님, 설명회 출강 요청이 들어왔습니다.\n\n' +
     '■ 설명회: #{설명회}\n■ 일정: #{일정}\n■ 학원: #{학원명}\n■ 장소: #{장소}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 요청사항: #{요청사항}\n\n' +
     '아래 링크에서 「가능 / 시간 조율 필요 / 불가」 중 하나를 골라 주세요.\n▶ #{링크}\n\n' +
-    '※ #{응답기한}까지 응답해 주세요. 기한 안에 응답이 없으면 원장님께 「불가」로 안내됩니다.',
+    '※ #{응답기한}까지 응답해 주세요. (밤·주말 포함 ' + RESPONSE_HOURS + '시간) 기한 안에 응답이 없으면 「불가」로 처리됩니다.\n' +
+    '※ 한 번 보낸 응답은 바꿀 수 없어요. 바꾸셔야 하면 본사 담당자에게 연락 주세요.',
   COACH_REMIND:
     '[클럽하와이] 설명회 출강 요청 — 응답 마감이 다가왔습니다\n\n#{소장님}님, 아래 요청에 아직 응답하지 않으셨습니다.\n\n' +
-    '■ 설명회: #{설명회}\n■ 일정: #{일정}\n■ 학원: #{학원명}\n\n▶ #{링크}\n\n※ #{응답기한}까지 응답이 없으면 원장님께 「불가」로 안내됩니다.',
+    '■ 설명회: #{설명회}\n■ 일정: #{일정}\n■ 학원: #{학원명}\n\n▶ #{링크}\n\n※ #{응답기한}까지 응답이 없으면 「불가」로 처리됩니다.',
+  COACH_CONFIRMED:
+    '[클럽하와이] 설명회 출강 확정 안내\n\n#{소장님}님, 응답해 주셔서 감사합니다.\n아래 설명회가 소장님 출강으로 확정되었습니다.\n\n' +
+    '■ 설명회: #{확정설명회}\n■ 일정: #{확정일시}\n■ 학원: #{학원명}\n■ 장소: #{장소}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 요청사항: #{요청사항}\n\n' +
+    '준비에 필요한 내용은 담당자가 따로 연락드리겠습니다.\n좋은 설명회 부탁드립니다!',
+  COACH_RELEASED:
+    '[클럽하와이] 설명회 출강 요청 결과 안내\n\n#{소장님}님, 바쁘신 중에도 시간을 내어 응답해 주셔서 정말 감사합니다.\n\n' +
+    '#{학원명} 설명회(#{일정})는 원장님과 일정을 맞추는 과정에서 이번에는 다른 소장님과 진행하게 되었습니다.\n' +
+    '소장님께서 흔쾌히 시간을 내어 주신 덕분에 원장님께 좋은 선택지를 드릴 수 있었습니다.\n\n' +
+    '소장님과 꼭 맞는 요청이 오면 다시 가장 먼저 연락드리겠습니다. 늘 감사합니다.',
+  COACH_CLOSED:
+    '[클럽하와이] 설명회 출강 요청 마감 안내\n\n#{소장님}님, 안녕하세요.\n\n' +
+    '#{학원명} 설명회(#{일정}) 출강 요청은 다른 소장님과 일정이 먼저 확정되어 마감되었습니다.\n' +
+    '이 요청에는 따로 응답하지 않으셔도 됩니다.\n\n바쁘신 중에 연락드려 죄송하고, 다음 요청 때 다시 찾아뵙겠습니다. 감사합니다.',
+  // ── 본사 ──
   HQ_NEW:
     '[설명회 신청] 새 신청 #{신청번호}\n\n학원: #{학원명} (#{원장님} 원장님 · #{회원})\n연락처: #{연락처}\n진행 장소: #{장소}\n' +
     '대상: #{대상} · 예상 인원 #{인원}\n일정: #{일정}\n요청사항: #{요청사항}\n\n■ 신청 소장님 · 설명회\n#{소장님설명회}\n\n' +
-    '소장님께 각각 출강 요청을 보냈습니다(응답 기한 #{응답기한}). 요청사항이 있으면 원장님께 연락해 주세요.',
-  DIRECTOR_RESULT:
-    '[클럽하와이] 설명회 소장님 응답 결과\n\n#{원장님} 원장님, 신청하신 설명회(#{일정})의 소장님 응답 결과를 알려 드립니다.\n\n#{결과}\n\n' +
-    '아래 링크에서 진행할 소장님 한 분을 골라 주세요. 고르시면 담당자가 확정 일정과 금액을 안내드립니다.\n▶ #{링크}',
-  DIRECTOR_NONE:
-    '[클럽하와이] 설명회 소장님 응답 결과\n\n#{원장님} 원장님, 신청하신 설명회(#{일정})에 아쉽게도 가능한 소장님이 없었습니다.\n\n#{결과}\n\n' +
-    '담당자가 다른 날짜나 소장님으로 연락드리겠습니다.',
+    '소장님께 각각 출강 요청을 보냈습니다(응답 기한 #{응답기한}). 가능 응답이 오면 바로 알려 드립니다.',
+  HQ_ANSWER:
+    '[설명회] 소장님 응답 #{신청번호}\n\n#{소장님} 소장님: #{응답}#{메모}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n일정: #{일정}\n설명회: #{설명회}\n\n' +
+    '■ 지금까지 응답\n#{응답현황}\n\n소장님·원장님과 조율해 주세요.',
   HQ_RESULT:
-    '[설명회] 응답 결과 안내 #{신청번호}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n일정: #{일정}\n\n#{결과}\n\n#{다음}',
-  HQ_CHOSEN:
-    '[설명회] 원장님 선택 #{신청번호}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n선택: #{선택}\n설명회: #{확정설명회}\n일정: #{일정}\n\n' +
-    '원장님께 확정 연락 후 시트 상태를 「일정확정」으로 바꿔 주세요.',
-  COACH_CHOSEN:
-    '[클럽하와이] 설명회 진행 소장님으로 선택되셨습니다\n\n#{소장님}님, #{학원명} 원장님이 소장님을 선택하셨습니다.\n\n' +
-    '■ 설명회: #{설명회}\n■ 일정: #{일정}\n\n#{조율}담당자가 원장님과 최종 확정한 뒤 다시 안내드리겠습니다.',
-  COACH_RELEASED:
-    '[클럽하와이] 설명회 출강 요청 결과\n\n#{소장님}님, 응답해 주셔서 감사합니다.\n#{학원명}(#{일정}) 설명회는 원장님이 다른 소장님과 진행하기로 하셨습니다.\n다음 요청 때 다시 연락드리겠습니다.',
+    '[설명회] 소장님 응답 마감 #{신청번호}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n일정: #{일정}\n\n#{결과}\n\n#{다음}',
+  HQ_PROFILE:
+    '[강연자 정보] #{소장님} 소장님이 정보를 제출했습니다\n\n바뀐 항목: #{바뀐항목}\n\n' +
+    '시트 「프로필 제출」에서 내용을 확인한 뒤, 그 줄을 고르고 메뉴 「설명회 → 선택한 프로필 제출을 강연자 정보에 반영」을 눌러 주세요.',
   HQ_PAY_OVERDUE:
     '[설명회] 결제 기한 지남 #{신청번호}\n\n#{학원명} (#{원장님} 원장님 · #{연락처})\n확정: #{확정강연자} · #{확정일시}\n결제 기한: #{결제기한}\n\n' +
     '원장님께 확인 후 결제 또는 취소 처리해 주세요. 취소하면 강연자 날짜가 다시 열립니다.'
@@ -123,6 +141,7 @@ function acol_(name) { return ANS_HEADERS.indexOf(name) + 1; }
 /** 시트·머리글·드롭다운·조건부 서식·트리거를 만듭니다. 편집기에서 이 함수를 한 번 실행하세요. */
 function setupSheets() {
   var ss = SpreadsheetApp.getActive();
+  ss.setSpreadsheetTimeZone(TZ);
   var apps = ensureSheet_(ss, SH.APPS, APP_HEADERS);
   var ans = ensureSheet_(ss, SH.ANS, ANS_HEADERS);
   ensureSheet_(ss, SH.COACH, COACH_HEADERS);
@@ -132,6 +151,12 @@ function setupSheets() {
     .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([SUBMIT_ST.WAIT, SUBMIT_ST.DONE, SUBMIT_ST.SKIP], true).build());
   sub.hideColumns(SUBMIT_HEADERS.indexOf('데이터') + 1);
   ensureSheet_(ss, SH.BLOCK, BLOCK_HEADERS);
+  var hq = ensureSheet_(ss, SH.HQ, HQ_HEADERS);
+  if (hq.getLastRow() === 1) hq.getRange(2, 1, 3, 1).setValues([['담당자'], ['이사님'], ['대표님']]);
+  hq.getRange(2, 2, hq.getMaxRows() - 1, 1).setNumberFormat('@');   // 0으로 시작하는 번호가 숫자로 바뀌지 않게
+  var conf = ensureSheet_(ss, SH.CONF, CONF_HEADERS);
+  var have = rows_(conf).map(function (r) { return String(r['항목']).trim(); });
+  CONF_ROWS.forEach(function (r) { if (have.indexOf(r[0]) < 0) conf.appendRow(r); });
   ensureSheet_(ss, SH.LOG, LOG_HEADERS);
 
   var rows = apps.getMaxRows() - 1;
@@ -140,10 +165,11 @@ function setupSheets() {
   ['확정일', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감'].forEach(function (h) {
     apps.getRange(2, col_(h), rows, 1).setNumberFormat('yyyy-mm-dd');
   });
-  ['신청일시', '응답 기한', '결과 안내 일시', '선택 일시', '결제 기한', '결제 기한 알림'].forEach(function (h) {
+  ['신청일시', '응답 기한', '응답 마감 일시', '결제 기한', '확정 안내 일시', '결제 기한 알림'].forEach(function (h) {
     apps.getRange(2, col_(h), rows, 1).setNumberFormat('yyyy-mm-dd hh:mm');
   });
-  apps.hideColumns(col_('결제 기한 알림'), 2);   // 결제 기한 알림 · 원장님 토큰
+  apps.getRange(2, col_('확정 시간'), rows, 1).setNumberFormat('@');
+  apps.hideColumns(col_('결제 기한 알림'));
   ['요청 일시', '응답 기한', '응답 일시', '독촉 알림'].forEach(function (h) {
     ans.getRange(2, acol_(h), ans.getMaxRows() - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm');
   });
@@ -157,10 +183,15 @@ function setupSheets() {
 
   var handlers = ScriptApp.getProjectTriggers().map(function (t) { return t.getHandlerFunction(); });
   if (handlers.indexOf('onEditInstalled') < 0) ScriptApp.newTrigger('onEditInstalled').forSpreadsheet(ss).onEdit().create();
-  // 응답 기한·독촉은 15분마다 확인 (기한이 지난 뒤 늦어도 15분 안에 원장님 결과가 나감)
+  // 응답 기한·독촉은 15분마다 확인 (기한이 지난 뒤 늦어도 15분 안에 본사에 마감 알림)
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'checkDeadlines') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('checkDeadlines').timeBased().everyMinutes(15).create();
 
+  // 스크립트 시간대는 코드로 못 바꿔서 확인만 함
+  if (Session.getScriptTimeZone() !== TZ) {
+    SpreadsheetApp.getUi().alert('스크립트 시간대가 서울이 아닙니다 (지금: ' + Session.getScriptTimeZone() + ').\n' +
+      '확장 프로그램 → Apps Script → ⚙ 프로젝트 설정 → 시간대를 「(GMT+09:00) 서울」로 바꾼 뒤 setupSheets를 한 번 더 실행해 주세요.');
+  }
   ss.toast('시트 준비가 끝났습니다. 새로고침하면 위쪽에 「설명회」 메뉴가 생깁니다.');
 }
 
@@ -180,9 +211,9 @@ function colLetter_(n) {
   return s;
 }
 
-/** 시트를 열면 「설명회」 메뉴를 붙입니다. */
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('설명회')
+    .addItem('선택한 신청 확정·결제 안내 보내기', 'menuConfirm')
     .addItem('선택한 신청에 소장님 추가 요청', 'menuAddCoach')
     .addSeparator()
     .addItem('선택한 프로필 제출을 강연자 정보에 반영', 'menuApplyProfile')
@@ -195,7 +226,6 @@ function doGet(e) {
   try {
     var p = (e && e.parameter) || {};
     if (p.action === 'request') return json_(getRequest_(p.t));
-    if (p.action === 'result') return json_(getResult_(p.t));
     var ss = SpreadsheetApp.getActive();
     var topics = topicsByCoach_(true);
     var coaches = rows_(ss.getSheetByName(SH.COACH)).filter(function (r) {
@@ -242,31 +272,11 @@ function sameDay_(coach, ds, tm, id) {
   rows_(SpreadsheetApp.getActive().getSheetByName(SH.ANS)).forEach(function (r) {
     if (String(r['소장님']).trim() !== coach || dateStr_(r['희망일']) !== ds || String(r['신청번호']) === id) return;
     var ans = String(r['응답']);
-    if ([ANS.WAIT, ANS.OK, ANS.ADJ, ANS.PICKED].indexOf(ans) < 0) return;
+    if ([ANS.WAIT, ANS.OK, ANS.ADJ].indexOf(ans) < 0) return;
     if (blocks_().some(function (b) { return b.id === String(r['신청번호']); })) return;   // 이미 확정으로 위에 나옴
     out.push({ time: timeStr_(r['시작 시간']), state: ans === ANS.WAIT ? '다른 요청 (응답 대기)' : '다른 요청 (' + ans + ')', clash: overlap_(timeStr_(r['시작 시간']), tm), academy: String(r['학원명'] || '') });
   });
   return out.sort(function (x, y) { return String(x.time).localeCompare(String(y.time)); });
-}
-
-/** 원장님 결과 페이지용 — 원장님 토큰이 맞는 신청의 소장님 응답 결과 */
-function getResult_(token) {
-  var app = findAppByToken_(token);
-  if (!app) return { ok: false, error: '신청을 찾을 수 없습니다. 알림톡의 링크로 다시 들어와 주세요.' };
-  var g = app.get, id = String(g('신청번호')), photos = {};
-  rows_(SpreadsheetApp.getActive().getSheetByName(SH.COACH)).forEach(function (r) { photos[String(r['이름']).trim()] = driveImage_(r['프로필 사진 URL']); });
-  return {
-    ok: true,
-    result: {
-      id: id, academy: String(g('학원명')), director: String(g('원장님 성함')),
-      date: dateStr_(g('희망일')), time: timeStr_(g('시작 시간')), request: String(g('요청사항') || ''),
-      status: String(g('상태')), chosen: String(g('확정 강연자') || ''),
-      answers: ansOf_(id).map(function (a) {
-        var name = String(a.get('소장님')).trim();
-        return { coach: name, product: String(a.get('설명회') || ''), answer: String(a.get('응답')), memo: String(a.get('소장님 메모') || ''), photo: photos[name] || '' };
-      })
-    }
-  };
 }
 
 function driveImage_(url) {
@@ -275,7 +285,7 @@ function driveImage_(url) {
   return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : url;
 }
 
-/* ================= 저장 (신청 · 소장님 응답 · 원장님 선택) ================= */
+/* ================= 저장 (신청 · 소장님 응답) ================= */
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -290,7 +300,6 @@ function doPost(e) {
     if (d.action === 'profileUpload') return json_(profileUpload_(d));
     if (d.action === 'profileSubmit') return json_(profileSubmit_(d));
     if (d.action === 'respond') return json_(respond_(d));
-    if (d.action === 'choose') return json_(choose_(d));
     return json_(apply_(d));
   } catch (err) {
     console.error(err);
@@ -342,8 +351,8 @@ function apply_(d) {
   if (failed.length) v['소장님설명회'] += '\n※ 연락처가 없어 요청을 못 보낸 소장님: ' + failed.join(', ');
   notify_('DIRECTOR_RECEIVED', String(d.director), d.phone, v);
   notifyHQ_('HQ_NEW', v);
-  if (failed.length) refreshApp_(id);   // 모두 답한 상태가 됐으면 결과를 바로 보냄
-  return { ok: true, id: id, due: due.toISOString() };
+  if (failed.length) refreshApp_(id);   // 모두 답한 상태가 됐으면 마감 알림을 바로 보냄
+  return { ok: true, id: id };
 }
 
 function validate_(d) {
@@ -351,7 +360,8 @@ function validate_(d) {
   var req = ['academy', 'director', 'phone', 'address', 'member', 'target'];
   for (var i = 0; i < req.length; i++) if (!String(d[req[i]] || '').trim()) return '필수 항목이 비어 있습니다.';
   if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(d.phone)) return '휴대폰 번호를 확인해 주세요.';
-  if (!Array.isArray(d.picks) || !d.picks.length || d.picks.length > 40) return '소장님을 골라 주세요.';
+  if (!Array.isArray(d.picks) || !d.picks.length) return '소장님을 골라 주세요.';
+  if (d.picks.length > MAX_PICKS) return '소장님은 최대 ' + MAX_PICKS + '명까지 고를 수 있습니다.';
   var names = d.picks.map(function (p) { return String(p && p.coach || '').trim(); });
   if (names.some(function (n, k) { return !n || names.indexOf(n) !== k; })) return '소장님 선택을 확인해 주세요.';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !/^\d{2}:\d{2}$/.test(d.time)) return '희망 날짜와 시작 시간을 확인해 주세요.';
@@ -373,55 +383,27 @@ function respond_(d) {
   if (!ans) return { ok: false, error: '응답을 골라 주세요.' };
   var memo = safe_(String(d.memo || '').slice(0, 500));
   if (ans === ANS.ADJ && !memo) return { ok: false, error: '가능한 시간을 적어 주세요.' };
-  var coach = String(a.get('소장님')).trim();
-  if (ans === ANS.OK && clash_(coach, dateStr_(a.get('희망일')), timeStr_(a.get('시작 시간')), String(a.get('신청번호')))) {
+  var coach = String(a.get('소장님')).trim(), id = String(a.get('신청번호'));
+  if (ans === ANS.OK && clash_(coach, dateStr_(a.get('희망일')), timeStr_(a.get('시작 시간')), id)) {
     return { ok: false, error: '이 시간 앞뒤로 이미 확정된 설명회가 있습니다. 「시간 조율 필요」로 가능한 시간을 알려 주세요.' };
   }
   setAns_(a, { '응답': ans, '응답 일시': new Date(), '소장님 메모': memo });
-  refreshApp_(String(a.get('신청번호')));
+  // 가능·시간 조율 응답은 바로 본사에 — 담당자가 최대한 빨리 원장님과 연결
+  var app = findApp_(id);
+  if (app && ans !== ANS.NO) {
+    var v = coachVars_(vars_(app.get), coach, String(a.get('설명회') || ''), '');
+    v['응답'] = ans;
+    v['메모'] = memo ? ' (' + memo + ')' : '';
+    v['응답현황'] = statusText_(ansOf_(id));
+    notifyHQ_('HQ_ANSWER', v);
+  }
+  refreshApp_(id);
   return { ok: true };
 }
 
-/** 원장님이 결과 페이지에서 소장님 한 분을 고름 */
-function choose_(d) {
-  var app = findAppByToken_(d.t);
-  if (!app) return { ok: false, error: '신청을 찾을 수 없습니다.' };
-  var g = app.get, id = String(g('신청번호'));
-  if (String(g('상태')) !== ST.RESULT) return { ok: false, error: '이미 처리된 신청입니다. (' + g('상태') + ')' };
-  var list = ansOf_(id), coach = String(d.coach || '').trim();
-  var hit = list.filter(function (a) { return String(a.get('소장님')).trim() === coach; })[0];
-  if (!hit || [ANS.OK, ANS.ADJ].indexOf(String(hit.get('응답'))) < 0) return { ok: false, error: '고를 수 없는 소장님입니다.' };
-  var ds = dateStr_(g('희망일')), tm = timeStr_(g('시작 시간')), adj = String(hit.get('응답')) === ANS.ADJ;
-  if (!adj && clash_(coach, ds, tm, id)) return { ok: false, error: '방금 ' + coach + ' 소장님의 다른 일정이 같은 시간에 확정되었습니다. 다른 소장님을 골라 주세요.' };
+/* ================= 응답이 모두 모이면 본사에 마감 알림 ================= */
 
-  var now = new Date(), product = String(hit.get('설명회') || '');
-  setCells_(app.sheet, app.row, {
-    '상태': ST.CHOSEN, '원장님 선택': coach + (adj ? ' (시간 조율 필요)' : ''), '선택 일시': now,
-    '확정 강연자': coach, '확정 설명회': product, '확정일': parseDate_(ds), '확정 시간': tm
-  });
-  var v = vars_(rowGetter_(app.sheet.getRange(app.row, 1, 1, APP_HEADERS.length).getValues()[0]));
-  v['선택'] = coach + (adj ? ' — 시간 조율 필요 (소장님 메모: ' + (hit.get('소장님 메모') || '없음') + ')' : ' — 가능');
-  v['확정설명회'] = product || '요청사항으로 상의';
-  list.forEach(function (a) {
-    var name = String(a.get('소장님')).trim(), ans = String(a.get('응답'));
-    var cv = coachVars_(v, name, String(a.get('설명회') || ''), String(a.get('응답 토큰')));
-    if (name === coach) {
-      setAns_(a, { '응답': ANS.PICKED });
-      cv['조율'] = adj ? '원장님과 시작 시간을 조율해야 합니다. 담당자가 곧 연락드립니다.\n' : '';
-      notify_('COACH_CHOSEN', name, coachPhone_(name), cv);
-    } else if (ans === ANS.OK || ans === ANS.ADJ) {
-      setAns_(a, { '응답': ANS.RELEASED });
-      notify_('COACH_RELEASED', name, coachPhone_(name), cv);
-    }
-  });
-  writeStatus_(app.sheet, app.row, ansOf_(id));
-  notifyHQ_('HQ_CHOSEN', v);
-  return { ok: true };
-}
-
-/* ================= 결과 모아서 안내 ================= */
-
-/** 응답이 바뀔 때마다 신청 줄의 응답 현황을 고치고, 모두 답했으면 원장님께 결과를 보냄 */
+/** 응답이 바뀔 때마다 신청 줄의 응답 현황을 고치고, 모두 답했으면 본사에 마감 알림 */
 function refreshApp_(id) {
   var app = findApp_(id);
   if (!app) return;
@@ -429,14 +411,22 @@ function refreshApp_(id) {
   writeStatus_(app.sheet, app.row, list);
   if (String(app.get('상태')) !== ST.ASKING) return;
   if (list.some(function (a) { return String(a.get('응답')) === ANS.WAIT; })) return;
-  sendResult_(app, list);
+  var r = resultText_(list);
+  setCells_(app.sheet, app.row, { '상태': r.any ? ST.RESULT : ST.NONE, '응답 마감 일시': new Date() });
+  var v = vars_(rowGetter_(app.sheet.getRange(app.row, 1, 1, APP_HEADERS.length).getValues()[0]));
+  v['결과'] = r.text;
+  v['다음'] = r.any
+    ? '가능한 소장님·원장님과 조율한 뒤, 시트에 확정 강연자·확정일·확정 시간·금액을 넣고 메뉴 「설명회 → 선택한 신청 확정·결제 안내 보내기」를 눌러 주세요.'
+    : '가능한 소장님이 없습니다. 원장님께 연락해 다른 날짜·소장님을 정한 뒤 메뉴 「설명회 → 선택한 신청에 소장님 추가 요청」을 써 주세요.';
+  notifyHQ_('HQ_RESULT', v);
 }
 
-function writeStatus_(sh, row, list) {
-  sh.getRange(row, col_('응답 현황')).setValue(list.map(function (a) {
+function statusText_(list) {
+  return list.map(function (a) {
     return a.get('소장님') + ': ' + a.get('응답') + (a.get('소장님 메모') ? ' (' + a.get('소장님 메모') + ')' : '');
-  }).join('\n'));
+  }).join('\n');
 }
+function writeStatus_(sh, row, list) { sh.getRange(row, col_('응답 현황')).setValue(statusText_(list)); }
 
 function resultText_(list) {
   function names(arr) { return arr.map(function (a) { return a.get('소장님') + (a.get('설명회') ? '(' + a.get('설명회') + ')' : ''); }).join(', '); }
@@ -449,15 +439,75 @@ function resultText_(list) {
   return { text: lines.join('\n'), any: ok.length + adj.length > 0 };
 }
 
-function sendResult_(app, list) {
-  var r = resultText_(list), token = Utilities.getUuid().replace(/-/g, '');
-  setCells_(app.sheet, app.row, { '상태': r.any ? ST.RESULT : ST.NONE, '결과 안내 일시': new Date(), '원장님 토큰': token });
-  var v = vars_(rowGetter_(app.sheet.getRange(app.row, 1, 1, APP_HEADERS.length).getValues()[0]));
-  v['결과'] = r.text;
-  v['링크'] = CHOOSE_PAGE_URL + '?t=' + token;
-  notify_(r.any ? 'DIRECTOR_RESULT' : 'DIRECTOR_NONE', v['원장님'], v['연락처'], v);
-  v['다음'] = r.any ? '원장님께 결과와 선택 링크를 보냈습니다. 원장님이 고르면 다시 알려 드립니다.' : '가능한 소장님이 없습니다. 원장님께 다른 날짜·소장님을 안내해 주세요. (메뉴 「선택한 신청에 소장님 추가 요청」)';
-  notifyHQ_('HQ_RESULT', v);
+/* ================= 담당자 메뉴: 확정·결제 안내 ================= */
+
+/**
+ * 담당자가 소장님·원장님과 조율을 끝낸 뒤 — 「신청내역」에서 그 줄을 고르고 실행
+ * 원장님께 확정·결제 안내, 확정 소장님께 확정 안내, 가능하다고 했던 다른 소장님께 다른 소장님으로 진행 안내,
+ * 아직 응답 전인 소장님께 요청 마감 안내를 보내고, 그 시간을 예약불가로 막습니다.
+ */
+function menuConfirm() {
+  var ui = SpreadsheetApp.getUi();
+  var sh = SpreadsheetApp.getActiveSheet(), row = sh.getActiveRange().getRow();
+  if (sh.getName() !== SH.APPS || row < 2) { ui.alert('「신청내역」에서 확정할 신청 줄을 먼저 눌러 주세요.'); return; }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var g = rowGetter_(sh.getRange(row, 1, 1, APP_HEADERS.length).getValues()[0]);
+    var id = String(g('신청번호')), status = String(g('상태'));
+    if ([ST.PAID, ST.DONE, ST.CANCEL].indexOf(status) >= 0) { ui.alert('이미 「' + status + '」인 신청입니다.'); return; }
+    var coach = String(g('확정 강연자')).trim(), date = g('확정일'), tm = timeStr_(g('확정 시간'));
+    var miss = [];
+    if (!coach) miss.push('확정 강연자');
+    if (!(date instanceof Date)) miss.push('확정일 (날짜 형식)');
+    if (!/^\d{1,2}:\d{2}$/.test(tm)) miss.push('확정 시간 (예: 14:00)');
+    if (!num_(g('금액'))) miss.push('금액');
+    if (miss.length) { ui.alert('먼저 채워 주세요: ' + miss.join(', ')); return; }
+    if (!coachPhone_(coach)) { ui.alert('「강연자」 시트에서 ' + coach + ' 소장님의 연락처를 찾지 못했습니다. 이름을 확인해 주세요.'); return; }
+    if (clash_(coach, dateStr_(date), tm, id)) {
+      ui.alert(coach + ' 소장님은 ' + krDate_(date) + ' ' + krTime_(tm) + ' 앞뒤 ' + OVERLAP_HOURS + '시간 안에 이미 확정된 일정이 있습니다.');
+      return;
+    }
+    var resend = !!g('확정 안내 일시');
+    if (resend && ui.alert('이미 ' + Utilities.formatDate(new Date(g('확정 안내 일시')), TZ, 'M월 d일 HH:mm') + '에 확정 안내를 보냈습니다.\n' +
+      '원장님께만 확정·결제 안내를 다시 보낼까요? (소장님들께는 다시 보내지 않습니다)', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+
+    // 확정 설명회가 비어 있으면 그 소장님이 요청받은 설명회로
+    var list = ansOf_(id);
+    var mine = list.filter(function (a) { return String(a.get('소장님')).trim() === coach; })[0];
+    if (!g('확정 설명회') && mine && mine.get('설명회')) sh.getRange(row, col_('확정 설명회')).setValue(String(mine.get('설명회')));
+    if (!g('결제 기한')) sh.getRange(row, col_('결제 기한')).setValue(payDeadline_(new Date()));
+    fillPayment_(sh, row);
+    g = rowGetter_(sh.getRange(row, 1, 1, APP_HEADERS.length).getValues()[0]);
+    var v = vars_(g);
+
+    var others = list.filter(function (a) { return String(a.get('소장님')).trim() !== coach; });
+    var released = others.filter(function (a) { return [ANS.OK, ANS.ADJ].indexOf(String(a.get('응답'))) >= 0; });
+    var closed = others.filter(function (a) { return String(a.get('응답')) === ANS.WAIT; });
+    var preview = '아래 내용으로 보낼까요?\n\n[원장님께 — ' + v['원장님'] + ' 원장님]\n' + fill_(TEMPLATES.DIRECTOR_CONFIRMED, v) +
+      (resend ? '' : '\n\n[소장님께]\n· 확정 안내: ' + coach +
+        (released.length ? '\n· 다른 소장님으로 진행 안내: ' + released.map(function (a) { return a.get('소장님'); }).join(', ') : '') +
+        (closed.length ? '\n· 요청 마감 안내(응답 전): ' + closed.map(function (a) { return a.get('소장님'); }).join(', ') : ''));
+    if (ui.alert('확정·결제 안내 — ' + id, preview, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+
+    notify_('DIRECTOR_CONFIRMED', v['원장님'], v['연락처'], v);
+    if (!resend) {
+      notify_('COACH_CONFIRMED', coach, coachPhone_(coach), coachVars_(v, coach, String(g('확정 설명회') || ''), mine ? String(mine.get('응답 토큰')) : ''));
+      if (mine) setAns_(mine, { '응답': ANS.PICKED });
+      released.concat(closed).forEach(function (a) {
+        var name = String(a.get('소장님')).trim(), wasWaiting = String(a.get('응답')) === ANS.WAIT;
+        setAns_(a, { '응답': ANS.RELEASED });
+        notify_(wasWaiting ? 'COACH_CLOSED' : 'COACH_RELEASED', name, coachPhone_(name), coachVars_(v, name, String(a.get('설명회') || ''), String(a.get('응답 토큰'))));
+      });
+      writeStatus_(sh, row, ansOf_(id));
+    }
+    removeBlock_(id);
+    sh.getParent().getSheetByName(SH.BLOCK).appendRow([coach, date, '확정 예약', id, "'" + tm]);
+    setCells_(sh, row, { '상태': ST.PAY, '확정 안내 일시': new Date() });
+    SpreadsheetApp.getActive().toast('확정·결제 안내를 보냈습니다. 결과는 「알림기록」에서 확인할 수 있습니다.');
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /* ================= 담당자 메뉴: 소장님 추가 요청 ================= */
@@ -469,24 +519,26 @@ function menuAddCoach() {
   if (sh.getName() !== SH.APPS || row < 2) { ui.alert('「신청내역」에서 요청을 보낼 신청 줄을 먼저 눌러 주세요.'); return; }
   var g = rowGetter_(sh.getRange(row, 1, 1, APP_HEADERS.length).getValues()[0]);
   var status = String(g('상태')), id = String(g('신청번호'));
-  if ([ST.CONFIRMED, ST.PAY, ST.PAID, ST.DONE, ST.CANCEL, ST.CHOSEN].indexOf(status) >= 0) { ui.alert('이미 「' + status + '」인 신청입니다.'); return; }
+  if ([ST.CONFIRMED, ST.PAY, ST.PAID, ST.DONE, ST.CANCEL].indexOf(status) >= 0) { ui.alert('이미 「' + status + '」인 신청입니다.'); return; }
+  var ds = dateStr_(g('희망일')), tm = timeStr_(g('시작 시간'));
   var res = ui.prompt('소장님 추가 요청 — ' + id, '지금까지: \n' + g('응답 현황') + '\n\n요청할 소장님 이름과 설명회를 「이름 / 설명회」로 입력하세요. (설명회는 비워도 됩니다)\n' +
-    '날짜·시간은 신청과 같습니다(' + dateStr_(g('희망일')) + ' ' + timeStr_(g('시작 시간')) + '). 응답 기한은 지금부터 ' + RESPONSE_HOURS + '시간입니다.', ui.ButtonSet.OK_CANCEL);
+    '날짜·시간은 신청과 같습니다(' + ds + ' ' + tm + '). 다른 날짜·시간이면 먼저 「희망일」·「시작 시간」 칸을 고친 뒤 실행하세요.\n응답 기한은 지금부터 ' + RESPONSE_HOURS + '시간입니다.', ui.ButtonSet.OK_CANCEL);
   if (res.getSelectedButton() !== ui.Button.OK) return;
   var parts = res.getResponseText().split('/'), coach = String(parts[0] || '').trim(), product = String(parts[1] || '').trim();
   if (!coach) { ui.alert('소장님 이름을 입력해 주세요.'); return; }
   var phone = coachPhone_(coach);
   if (!phone) { ui.alert('「강연자」 시트에서 ' + coach + '님의 연락처를 찾지 못했습니다.'); return; }
   if (ansOf_(id).some(function (a) { return String(a.get('소장님')).trim() === coach && String(a.get('응답')) === ANS.WAIT; })) { ui.alert('이미 응답을 기다리는 소장님입니다.'); return; }
+  if (clash_(coach, ds, tm, id)) { ui.alert(coach + ' 소장님은 그 시간 앞뒤 ' + OVERLAP_HOURS + '시간 안에 이미 확정된 일정이 있습니다.'); return; }
 
   var now = new Date(), due = new Date(now.getTime() + RESPONSE_HOURS * 3600 * 1000), token = Utilities.getUuid().replace(/-/g, '');
   var ash = sh.getParent().getSheetByName(SH.ANS), ar = ash.getLastRow() + 1;
   ash.getRange(ar, acol_('희망일'), 1, 2).setNumberFormat('@');
-  ash.getRange(ar, 1, 1, ANS_HEADERS.length).setValues([[id, safe_(coach), safe_(product), dateStr_(g('희망일')), timeStr_(g('시작 시간')), String(g('학원명')), now, due, ANS.WAIT, '', '', '', token]]);
-  // 결과를 이미 보낸 신청이면 다시 「응답 대기」로 — 새 소장님까지 답하면 결과를 다시 보냄
+  ash.getRange(ar, 1, 1, ANS_HEADERS.length).setValues([[id, safe_(coach), safe_(product), ds, tm, String(g('학원명')), now, due, ANS.WAIT, '', '', '', token]]);
+  // 다시 「응답 대기」로 — 새 소장님까지 답하면 본사에 마감 알림을 다시 보냄
   setCells_(sh, row, { '상태': ST.ASKING, '응답 기한': due });
   writeStatus_(sh, row, ansOf_(id));
-  var sent = notify_('COACH_REQUEST', coach, phone, coachVars_(vars_(g), coach, product, token));
+  var sent = notify_('COACH_REQUEST', coach, phone, coachVars_(vars_(rowGetter_(sh.getRange(row, 1, 1, APP_HEADERS.length).getValues()[0])), coach, product, token));
   ui.alert(coach + '님에게 출강 요청을 ' + (sent ? '보냈습니다.' : '기록했습니다. (알림톡 설정 전이라 「알림기록」에 문구만 남겼습니다)') +
     '\n응답 링크: ' + COACH_PAGE_URL + '?t=' + token);
 }
@@ -547,24 +599,23 @@ function onEditInstalled(e) {
 
     if (status === ST.CANCEL) {
       removeBlock_(id);
-    } else if (status === ST.CONFIRMED && (c === col_('상태') || c === col_('확정일') || c === col_('확정 강연자') || c === col_('확정 시간'))) {
-      // 담당자가 원장님께 확정 연락한 뒤 「일정확정」으로 바꾸면 그 시간을 막는다
+    } else if ((status === ST.CONFIRMED || status === ST.PAY) && (c === col_('상태') || c === col_('확정일') || c === col_('확정 강연자') || c === col_('확정 시간'))) {
+      // 메뉴를 쓰지 않고 상태를 직접 「일정확정」·「결제안내」로 바꿔도 그 시간을 막는다 (알림톡은 메뉴로만 나감)
       if (!coach || !(date instanceof Date)) {
         if (c === col_('상태')) {
           SpreadsheetApp.getUi().alert('「확정 강연자」와 「확정일」을 먼저 입력한 뒤 상태를 「일정확정」으로 바꿔 주세요.');
-          e.range.setValue(e.oldValue || ST.CHOSEN);
+          e.range.setValue(e.oldValue || ST.RESULT);
         }
         return;
       }
       if (clash_(coach, dateStr_(date), tm, id)) {
         SpreadsheetApp.getUi().alert('이 시간 앞뒤 ' + OVERLAP_HOURS + '시간 안에 이미 확정된 일정이 있습니다.\n(' + coach + ' · ' + krDate_(date) + ' ' + krTime_(tm) + ')');
-        e.range.setValue(e.oldValue || (c === col_('상태') ? ST.CHOSEN : ''));
+        e.range.setValue(e.oldValue || (c === col_('상태') ? ST.RESULT : ''));
         return;
       }
       removeBlock_(id);
       sh.getParent().getSheetByName(SH.BLOCK).appendRow([coach, date, '확정 예약', id, tm ? "'" + tm : '']);
-    } else if (status === ST.PAY && c === col_('상태') && !g('결제 기한')) {
-      sh.getRange(row, col_('결제 기한')).setValue(payDeadline_(new Date()));
+      if (status === ST.PAY && !g('결제 기한')) sh.getRange(row, col_('결제 기한')).setValue(payDeadline_(new Date()));
     }
     fillPayment_(sh, row);
   } finally {
@@ -637,7 +688,11 @@ function vars_(g) {
     '응답기한': when(g('응답 기한')),
     '확정강연자': String(g('확정 강연자')),
     '확정일시': date instanceof Date ? krDate_(date) + (g('확정 시간') ? ' ' + krTime_(timeStr_(g('확정 시간'))) : '') : '',
-    '결제기한': when(g('결제 기한'))
+    '확정설명회': String(g('확정 설명회') || '') || '담당자와 협의한 내용',
+    '결제기한': when(g('결제 기한')),
+    '결제금액': payText_(g),
+    '결제방법': conf_('결제 방법') || '담당자가 따로 안내드립니다.',
+    '환불규정': date instanceof Date ? refundText_(date) : ''
   };
 }
 /** 소장님 한 분에게 보낼 변수 — 신청 변수 + 소장님·설명회·응답 링크 */
@@ -650,20 +705,40 @@ function coachVars_(v, coach, product, token) {
   return o;
 }
 
+function payText_(g) {
+  var fee = num_(g('금액')), trip = num_(g('출장비'));
+  if (!fee) return '';
+  return (fee + trip).toLocaleString('ko-KR') + '원 (VAT 별도' + (trip ? ', 출장비 ' + trip.toLocaleString('ko-KR') + '원 포함' : '') + ')';
+}
+function refundText_(date) {
+  return krMD_(shift_(date, -15)) + '까지 100%, ' + krMD_(shift_(date, -8)) + '까지 70%, ' + krMD_(shift_(date, -4)) + '까지 50% 환불, ' +
+    krMD_(shift_(date, -3)) + '부터는 환불되지 않습니다.';
+}
+/** 「설정」 시트의 값 */
+function conf_(key) {
+  var sh = SpreadsheetApp.getActive().getSheetByName(SH.CONF);
+  var hit = sh ? rows_(sh).filter(function (r) { return String(r['항목']).trim() === key; })[0] : null;
+  return hit ? String(hit['값'] || '').trim() : '';
+}
+
 function fill_(tpl, v) { return tpl.replace(/#\{([^}]+)\}/g, function (m, k) { return v[k] != null ? v[k] : m; }); }
 
+/** 본사 알림 — 「본사 알림」 시트의 사람마다 휴대폰이면 알림톡, 메일이면 메일 */
 function notifyHQ_(type, v) {
-  HQ.forEach(function (p) {
-    var phone = String(p.phone || '').replace(/[^\d]/g, '');
-    if (phone) notify_(type, p.name, phone, v);
-    else log_(type, p.name, '', '미발송(번호 없음)', fill_(TEMPLATES[type], v));
+  var sh = SpreadsheetApp.getActive().getSheetByName(SH.HQ);
+  var list = sh ? rows_(sh) : [];
+  var text = fill_(TEMPLATES[type], v), any = false;
+  list.forEach(function (r) {
+    var name = String(r['이름'] || '본사').trim(), phone = digits_(r['휴대폰']), mail = String(r['메일'] || '').trim();
+    if (phone) { notify_(type, name, phone, v); any = true; }
+    if (mail) {
+      any = true;
+      try {
+        MailApp.sendEmail({ to: mail, subject: text.split('\n')[0], body: text + '\n\n시트: ' + SpreadsheetApp.getActive().getUrl() });
+      } catch (e) { console.error(e); }
+    }
   });
-  if (HQ_EMAIL) {
-    var text = fill_(TEMPLATES[type], v);
-    try {
-      MailApp.sendEmail({ to: HQ_EMAIL, subject: text.split('\n')[0], body: text + '\n\n시트: ' + SpreadsheetApp.getActive().getUrl() });
-    } catch (e) { console.error(e); }
-  }
+  if (!any) log_(type, '본사', '', '미발송(「본사 알림」 시트에 번호·메일 없음)', text);
 }
 
 /** 알림톡 1건 보내기. 설정 전이면 「알림기록」에 내용만 남기고 false를 돌려줍니다. */
@@ -727,12 +802,8 @@ function nextId_(sh, now) {
   return prefix + String(max + 1).padStart(3, '0');
 }
 
-/** 신청 한 줄 찾기 — 신청번호로 / 원장님 토큰으로 */
+/** 신청 한 줄 찾기 — 신청번호로 */
 function findApp_(id) { return findAppBy_(col_('신청번호'), String(id)); }
-function findAppByToken_(token) {
-  token = String(token || '');
-  return /^[0-9a-f]{32}$/.test(token) ? findAppBy_(col_('원장님 토큰'), token) : null;
-}
 function findAppBy_(c, val) {
   var sh = SpreadsheetApp.getActive().getSheetByName(SH.APPS), n = sh.getLastRow();
   if (n < 2) return null;
@@ -806,15 +877,15 @@ function lines_(v) { return String(v || '').split('\n').map(function (x) { retur
 function commas_(v) { return String(v || '').split(/[,\n]/).map(function (x) { return x.trim(); }).filter(String); }
 function digits_(v) { return String(v || '').replace(/\D/g, ''); }
 
-/** 「대표 주제」를 강연자 이름별로 묶음. onlyShown이면 노출이 N인 주제는 뺌 */
+/** 「설명회」를 강연자 이름별로 묶음. onlyShown이면 노출이 N인 설명회는 뺌 */
 function topicsByCoach_(onlyShown) {
   var out = {};
   rows_(SpreadsheetApp.getActive().getSheetByName(SH.TOPIC)).filter(function (r) {
-    return r['강연자'] && r['주제명'] && !(onlyShown && String(r['노출']).trim().toUpperCase() === 'N');
+    return r['강연자'] && r['설명회 이름'] && !(onlyShown && String(r['노출']).trim().toUpperCase() === 'N');
   }).sort(function (a, b) { return (Number(a['순서']) || 99) - (Number(b['순서']) || 99); }).forEach(function (r) {
     var who = String(r['강연자']).trim();
     (out[who] = out[who] || []).push({
-      area: String(r['영역'] || ''), cats: commas_(r['카테고리']), name: String(r['주제명']).trim(), intro: String(r['한 줄 소개'] || ''),
+      area: String(r['영역'] || ''), cats: commas_(r['카테고리']), name: String(r['설명회 이름']).trim(), intro: String(r['한 줄 소개'] || ''),
       points: lines_(r['핵심 내용']), targets: commas_(r['대상']), seasons: commas_(r['적합 시기'])
     });
   });
@@ -911,13 +982,7 @@ function profileSubmit_(d) {
   if (wait) sh.getRange(wait.row, 1, 1, row.length).setValues([row]);
   else sh.appendRow(row);
   SpreadsheetApp.getActive().getSheetByName(SH.COACH).getRange(hit.row, COACH_HEADERS.indexOf('최근 제출') + 1).setValue(new Date());
-  if (HQ_EMAIL) {
-    try {
-      MailApp.sendEmail(HQ_EMAIL, '[강연자 정보] ' + name + ' 소장님이 프로필을 제출했습니다',
-        '바뀐 항목: ' + (diff.keys.join(', ') || '없음') + '\n\n' + diff.text.join('\n') + '\n\n우선 수락 동의: ' + (data.agreePriority ? '예' : '아니오') +
-        '\n\n시트 「프로필 제출」에서 확인 후, 줄을 고르고 메뉴 「설명회 → 선택한 프로필 제출을 강연자 정보에 반영」을 눌러 주세요.');
-    } catch (err) { console.error(err); }
-  }
+  notifyHQ_('HQ_PROFILE', { '소장님': name, '바뀐항목': diff.keys.join(', ') || '없음' });
   return { ok: true };
 }
 
@@ -967,8 +1032,8 @@ function profileDiff_(a, b) {
     return o && sortedJson_(o) !== sortedJson_(t);
   }).map(function (t) { return t.name; });
   if (added.length || removed.length || changed.length) {
-    keys.push('대표 주제');
-    text.push('· 대표 주제 ' + b.topics.length + '개' + (added.length ? ' / 추가: ' + added.join(', ') : '') +
+    keys.push('설명회');
+    text.push('· 설명회 ' + b.topics.length + '개' + (added.length ? ' / 추가: ' + added.join(', ') : '') +
       (changed.length ? ' / 수정: ' + changed.join(', ') : '') + (removed.length ? ' / 뺌: ' + removed.join(', ') : ''));
   }
   return { keys: keys, text: text };
@@ -976,7 +1041,7 @@ function profileDiff_(a, b) {
 
 function sortedJson_(o) { return JSON.stringify(Object.keys(o).sort().map(function (k) { return [k, o[k]]; })); }
 
-/** 메뉴: 「프로필 제출」에서 고른 줄을 「강연자」·「대표 주제」에 반영 */
+/** 메뉴: 「프로필 제출」에서 고른 줄을 「강연자」·「설명회」에 반영 — 소장님이 마지막으로 제출한 내용 그대로 */
 function menuApplyProfile() {
   var ui = SpreadsheetApp.getUi(), ss = SpreadsheetApp.getActive(), sh = ss.getActiveSheet();
   if (sh.getName() !== SH.SUBMIT) { ui.alert('「' + SH.SUBMIT + '」 시트에서 반영할 줄을 먼저 골라 주세요.'); return; }
@@ -986,8 +1051,10 @@ function menuApplyProfile() {
   var vals = sh.getRange(row, 1, 1, SUBMIT_HEADERS.length).getValues()[0];
   var g = function (h) { return vals[head.indexOf(h)]; };
   var name = String(g('강연자')).trim();
+  var latest = lastSubmit_(name);
+  if (latest && latest.row !== row) { ui.alert(name + ' 소장님은 이 줄보다 나중에 제출한 내용이 있습니다(' + latest.row + '번째 줄). 가장 최근 제출을 반영해 주세요.'); return; }
   if (g('상태') === SUBMIT_ST.DONE && ui.alert('이미 반영한 제출입니다. 다시 반영할까요?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
-  if (ui.alert(name + ' 소장님의 제출 내용을 강연자 정보와 대표 주제에 반영할까요?\n(이 소장님의 대표 주제는 제출 내용으로 모두 바뀝니다)', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  if (ui.alert(name + ' 소장님의 제출 내용을 강연자 정보와 설명회에 반영할까요?\n(이 소장님의 설명회는 제출 내용으로 모두 바뀝니다)', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   applyProfile_(name, JSON.parse(g('데이터')));
   sh.getRange(row, head.indexOf('상태') + 1).setValue(SUBMIT_ST.DONE);
   sh.getRange(row, head.indexOf('반영일시') + 1).setValue(new Date());
@@ -1011,16 +1078,14 @@ function applyProfile_(name, d) {
     if (c >= 0) csh.getRange(row, c + 1).setValue(safe_(set[h]));
   });
 
-  // 대표 주제: 이 강연자 줄을 지우고 제출 순서대로 다시 씀 (본사가 끈 노출 N은 같은 주제명이면 유지)
+  // 설명회: 이 강연자 줄을 지우고 소장님이 마지막으로 제출한 내용 그대로 다시 씀
   var tsh = ss.getSheetByName(SH.TOPIC);
-  var all = rows_(tsh), hidden = {};
+  var all = rows_(tsh);
   for (var i = all.length - 1; i >= 0; i--) {
-    if (String(all[i]['강연자']).trim() !== name) continue;
-    if (String(all[i]['노출']).trim().toUpperCase() === 'N') hidden[String(all[i]['주제명']).trim()] = true;
-    tsh.deleteRow(i + 2);
+    if (String(all[i]['강연자']).trim() === name) tsh.deleteRow(i + 2);
   }
   var rows = d.topics.map(function (t, i) {
-    return [name, i + 1, hidden[t.name] ? 'N' : 'Y', t.area, t.cats.join(', '), t.name, t.intro, t.points.join('\n'), t.targets.join(', '),
+    return [name, i + 1, 'Y', t.area, t.cats.join(', '), t.name, t.intro, t.points.join('\n'), t.targets.join(', '),
       t.seasons.join(', ')].map(safe_);
   });
   if (rows.length) tsh.getRange(tsh.getLastRow() + 1, 1, rows.length, TOPIC_HEADERS.length).setValues(rows);

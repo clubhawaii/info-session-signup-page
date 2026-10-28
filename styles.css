@@ -509,7 +509,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .venue-box { display: grid; gap: 6px; }
 .btn.is-off { opacity: .35; cursor: not-allowed; }
 
-/* 강연자 카드 — 대표 주제 줄 · 주제로 찾기 */
+/* 강연자 카드 — 설명회 줄 · 주제로 찾기 */
 .cat-row { display: flex; align-items: center; gap: 10px; margin: -8px 0 18px; min-width: 0; }
 .cat-row > span { flex: none; font-size: 13px; font-weight: 700; color: var(--ink-60); }
 .cat-row .chips { margin: 0; min-width: 0; }
@@ -536,7 +536,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .link-list a span { flex: none; font-size: 12px; color: var(--blue); background: var(--blue-08); border-radius: 4px; padding: 2px 8px; }
 .tab-pane .video + .video { margin-top: 10px; }
 
-/* 3단계 — 강연자별 대표 주제 */
+/* 3단계 — 소장님별 설명회 */
 .topic-group { margin-top: 12px; }
 .topic-group .tg-name { font-size: 13px; font-weight: 700; color: var(--ink-60); }
 .topic-group .wrap-chips { margin: 8px 0 4px; }

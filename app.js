@@ -1,5 +1,5 @@
-// 학생·학부모 설명회 신청 — 소장님(여러 명) → 소장님별 설명회 하나 → 날짜 하나·시작 시간·요청사항 → 신청 정보 → 완료
-// 신청하면 고른 소장님께 각각 알림톡이 가고, 소장님은 RESPONSE_HOURS 안에 가능·시간 조율 필요·불가로 답함(무응답 = 불가)
+// 학생·학부모 설명회 신청 — 소장님(최대 MAX_PICKS명) → 소장님별 설명회 하나 → 날짜 하나·시작 시간·요청사항 → 신청 정보 → 완료
+// 신청하면 고른 소장님께 일정이 되는지 먼저 확인하고, 가능한 소장님과 조율한 뒤 본사 담당자가 원장님께 직접 연락함
 (function () {
   "use strict";
 
@@ -7,6 +7,7 @@
   var DEMO = !C.APPS_SCRIPT_URL;
   var DOW = "일월화수목금토";
   var HOURS = C.RESPONSE_HOURS || 24;
+  var MAX_PICKS = C.MAX_PICKS || 3;
   var OVERLAP = (C.OVERLAP_HOURS || 3) * 60;   // 분
 
   var S = {
@@ -214,6 +215,7 @@
     if (!c) return;
     var i = S.picked.indexOf(c.name);
     if (i >= 0) { S.picked.splice(i, 1); delete S.product[c.name]; }
+    else if (S.picked.length >= MAX_PICKS) { toast("소장님은 최대 " + MAX_PICKS + "명까지 고를 수 있어요. 다른 분을 고르시려면 먼저 한 분을 빼 주세요."); return; }
     else {
       S.picked.push(c.name);
       if (c.topics.length === 1) S.product[c.name] = c.topics[0].name;   // 설명회가 하나뿐이면 미리 골라 둠
@@ -410,7 +412,7 @@
     save();
     each(document.querySelectorAll("[data-prev]"), function (b) { b.hidden = S.step === 1; });
     $("barTxt").innerHTML = st.txt;
-    $("sumNote").textContent = "소장님이 " + HOURS + "시간 안에 답하고, 결과를 알림톡으로 모아서 보내 드려요. 신청만으로 확정되지는 않습니다.";
+    $("sumNote").textContent = "소장님 일정을 확인한 뒤 담당자가 연락드려요. 신청만으로 확정되지는 않습니다.";
     if (S.step === 4) renderMember();
   }
 
@@ -556,7 +558,6 @@
     S.sending = false;
     S.finished = true;
     try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {}
-    $("doneDue").textContent = krDue(new Date(res.due || Date.now() + HOURS * 3600e3));
     $("doneSum").innerHTML =
       "<dt>신청번호</dt><dd>" + esc(res.id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
@@ -751,7 +752,7 @@
   }
 
   /* ---------- 입력 내용 보관 (같은 탭에서 새로고침해도 이어서) ---------- */
-  var SAVE_KEY = "seminar-signup-v2";
+  var SAVE_KEY = "seminar-signup-v3";
   var KEEP = ["member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2"];
   function save() {
     if (S.finished) return;
@@ -787,6 +788,7 @@
     $("demoBar").hidden = !DEMO;
     each(document.querySelectorAll(".retention"), function (el) { el.textContent = C.PRIVACY_RETENTION || ""; });
     each(document.querySelectorAll(".resp-h"), function (el) { el.textContent = HOURS; });
+    each(document.querySelectorAll(".max-picks"), function (el) { el.textContent = MAX_PICKS; });
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
     renderTargets();
     fillTimeSelects();

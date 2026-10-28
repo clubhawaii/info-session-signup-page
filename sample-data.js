@@ -1,5 +1,5 @@
 // 예시 데이터 — config.js의 APPS_SCRIPT_URL이 비어 있을 때만 쓰입니다.
-// 실제 강연자 정보는 구글시트 「강연자」·「대표 주제」에 들어가고, 소장님은 profile.html에서 직접 고칩니다.
+// 실제 강연자 정보는 구글시트 「강연자」·「설명회」에 들어가고, 소장님은 profile.html에서 직접 고칩니다.
 // (같은 폴더에 local-data.js가 있으면 그 내용을 대신 씁니다 — 실제 자료 미리보기용, 저장소에는 올리지 않음)
 (function () {
   function plus(days) {
@@ -119,23 +119,6 @@
       deadline: new Date(Date.now() + 20 * 3600 * 1000).toISOString(),
       answer: "응답 대기",
       others: [{ time: "14:00", state: "확정", clash: false }]
-    },
-    // 원장님 결과 페이지(choose.html) 미리보기용 결과 1건
-    result: {
-      id: "SEM-20261020-001",
-      academy: "클럽하와이",
-      director: "홍길동",
-      date: plus(25),
-      time: "19:00",
-      request: "고입 준비 위주로 부탁드립니다.",
-      status: "원장님 선택 대기",
-      chosen: "",
-      answers: [
-        { coach: "예시 강연자 A", product: "고교 선택의 정석", answer: "가능", memo: "" },
-        { coach: "예시 강연자 C", product: "수시·정시 구조와 학년별 로드맵", answer: "가능", memo: "" },
-        { coach: "예시 강연자 B", product: "예비중1 「중학교 가기 전에」", answer: "시간 조율 필요", memo: "오후 4시 시작이면 가능합니다" },
-        { coach: "예시 강연자 D", product: "", answer: "응답 없음(불가)", memo: "" }
-      ]
     }
   };
 })();

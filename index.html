@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>학생·학부모 설명회 신청</title>
-  <meta name="description" content="학생·학부모 설명회 — 소장님과 설명회, 날짜·시작 시간을 골라 신청하시면 소장님이 24시간 안에 직접 답해 드립니다.">
+  <meta name="description" content="학생·학부모 설명회 — 소장님과 설명회, 날짜·시작 시간을 골라 신청하시면 소장님 일정을 확인한 뒤 담당자가 연락드립니다.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261028a">
+  <link rel="stylesheet" href="styles.css?v=20261028c">
 </head>
 <body>
-  <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="choose.html">원장님 결과 화면</a></div>
+  <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="profile.html">소장님 입력 페이지</a></div>
 
   <header class="top">
     <div class="top-in">
@@ -21,7 +21,7 @@
   <main class="wrap">
     <div class="head" id="pageHead">
       <p class="intro"><b>클럽하와이 전문가가 원장님 학원으로 직접 찾아갑니다.</b><br>학원에서 학부모·학생 대상 설명회를 진행해 드려요.</p>
-      <p>원하시는 소장님과 설명회를 고르고, 날짜와 시작 시간을 알려 주세요. 소장님이 <b>24시간 안에</b> 직접 답해 드립니다.</p>
+      <p>원하시는 소장님(최대 <span class="max-picks">3</span>명)과 설명회를 고르고, 날짜와 시작 시간을 알려 주세요. 소장님 일정을 확인한 뒤 <b>담당자가 최대한 빠르게 연락</b>드립니다.</p>
 
       <ol class="steps" id="steps">
         <li data-step="1"><b>1</b><span>소장님</span></li>
@@ -37,7 +37,7 @@
         <!-- 1. 소장님 -->
         <section class="panel" id="step1">
           <h2>설명회를 맡길 소장님을 골라 주세요</h2>
-          <p class="sub">여러 분을 함께 고를 수 있어요. 고르신 소장님께 <b>각각 출강 요청 알림톡</b>이 가고,<br>가능하다고 답한 소장님 중 한 분을 나중에 고르시면 됩니다.</p>
+          <p class="sub"><b>최대 <span class="max-picks">3</span>명</b>까지 함께 고를 수 있어요.<br>고르신 소장님들께 <b>일정이 되는지 먼저 확인</b>하고, 가능한 소장님만 정리해 <b>담당자가 연락</b>드립니다.</p>
 
           <div class="search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -153,10 +153,9 @@
             <div class="howto" id="howto">
               <h3>신청 후 이렇게 진행돼요</h3>
               <ol>
-                <li><b>고르신 소장님께 각각 알림톡이 갑니다.</b> 소장님은 <b><span class="resp-h">24</span>시간 안에</b> 「가능 · 시간 조율 필요 · 불가」 중 하나로 답합니다.</li>
-                <li><b><span class="resp-h">24</span>시간 안에 답하지 않은 소장님은 「불가」로 안내</b>됩니다.</li>
-                <li>모든 소장님이 답하거나 <span class="resp-h">24</span>시간이 지나면, <b>결과를 알림톡 한 번으로 모아서</b> 보내 드립니다.</li>
-                <li>가능하다고 답한 소장님이 여러 분이면 <b>알림톡 링크에서 한 분을 고르시면</b> 됩니다. 담당자가 확정 일정과 금액을 안내드려요.</li>
+                <li><b>고르신 소장님(최대 <span class="max-picks">3</span>명)께 일정이 되는지 먼저 확인</b>합니다.</li>
+                <li>가능한 소장님만 정리해 <b>담당자가 소장님과 조율한 뒤 최대한 빠르게 연락</b>드립니다.</li>
+                <li>소장님과 날짜·시간이 확정되면 <b>확정 내용과 결제 안내를 알림톡</b>으로 보내 드립니다.</li>
               </ol>
             </div>
 
@@ -207,13 +206,13 @@
         <section class="panel done" id="done" hidden>
           <div class="done-icon"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
           <h2>신청이 완료되었습니다</h2>
-          <p class="lead">고르신 소장님께 출강 요청 알림톡을 보냈습니다.<br><b id="doneDue"></b>까지 결과를 알림톡으로 모아서 보내 드릴게요.</p>
+          <p class="lead">고르신 소장님들께 일정이 되는지 먼저 확인하고 있습니다.<br>소장님과 조율한 뒤 <b>담당자가 최대한 빠르게 연락</b>드리겠습니다.</p>
           <dl class="done-sum" id="doneSum"></dl>
           <ol class="flow">
-            <li class="on"><b>신청 완료</b><span>소장님께 각각 출강 요청 알림톡이 갔어요</span></li>
-            <li><b>소장님 응답</b><span><span class="resp-h">24</span>시간 안에 가능·시간 조율 필요·불가로 답해요 (응답이 없으면 불가)</span></li>
-            <li><b>결과 안내 · 소장님 선택</b><span>결과를 알림톡 한 번으로 보내 드리고, 가능한 소장님 중 한 분을 고르세요</span></li>
-            <li><b>담당자 연락 · 결제 안내</b><span>확정 일정과 금액을 안내드려요</span></li>
+            <li class="on"><b>신청 완료</b><span>접수 알림톡을 보내 드렸어요</span></li>
+            <li><b>소장님 일정 확인</b><span>고르신 소장님들께 일정이 되는지 확인해요</span></li>
+            <li><b>담당자 연락 · 조율</b><span>가능한 소장님을 정리해 담당자가 연락드려요</span></li>
+            <li><b>확정 · 결제 안내</b><span>확정 일정과 금액을 알림톡으로 보내 드려요</span></li>
             <li><b>설명회 진행</b></li>
           </ol>
         </section>
@@ -291,9 +290,9 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261028a"></script>
-  <script src="sample-data.js?v=20261028a"></script>
+  <script src="config.js?v=20261028c"></script>
+  <script src="sample-data.js?v=20261028c"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="app.js?v=20261028a"></script>
+  <script src="app.js?v=20261028c"></script>
 </body>
 </html>
