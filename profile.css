@@ -43,7 +43,7 @@
 
 /* 링크 */
 .link-rows { display: grid; gap: 8px; margin: 16px 0 12px; }
-.link-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1.4fr) 36px; gap: 8px; }
+.link-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 36px; gap: 8px; }
 .link-row select, .link-row input { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 0 12px; height: 44px; outline: none; background: #fff; min-width: 0; }
 .link-row select:focus, .link-row input:focus { border-color: var(--blue); }
 .x { border: 1px solid var(--line); background: #fff; border-radius: var(--r-sm); font-size: 18px; color: var(--ink-60); line-height: 1; }
@@ -143,7 +143,7 @@
 .agree b { color: var(--blue); }
 #secAgree.err { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-12); }
 #secPhoto.err .pf-photo .ph { outline: 2px solid var(--red); }
-.link-row { grid-template-columns: 130px minmax(0, 1fr) 36px; }
+.link-row { grid-template-columns: 170px minmax(0, 1fr) 36px; }
 @media (max-width: 640px) { .link-row { grid-template-columns: 1fr 36px; } }
 
 /* 「이렇게 보여요」 · 링크 안내 */
@@ -156,6 +156,9 @@
 .link-guide ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; color: var(--ink-60); }
 .link-guide ul b { color: var(--ink); margin-right: 6px; }
 .link-guide + .sub { margin-top: 14px !important; }
+.link-guide .no { margin: 8px 0 0; color: var(--red, #d33); }
+.link-warn { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--red, #d33); }
+.link-row.bad input, .link-row.bad select { border-color: var(--red, #d33); }
 .agree { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); line-height: 1.6; }
 .agree span b { color: var(--ink); }
 .agree:has(input:checked) { border-color: var(--blue); background: var(--blue-08); }

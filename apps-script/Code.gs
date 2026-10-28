@@ -75,6 +75,8 @@ var CONF_ROWS = [
   ['결제 방법', '', '확정·결제 안내 알림톡에 들어갑니다. 예) 계좌이체 ○○은행 000-0000-0000 (예금주 ○○○). 비워 두면 「담당자가 따로 안내드립니다」로 나갑니다.']
 ];
 var LOG_HEADERS = ['일시', '종류', '받는 사람', '번호', '결과', '내용'];
+// 소장님이 넣을 수 있는 링크 구분 (config.js의 LINK_TYPES와 같게) — 기준 밖 링크는 저장·노출하지 않음
+var LINK_TYPES = ['클럽하와이 유튜브', '클럽하와이 블로그', '본인 강의 영상', '방송·기사', '저서'];
 
 /*
  * 알림톡 문구 — 카카오 템플릿 검수에 이 글을 그대로 등록합니다(#{…}는 변수).
@@ -233,6 +235,7 @@ function doGet(e) {
     }).map(function (r) {
       var c = coachFromRow_(r, topics);   // 연락처·동의·본사 메모는 내보내지 않는다
       delete c.agreePriority;
+      c.links = c.links.filter(function (l) { return !linkProblem_(l, LINK_TYPES); });   // 기준 밖 링크는 원장님 화면에 안 보임
       return c;
     });
     var blocked = blocks_().map(function (b) { return { coach: b.coach, date: b.date, time: b.time }; });
@@ -986,6 +989,21 @@ function profileSubmit_(d) {
   return { ok: true };
 }
 
+function linkProblem_(l, types) {
+  var u = String(l.url || "").trim(), t = l.type;
+  if (!u) return "";
+  if (types.indexOf(t) < 0) return "구분을 골라 주세요.";
+  if (!/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(u)) return "주소를 확인해 주세요.";
+  if (/instagram\.com|facebook\.com|tiktok\.com|open\.kakao\.com|pf\.kakao\.com|smartstore\.naver\.com|forms\.gle|docs\.google\.com\/forms|linktr\.ee/i.test(u)) return "SNS·상담·구매 링크는 넣을 수 없어요.";
+  var yt = /youtube\.com|youtu\.be/i.test(u), vid = /(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)[\w-]{11}/.test(u);
+  if (yt && !vid) return "유튜브 채널 주소가 아니라 영상 하나의 주소를 넣어 주세요.";
+  if ((t === "클럽하와이 유튜브" || t === "본인 강의 영상") && !vid) return "유튜브 영상 하나의 주소를 넣어 주세요.";
+  var blog = /blog\.naver\.com|tistory\.com|brunch\.co\.kr/i.test(u);
+  if (t === "클럽하와이 블로그" && !(blog && /\/\d{5,}|logNo=\d+/.test(u))) return "블로그 홈이 아니라 클럽하와이 블로그 글 하나의 주소를 넣어 주세요.";
+  if (blog && t !== "클럽하와이 블로그") return "개인 블로그는 넣을 수 없어요. 클럽하와이 블로그 글이면 구분을 「클럽하와이 블로그」로 골라 주세요.";
+  return "";
+}
+
 /** 받은 값을 정해진 모양으로만 남김 (모르는 칸은 버림, 글자 수 제한) */
 function cleanProfile_(x) {
   function str(v, n) { return String(v == null ? '' : v).trim().slice(0, n || 500); }
@@ -995,7 +1013,7 @@ function cleanProfile_(x) {
     history: arr(x.history, 200).slice(0, 30),
     links: (Array.isArray(x.links) ? x.links : []).map(function (l) {
       return { type: str(l.type, 20).replace(/\|/g, '/'), url: str(l.url, 500) };
-    }).filter(function (l) { return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(l.url); }).slice(0, 20),
+    }).filter(function (l) { return !linkProblem_(l, LINK_TYPES); }).slice(0, 20),
     agreePrivacy: x.agreePrivacy === true, agreePriority: x.agreePriority === true, agreePublish: x.agreePublish === true,
     photo: /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(x.photo) || !x.photo ? str(x.photo, 300) : '',
     photos: arr(x.photos, 300).filter(function (u) { return /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com)\//.test(u); }).slice(0, 10),

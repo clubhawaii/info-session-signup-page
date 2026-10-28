@@ -153,14 +153,38 @@
     st.parentNode.classList.toggle("changed", changed);
   }
 
+  // 링크 기준: 클럽하와이 유튜브·블로그의 본인 콘텐츠, 본인 강의 영상(영상 하나), 방송·기사, 저서만. 기준 밖이면 문제를 돌려줌
+  function linkProblem(l, types) {
+    var u = String(l.url || "").trim(), t = l.type;
+    if (!u) return "";
+    if (types.indexOf(t) < 0) return "구분을 골라 주세요.";
+    if (!/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i.test(u)) return "주소를 확인해 주세요.";
+    if (/instagram\.com|facebook\.com|tiktok\.com|open\.kakao\.com|pf\.kakao\.com|smartstore\.naver\.com|forms\.gle|docs\.google\.com\/forms|linktr\.ee/i.test(u)) return "SNS·상담·구매 링크는 넣을 수 없어요.";
+    var yt = /youtube\.com|youtu\.be/i.test(u), vid = /(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)[\w-]{11}/.test(u);
+    if (yt && !vid) return "유튜브 채널 주소가 아니라 영상 하나의 주소를 넣어 주세요.";
+    if ((t === "클럽하와이 유튜브" || t === "본인 강의 영상") && !vid) return "유튜브 영상 하나의 주소를 넣어 주세요.";
+    var blog = /blog\.naver\.com|tistory\.com|brunch\.co\.kr/i.test(u);
+    if (t === "클럽하와이 블로그" && !(blog && /\/\d{5,}|logNo=\d+/.test(u))) return "블로그 홈이 아니라 클럽하와이 블로그 글 하나의 주소를 넣어 주세요.";
+    if (blog && t !== "클럽하와이 블로그") return "개인 블로그는 넣을 수 없어요. 클럽하와이 블로그 글이면 구분을 「클럽하와이 블로그」로 골라 주세요.";
+    return "";
+  }
   function renderLinks() {
     var types = C.LINK_TYPES || [];
     $("links").innerHTML = P.cur.links.length ? P.cur.links.map(function (l, i) {
-      return '<div class="link-row" data-li="' + i + '">' +
+      var bad = l.url.trim() ? linkProblem(l, types) : "";
+      return '<div class="link-row' + (bad ? " bad" : "") + '" data-li="' + i + '">' +
         '<select data-l="type"><option value="">구분</option>' + types.map(function (t) { return "<option" + (t === l.type ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
         '<input data-l="url" type="url" placeholder="주소를 붙여 넣어 주세요 (예: https://youtu.be/…)" value="' + esc(l.url) + '">' +
-        '<button type="button" class="x" data-ldel="' + i + '" aria-label="링크 빼기">×</button></div>';
+        '<button type="button" class="x" data-ldel="' + i + '" aria-label="링크 빼기">×</button>' +
+        '<p class="link-warn"' + (bad ? "" : " hidden") + ">" + esc(bad) + "</p></div>";
     }).join("") : '<p class="muted small">아직 등록된 링크가 없어요. 「+ 링크 추가」를 눌러 넣어 주세요.</p>';
+  }
+  function checkLinkRow(row) {
+    var l = P.cur.links[+row.dataset.li], bad = l.url.trim() ? linkProblem(l, C.LINK_TYPES || []) : "";
+    row.classList.toggle("bad", !!bad);
+    var w = row.querySelector(".link-warn");
+    w.textContent = bad;
+    w.hidden = !bad;
   }
 
   function photoTile(src, attr, badge) {
@@ -223,9 +247,10 @@
     var changed = Object.keys(FIELDS).filter(function (k) { return !same(P.cur[k], P.orig[k]); }).length;
     var okTopics = P.cur.topics.filter(topicOk).length;
     var photoN = P.cur.photos.length + P.newPhotos.length;
+    var badLinks = P.cur.links.filter(function (l) { return l.url.trim() && linkProblem(l, C.LINK_TYPES || []); }).length;
     var items = [
       { ok: true, t: "소개 내용", s: changed ? changed + "곳 수정" : "그대로" },
-      { ok: true, t: "관련 링크", s: P.cur.links.filter(function (l) { return l.url; }).length + "개" },
+      { ok: !badLinks, t: "관련 링크", s: badLinks ? "기준에 맞지 않는 링크 " + badLinks + "개" : P.cur.links.filter(function (l) { return l.url; }).length + "개" },
       { ok: hasPhoto(), t: "사진", s: (hasPhoto() ? "프로필 있음" : "프로필 사진 필요") + " · 현장 " + photoN + "장" },
       { ok: okTopics > 0 && okTopics === P.cur.topics.length, t: "내 설명회", s: P.cur.topics.length ? okTopics + " / " + P.cur.topics.length + "개 완료" : "1개 이상 필요" },
       { ok: agreedAll(), t: "확인 및 동의", s: AGREES.filter(function (id) { return P.cur[id]; }).length + " / 3개 동의" }
@@ -266,6 +291,10 @@
     $("agreeMsg").textContent = "";
     if (P.cur.slogan.trim().length >= SLOGAN_MAX) errs.push({ el: document.querySelector('[data-in="slogan"]'), msg: "슬로건을 " + SLOGAN_MAX + "자보다 짧게 줄여 주세요. (지금 " + P.cur.slogan.trim().length + "자예요)" });
     if (!hasPhoto()) { $("secPhoto").classList.add("err"); errs.push({ el: $("secPhoto"), msg: "프로필 사진을 올려 주세요." }); }
+    P.cur.links.forEach(function (l, i) {
+      var bad = l.url.trim() ? linkProblem(l, C.LINK_TYPES || []) : "";
+      if (bad) errs.push({ el: document.querySelector('[data-li="' + i + '"]'), msg: "링크 " + (i + 1) + ": " + bad });
+    });
     if (!P.cur.topics.length) errs.push({ el: $("secTopics"), msg: "설명회를 1개 이상 적어 주세요." });
     P.cur.topics.forEach(function (t, i) {
       if (!topicOk(t)) {
@@ -367,6 +396,7 @@
         markField(t.dataset.in);
       } else if (t.dataset.l === "url") {
         P.cur.links[+t.closest("[data-li]").dataset.li].url = t.value;
+        checkLinkRow(t.closest("[data-li]"));
       } else if (t.dataset.t && t.type !== "checkbox" && t.tagName !== "SELECT") {
         var tp = P.cur.topics[+t.closest("[data-ti]").dataset.ti];
         tp[t.dataset.t] = t.dataset.t === "points" ? arr(t.value) : t.value;
@@ -395,6 +425,7 @@
         if (agreedAll()) { $("secAgree").classList.remove("err"); $("agreeMsg").textContent = ""; }
       } else if (t.dataset.l === "type") {
         P.cur.links[+t.closest("[data-li]").dataset.li].type = t.value;
+        checkLinkRow(t.closest("[data-li]"));
       } else return;
       renderProgress();
       saveDraft();
