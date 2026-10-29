@@ -68,10 +68,13 @@ window.APP_CONFIG = {
   ],
   TOPIC_TARGETS: ["초등 학부모", "중등 학부모", "고등 학부모", "초등학생", "중학생", "고등학생", "강사·직원", "원장", "기업·기관·단체"],
   SEASONS: ["상시", "1학기 초", "1학기 말", "여름방학", "2학기 초", "2학기 말", "겨울방학"],
-  // 소장님이 넣을 수 있는 링크 — 클럽하와이 유튜브·블로그에 있는 본인 영상·글만 (다른 채널·회사 콘텐츠 홍보를 막음). Code.gs와 같게
-  LINK_TYPES: ["클럽하와이 유튜브", "클럽하와이 블로그"],
-  CH_YOUTUBE: "@ISYOUHAWAII",               // https://www.youtube.com/@ISYOUHAWAII
-  CH_YOUTUBE_ID: "UCpPQizkoUXzT-xN_ELtEMfA",
+  // 소장님이 넣을 수 있는 링크 — 클럽하와이·이즈유 유튜브, 클럽하와이 블로그에 있는 본인 영상·글만 (다른 채널·회사 콘텐츠 홍보를 막음). Code.gs와 같게
+  LINK_TYPES: ["클럽하와이 유튜브", "이즈유 유튜브", "클럽하와이 블로그"],
+  // 받을 수 있는 유튜브 채널 (두 유튜브 구분 모두 이 채널들 영상이면 통과)
+  CH_YOUTUBES: [
+    { name: "클럽하와이", handle: "@ISYOUHAWAII", id: "UCpPQizkoUXzT-xN_ELtEMfA" },     // https://www.youtube.com/@ISYOUHAWAII
+    { name: "이즈유", handle: "@isyou_official", id: "UCf3dybFyWD4TPmwvzFpyIHQ" }      // https://www.youtube.com/@isyou_official
+  ],
   CH_BLOG: "isyou0943",                     // https://blog.naver.com/isyou0943
   // 슬로건 글자 수 — 이 수보다 짧게 (브랜딩 이미지 슬로건 중 가장 긴 45자를 반올림한 50)
   SLOGAN_MAX: 50,

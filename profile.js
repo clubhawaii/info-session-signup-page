@@ -153,9 +153,10 @@
     st.parentNode.classList.toggle("changed", changed);
   }
 
-  // 링크 기준: 클럽하와이 유튜브(@ISYOUHAWAII)·블로그(isyou0943)에 있는 본인 영상·글만.
+  // 링크 기준: 클럽하와이 유튜브(@ISYOUHAWAII)·이즈유 유튜브(@isyou_official)·클럽하와이 블로그(isyou0943)에 있는 본인 영상·글만.
   // 유튜브는 oEmbed로 그 영상의 채널을 확인하고, 본인 영상·글인지는 본사가 반영 전에 확인
-  var YT_CH = C.CH_YOUTUBE || "@ISYOUHAWAII", YT_CH_ID = C.CH_YOUTUBE_ID || "", BLOG_ID = C.CH_BLOG || "isyou0943";
+  var YT_CHS = C.CH_YOUTUBES || [{ name: "클럽하와이", handle: "@ISYOUHAWAII", id: "UCpPQizkoUXzT-xN_ELtEMfA" }], BLOG_ID = C.CH_BLOG || "isyou0943";
+  function isYtType(t) { return t === "클럽하와이 유튜브" || t === "이즈유 유튜브"; }
   var YT = {};   // 영상 ID → { state: "wait" | "ok" | "bad" | "unknown", title, msg, p }
   function ytId(u) { var m = String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/); return /youtube\.com|youtu\.be/i.test(u) && m ? m[1] : ""; }
   function blogOk(u) {
@@ -166,18 +167,20 @@
   function linkProblem(l) {
     var u = String(l.url || "").trim(), t = l.type;
     if (!u) return "";
-    if (t === "클럽하와이 유튜브") {
+    if (isYtType(t)) {
       var id = ytId(u);
-      if (!id) return "클럽하와이 유튜브(youtube.com/" + YT_CH + ")에 있는 영상 하나의 주소를 넣어 주세요.";
+      if (!id) return "클럽하와이·이즈유 유튜브에 있는 영상 하나의 주소를 넣어 주세요.";
       return YT[id] && YT[id].state === "bad" ? YT[id].msg : "";
     }
     if (t === "클럽하와이 블로그") return blogOk(u) ? "" : "클럽하와이 블로그(blog.naver.com/" + BLOG_ID + ")에 있는 글 하나의 주소를 넣어 주세요.";
-    if (t) return "이 구분은 이제 받지 않아요. 클럽하와이 유튜브·블로그에 있는 영상·글만 넣을 수 있으니 빼 주세요.";
+    if (t) return "이 구분은 이제 받지 않아요. 클럽하와이·이즈유 유튜브와 클럽하와이 블로그에 있는 영상·글만 넣을 수 있으니 빼 주세요.";
     return "구분을 골라 주세요.";
   }
   function chanOk(url) {
     url = String(url || "").toLowerCase();
-    return url.slice(-YT_CH.length - 1) === "/" + YT_CH.toLowerCase() || (YT_CH_ID && url.indexOf(YT_CH_ID.toLowerCase()) >= 0);
+    return YT_CHS.some(function (ch) {
+      return url.slice(-ch.handle.length - 1) === "/" + ch.handle.toLowerCase() || (ch.id && url.indexOf(ch.id.toLowerCase()) >= 0);
+    });
   }
   function checkYt(id) {
     if (YT[id]) return YT[id].p;
@@ -185,9 +188,9 @@
     o.p = fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent("https://youtu.be/" + id)).then(function (r) {
       return r.ok ? r.json() : null;
     }).then(function (j) {
-      if (!j) { o.state = "bad"; o.msg = "영상을 확인할 수 없어요. 클럽하와이 유튜브에 공개된 영상인지 확인해 주세요."; }
+      if (!j) { o.state = "bad"; o.msg = "영상을 확인할 수 없어요. 클럽하와이·이즈유 유튜브에 공개된 영상인지 확인해 주세요."; }
       else if (chanOk(j.author_url)) { o.state = "ok"; o.title = j.title; }
-      else { o.state = "bad"; o.msg = "클럽하와이 유튜브 채널의 영상이 아니에요. (이 영상의 채널: " + j.author_name + ")"; }
+      else { o.state = "bad"; o.msg = "클럽하와이·이즈유 유튜브 채널의 영상이 아니에요. (이 영상의 채널: " + j.author_name + ")"; }
     }, function () { o.state = "unknown"; });   // 인터넷 문제 등 — 막지 않고 제출 때 시트 스크립트가 다시 확인
     return o.p;
   }
@@ -195,15 +198,15 @@
   function noteOf(l) {
     var bad = linkProblem(l);
     if (bad) return { cls: "bad", t: bad };
-    var id = l.type === "클럽하와이 유튜브" ? ytId(l.url) : "";
+    var id = isYtType(l.type) ? ytId(l.url) : "";
     if (!id || !YT[id]) return { cls: "", t: "" };
-    if (YT[id].state === "wait") return { cls: "wait", t: "클럽하와이 유튜브 영상인지 확인하는 중…" };
-    if (YT[id].state === "ok") return { cls: "ok", t: "✓ 클럽하와이 유튜브 영상: " + YT[id].title };
+    if (YT[id].state === "wait") return { cls: "wait", t: "클럽하와이·이즈유 유튜브 영상인지 확인하는 중…" };
+    if (YT[id].state === "ok") return { cls: "ok", t: "✓ 확인된 영상: " + YT[id].title };
     return { cls: "", t: "" };
   }
   function checkYtLinks() {
     return Promise.all(P.cur.links.map(function (l) {
-      var id = l.type === "클럽하와이 유튜브" ? ytId(l.url) : "";
+      var id = isYtType(l.type) ? ytId(l.url) : "";
       return id ? checkYt(id) : null;
     }));
   }
@@ -213,7 +216,7 @@
       var opts = types.indexOf(l.type) < 0 && l.type ? [l.type].concat(types) : types;   // 예전 구분도 보이게 (빼라고 안내)
       return '<div class="link-row" data-li="' + i + '">' +
         '<select data-l="type"><option value="">구분</option>' + opts.map(function (t) { return "<option" + (t === l.type ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
-        '<input data-l="url" type="url" placeholder="클럽하와이 유튜브 영상 또는 블로그 글 주소" value="' + esc(l.url) + '">' +
+        '<input data-l="url" type="url" placeholder="유튜브 영상 또는 블로그 글 하나의 주소" value="' + esc(l.url) + '">' +
         '<button type="button" class="x" data-ldel="' + i + '" aria-label="링크 빼기">×</button>' +
         '<p class="link-warn" hidden></p></div>';
     }).join("") : '<p class="muted small">아직 등록된 링크가 없어요. 「+ 링크 추가」를 눌러 넣어 주세요.</p>';
