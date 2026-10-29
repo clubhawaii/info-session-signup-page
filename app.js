@@ -4,7 +4,7 @@
   "use strict";
 
   var C = window.APP_CONFIG || {};
-  var DEMO = !C.APPS_SCRIPT_URL;
+  var DEMO = !C.APPS_SCRIPT_URL || C.SIGNUP_OPEN === false;   // 신청 페이지는 정식 오픈 전까지 시험 모드
   var DOW = "일월화수목금토";
   var HOURS = C.RESPONSE_HOURS || 24;
   var MAX_PICKS = C.MAX_PICKS || 3;
