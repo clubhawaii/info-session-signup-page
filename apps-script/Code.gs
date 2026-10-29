@@ -386,10 +386,9 @@ function respond_(d) {
   var map = { ok: ANS.OK, adjust: ANS.ADJ, decline: ANS.NO }, ans = map[d.choice];
   if (!ans) return { ok: false, error: '응답을 골라 주세요.' };
   var memo = safe_(String(d.memo || '').slice(0, 500));
-  if (ans === ANS.ADJ && !memo) return { ok: false, error: '가능한 시간을 적어 주세요.' };
   var coach = String(a.get('소장님')).trim(), id = String(a.get('신청번호'));
   if (ans === ANS.OK && clash_(coach, dateStr_(a.get('희망일')), timeStr_(a.get('시작 시간')), id)) {
-    return { ok: false, error: '이 시간 앞뒤로 이미 확정된 설명회가 있습니다. 「시간 조율 필요」로 가능한 시간을 알려 주세요.' };
+    return { ok: false, error: '이 시간 앞뒤로 이미 확정된 설명회가 있습니다. 「시간 조율 필요」로 가능한 일자·시간을 알려 주세요.' };
   }
   setAns_(a, { '응답': ans, '응답 일시': new Date(), '소장님 메모': memo });
   // 가능·시간 조율 응답은 바로 본사에 — 담당자가 최대한 빨리 원장님과 연결

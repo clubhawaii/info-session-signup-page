@@ -84,7 +84,7 @@
 
     var CHOICES = {
       ok: { d: "가능해요", t: "이 날짜·시간에 진행할 수 있어요", btn: "가능으로 보내기" },
-      adjust: { d: "시간 조율이 필요해요", t: "이 날은 되지만 시작 시간을 바꾸면 가능해요", btn: "시간 조율 필요로 보내기" },
+      adjust: { d: "시간 조율이 필요해요", t: "날짜나 시작 시간을 바꾸면 가능해요", btn: "시간 조율 필요로 보내기" },
       decline: { d: "이번에는 어려워요", t: "이 일정에는 진행이 어려워요", btn: "불가로 보내기" }
     };
 
@@ -113,8 +113,8 @@
         choice = b.dataset.c;
         Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
         $("memo").hidden = choice === "ok";
-        $("memoLabel").textContent = choice === "adjust" ? "가능한 시작 시간 (필수)" : "사정을 알려 주세요 (선택)";
-        $("memoText").placeholder = choice === "adjust" ? "예) 오후 4시 시작이면 가능합니다" : "예) 그날 지방 일정이 있어요";
+        $("memoLabel").textContent = choice === "adjust" ? "요청사항 · 가능한 일자 (선택)" : "사정을 알려 주세요 (선택)";
+        $("memoText").placeholder = choice === "adjust" ? "가능한 날짜·시간을 적어 주시면 조율이 빨라져요.\n예) 11월 20일(목) 오후 4시 이후, 11월 22일(토) 오전 가능" : "예) 그날 지방 일정이 있어요";
         $("send").disabled = false;
         $("send").textContent = CHOICES[choice].btn;
       });
@@ -123,7 +123,6 @@
     $("send").addEventListener("click", function () {
       if (!choice || sending) return;
       var memo = $("memoText").value.trim();
-      if (choice === "adjust" && !memo) { toast("가능한 시작 시간을 적어 주세요."); $("memoText").focus(); return; }
       sending = true;
       var btn = $("send"), label = btn.textContent;
       btn.disabled = true; btn.textContent = "보내는 중…";
@@ -132,9 +131,9 @@
         : fetch(C.APPS_SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
       req.then(function (res) {
         if (!res.ok) throw new Error(res.error || "");
-        var tail = "<br>본사 담당자가 원장님과 조율한 뒤 결과를 알림톡으로 알려 드립니다.";
+        var tail = "<br>응답이 모이면 원장님이 24시간 안에 확정하시고, 결과는 알림톡으로 알려 드립니다.";
         if (choice === "ok") result("ok", "가능으로 보냈습니다", esc(krDate(R.date) + " " + krTime(R.time)) + " 가능으로 전달했습니다." + tail);
-        else if (choice === "adjust") result("ok", "시간 조율 필요로 보냈습니다", "적어 주신 시간을 본사 담당자에게 전달했습니다." + tail);
+        else if (choice === "adjust") result("ok", "시간 조율 필요로 보냈습니다", (memo ? "적어 주신 내용을" : "시간 조율이 필요하다고") + " 본사 담당자에게 전달했습니다." + tail);
         else result("ok", "응답을 보냈습니다", "알려 주셔서 감사합니다. 다음 요청 때 다시 연락드리겠습니다.");
       }).catch(function (e) {
         sending = false; btn.disabled = false; btn.textContent = label;
