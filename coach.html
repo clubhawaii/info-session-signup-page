@@ -97,7 +97,7 @@
       $("app").innerHTML =
         "<h1>" + esc(r.coach) + "님, 설명회 출강 요청이 왔어요</h1>" +
         '<div class="due"><b>' + esc(krDue(new Date(r.deadline))) + "까지</b> 응답해 주세요. (밤·주말 포함 " + HOURS + "시간)<br>기한 안에 응답이 없으면 <b>「불가」로 처리</b>됩니다.</div>" +
-        '<div class="notyet" style="margin-top:14px"><b>확정 전에 소장님 일정을 먼저 여쭤보는 단계예요.</b>원장님께서는 최대 세 분의 소장님께 함께 일정을 여쭤보고 계세요. 가능하다고 답해 주신 소장님들 가운데 원장님께서 한 분을 모시게 되니, 편하게 일정만 알려 주세요.</div>' +
+        '<div class="notyet" style="margin-top:14px"><b>일정을 먼저 여쭤보는 단계예요.</b>원장님이 최대 세 분께 함께 여쭤보고, 가능하신 분 중 한 분과 확정해요.</div>' +
         '<div class="when"><small>희망 일정</small><b>' + esc(krDate(r.date)) + " " + esc(krTime(r.time)) + ' 시작</b><div class="prod">' + esc(r.product || "설명회 — 요청사항으로 상의") + "</div></div>" +
         // 같은 날 다른 일정 — 시작 시간 앞뒤로 겹치면 빨갛게 (판단은 소장님이)
         (others.length ? '<div class="others' + (clash ? " clash" : "") + '"><p>같은 날 소장님의 다른 일정</p><ul>' + others.map(function (o) {
@@ -107,7 +107,7 @@
         '<div class="opts" id="opts">' + Object.keys(CHOICES).map(function (k) {
           return '<button type="button" class="opt" data-c="' + k + '"><span><div class="d">' + CHOICES[k].d + '</div><div class="t">' + CHOICES[k].t + '</div></span><span class="radio"></span></button>';
         }).join("") + "</div>" +
-        '<div class="notyet" id="okNote" hidden><b>시간 내어 주셔서 감사해요</b>다만 「가능」으로 답해 주셔도 바로 확정되는 것은 아니에요. 원장님께서 가능하다고 답해 주신 소장님들 가운데 한 분을 모시게 되어, 이번에는 아쉽게 다른 소장님과 함께하게 될 수도 있어요. 확정되든 아니든 결과는 알림톡으로 꼭 알려 드릴게요.</div>' +
+        '<div class="notyet" id="okNote" hidden><b>「가능」이 곧 확정은 아니에요.</b>다른 소장님과 진행될 수도 있어요. 결과는 알림톡으로 알려 드릴게요.</div>' +
         '<div class="memo" id="memo" hidden><label for="memoText" id="memoLabel"></label><textarea id="memoText"></textarea></div>' +
         '<p class="once">한 번 보낸 응답은 바꿀 수 없어요. 바꾸셔야 하면 본사 담당자(<a href="tel:' + HQ.replace(/-/g, "") + '">' + HQ + '</a>)에게 연락해 주세요.</p>';
       $("cbar").hidden = false;
@@ -137,7 +137,7 @@
       req.then(function (res) {
         if (!res.ok) throw new Error(res.error || "");
         var tail = "<br>응답이 모이면 원장님이 24시간 안에 확정하시고, 결과는 알림톡으로 알려 드립니다.";
-        if (choice === "ok") result("ok", "가능으로 보냈습니다", esc(krDate(R.date) + " " + krTime(R.time)) + " 가능으로 잘 전달했어요. 감사합니다.<br>원장님께서 가능하다고 답해 주신 소장님들 가운데 한 분을 모시면 그때 확정돼요." + tail);
+        if (choice === "ok") result("ok", "가능으로 보냈습니다", esc(krDate(R.date) + " " + krTime(R.time)) + " 가능으로 전달했어요. 감사합니다." + tail);
         else result("ok", "응답을 보냈습니다", "알려 주셔서 감사합니다. 다음 요청 때 다시 연락드리겠습니다.");
       }).catch(function (e) {
         sending = false; btn.disabled = false; btn.textContent = label;
