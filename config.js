@@ -47,6 +47,8 @@ window.APP_CONFIG = {
   MAX_PICKS: 3,
   // 소장님 응답 기한(시간, 밤·주말 포함). 기한 안에 답이 없으면 「불가」로 처리. 시트 스크립트(Code.gs)의 RESPONSE_HOURS와 같게
   RESPONSE_HOURS: 24,
+  // 소장님이 보낸 응답을 바꿔야 할 때 연락할 본사 번호 (Code.gs의 HQ_CONTACT와 같게)
+  HQ_CONTACT: "010-2939-7909",
   // 같은 날 다른 일정과 겹침 기준(시간) — 시작 시간 앞뒤로 이 시간 안이면 겹침 (설명회 약 2시간 + 이동)
   OVERLAP_HOURS: 3,
 

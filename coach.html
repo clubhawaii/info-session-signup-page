@@ -32,6 +32,8 @@
     .opt.on .radio { border: 7px solid var(--blue); }
     .memo { margin-top: 12px; }
     .once { margin: 14px 0 0; font-size: 13px; color: var(--ink-60); }
+    .notyet { margin: 12px 0 0; padding: 14px 16px; border-radius: var(--r-sm); background: #fff6e0; border: 1px solid #f2d48a; font-size: 14px; line-height: 1.6; }
+    .notyet b { display: block; font-size: 15px; margin-bottom: 4px; }
     .memo label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
     .memo textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; min-height: 84px; outline: none; resize: vertical; }
     .memo textarea:focus { border-color: var(--blue); }
@@ -59,6 +61,7 @@
     var C = window.APP_CONFIG || {};
     var DEMO = !C.APPS_SCRIPT_URL;
     var HOURS = C.RESPONSE_HOURS || 24;
+    var HQ = C.HQ_CONTACT || "010-2939-7909";
     var TOKEN = new URLSearchParams(location.search).get("t") || "";
     var DOW = "일월화수목금토";
     var R = null, choice = null, sending = false;
@@ -94,6 +97,7 @@
       $("app").innerHTML =
         "<h1>" + esc(r.coach) + "님, 설명회 출강 요청이 왔어요</h1>" +
         '<div class="due"><b>' + esc(krDue(new Date(r.deadline))) + "까지</b> 응답해 주세요. (밤·주말 포함 " + HOURS + "시간)<br>기한 안에 응답이 없으면 <b>「불가」로 처리</b>됩니다.</div>" +
+        '<div class="notyet" style="margin-top:14px"><b>확정이 아니라, 이 일정에 출강이 가능한지 여쭤보는 요청이에요.</b>원장님은 최대 3명의 소장님께 함께 요청하시고, 「가능」이라고 답한 소장님 중에서 원장님이 한 분을 골라 확정해요.</div>' +
         '<div class="when"><small>희망 일정</small><b>' + esc(krDate(r.date)) + " " + esc(krTime(r.time)) + ' 시작</b><div class="prod">' + esc(r.product || "설명회 — 요청사항으로 상의") + "</div></div>" +
         // 같은 날 다른 일정 — 시작 시간 앞뒤로 겹치면 빨갛게 (판단은 소장님이)
         (others.length ? '<div class="others' + (clash ? " clash" : "") + '"><p>같은 날 소장님의 다른 일정</p><ul>' + others.map(function (o) {
@@ -103,8 +107,9 @@
         '<div class="opts" id="opts">' + Object.keys(CHOICES).map(function (k) {
           return '<button type="button" class="opt" data-c="' + k + '"><span><div class="d">' + CHOICES[k].d + '</div><div class="t">' + CHOICES[k].t + '</div></span><span class="radio"></span></button>';
         }).join("") + "</div>" +
+        '<div class="notyet" id="okNote" hidden><b>「가능」은 확정이 아니에요.</b>원장님은 최대 3명까지 소장님을 골라 요청하셨고, 「가능」이라고 답한 소장님 중에서 원장님이 한 분을 골라 확정해요. 다른 소장님과 진행될 수도 있으며, 결과는 알림톡으로 꼭 알려 드려요.</div>' +
         '<div class="memo" id="memo" hidden><label for="memoText" id="memoLabel"></label><textarea id="memoText"></textarea></div>' +
-        '<p class="once">한 번 보낸 응답은 바꿀 수 없어요. 바꾸셔야 하면 본사 담당자에게 연락해 주세요.</p>';
+        '<p class="once">한 번 보낸 응답은 바꿀 수 없어요. 바꾸셔야 하면 본사 담당자(<a href="tel:' + HQ.replace(/-/g, "") + '">' + HQ + '</a>)에게 연락해 주세요.</p>';
       $("cbar").hidden = false;
       $("opts").addEventListener("click", function (e) {
         var b = e.target.closest("[data-c]");
@@ -112,6 +117,7 @@
         choice = b.dataset.c;
         Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
         $("memo").hidden = choice === "ok";
+        $("okNote").hidden = choice !== "ok";
         $("memoLabel").textContent = "사정을 알려 주세요 (선택)";
         $("memoText").placeholder = "예) 그날 지방 일정이 있어요";
         $("send").disabled = false;
@@ -131,7 +137,7 @@
       req.then(function (res) {
         if (!res.ok) throw new Error(res.error || "");
         var tail = "<br>응답이 모이면 원장님이 24시간 안에 확정하시고, 결과는 알림톡으로 알려 드립니다.";
-        if (choice === "ok") result("ok", "가능으로 보냈습니다", esc(krDate(R.date) + " " + krTime(R.time)) + " 가능으로 전달했습니다." + tail);
+        if (choice === "ok") result("ok", "가능으로 보냈습니다", esc(krDate(R.date) + " " + krTime(R.time)) + " 가능으로 전달했습니다.<br><b>아직 확정은 아니에요.</b> 「가능」이라고 답한 소장님 중에서 원장님이 한 분을 골라 확정해요." + tail);
         else result("ok", "응답을 보냈습니다", "알려 주셔서 감사합니다. 다음 요청 때 다시 연락드리겠습니다.");
       }).catch(function (e) {
         sending = false; btn.disabled = false; btn.textContent = label;
@@ -151,7 +157,7 @@
       if (!d.ok) { result("x", "열 수 없는 링크입니다", esc(d.error || "")); return; }
       R = d.request;
       if (DONE_MSG[R.answer]) { result("ok", "이미 응답하신 요청입니다", esc(DONE_MSG[R.answer])); return; }
-      if (R.answer !== "응답 대기" || new Date(R.deadline) < new Date()) { result("x", "응답 기한이 지났습니다", "기한 안에 응답이 없어 「불가」로 처리되었습니다. 궁금한 점은 본사로 문의해 주세요."); return; }
+      if (R.answer !== "응답 대기" || new Date(R.deadline) < new Date()) { result("x", "응답 기한이 지났습니다", "기한 안에 응답이 없어 「불가」로 처리되었습니다. 궁금한 점은 본사 담당자(" + HQ + ")에게 문의해 주세요."); return; }
       render();
     }).catch(function () { result("x", "불러오지 못했습니다", "잠시 후 다시 열어 주세요."); });
   })();
