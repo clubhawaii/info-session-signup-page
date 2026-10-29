@@ -612,3 +612,16 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .products { grid-template-columns: minmax(0, 1fr); }
 }
 #step3 .picker { margin-top: 20px; }
+
+/* 맞춤 설명회 — 첫 화면 안내, 설명회 카드, 요청사항 필수 표시 */
+.custom-note { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 18px; padding: 12px 14px; border-radius: var(--r-sm); background: #fff6e0; border: 1px solid #f2d48a; font-size: 14px; line-height: 1.55; }
+.custom-note p { margin: 0; color: var(--ink-60); }
+.custom-note b { color: var(--ink); }
+.cn-tag { flex: none; padding: 2px 8px; border-radius: 4px; background: #e8a400; color: #fff; font-size: 12px; font-weight: 700; margin-top: 1px; }
+.product.custom { border-style: dashed; border-color: #e8a400; background: #fffbf0; }
+.product.custom .tc-cat { color: #b07c00; }
+.product.custom.on { border-style: solid; border-color: #e8a400; box-shadow: 0 0 0 1px #e8a400 inset; background: #fff6e0; }
+.product.custom.on .radio { border-color: #e8a400; }
+.req-field em.must { color: #b07c00; font-weight: 700; }
+.custom-req { display: block; margin: 6px 0 8px; font-size: 13px; }
+.custom-req[hidden] { display: none; }

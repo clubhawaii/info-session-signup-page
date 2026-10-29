@@ -6,7 +6,7 @@
   <title>학원 설명회 연사 초청 신청 | 클럽하와이</title>
   <meta name="description" content="학원 설명회 연사 초청 강연 신청 — 학부모·학생 대상 입시·학습 설명회에 클럽하와이 전문 연사를 초청하세요.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261028e">
+  <link rel="stylesheet" href="styles.css?v=20261029a">
 </head>
 <body>
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="profile.html">소장님 입력 페이지</a></div>
@@ -22,6 +22,7 @@
     <div class="head" id="pageHead">
       <p class="intro"><b>학원 설명회 연사 초청 강연 신청</b><br>학부모·학생 대상 입시·학습 설명회에 클럽하와이 전문 연사를 초청하세요.</p>
       <p>원하시는 연사(최대 <span class="max-picks">3</span>명)와 강연 주제, 희망 일정을 알려 주시면 일정을 확인해 <b>담당자가 연락</b>드립니다.</p>
+      <div class="custom-note"><span class="cn-tag">맞춤</span><p><b>원하는 주제가 없나요? 우리 학원만을 위한 맞춤 설명회도 요청할 수 있어요.</b><br>소장님을 고른 뒤 설명회 단계에서 「우리 학원 맞춤 설명회」를 고르면, 지역·학교·학원 상황에 맞춰 새로 준비해 드려요. (금액은 담당자가 따로 안내 · 진행일 3주 전까지 신청)</p></div>
 
       <ol class="steps" id="steps">
         <li data-step="1"><b>1</b><span>소장님</span></li>
@@ -55,7 +56,7 @@
         <!-- 2. 설명회 -->
         <section class="panel" id="step2" hidden>
           <h2>소장님별로 원하시는 설명회를 골라 주세요</h2>
-          <p class="sub">소장님마다 <b>설명회 하나</b>를 골라 주세요. 소장님이 직접 준비한 설명회입니다.</p>
+          <p class="sub">소장님마다 <b>설명회 하나</b>를 골라 주세요. 소장님이 직접 준비한 설명회 중에서 고르시거나,<br>맨 끝의 <b>「우리 학원 맞춤 설명회」</b>로 이 학원만을 위한 설명회를 요청할 수 있어요.</p>
           <div id="products"></div>
         </section>
 
@@ -91,7 +92,8 @@
             <button type="button" class="link" data-open="policy">취소·환불 규정 보기</button>
           </div>
 
-          <label class="field req-field"><span>요청사항 <em>선택</em></span>
+          <label class="field req-field"><span>요청사항 <em id="reqTag">선택</em></span>
+            <span class="notice custom-req" id="customReq" hidden><b>맞춤 설명회를 고르셨어요.</b> 원하시는 주제, 대상(학년·학교), 우리 지역·학원의 특징을 적어 주세요. 담당자가 확인한 뒤 금액과 함께 연락드립니다.<br>준비 기간이 필요해 진행일 3주 뒤 날짜부터 고를 수 있어요.</span>
             <textarea id="request" rows="4" maxlength="1000" placeholder="예) 학부모님 질의응답 시간을 길게 해 주세요.&#10;예) 빔프로젝터·마이크가 없어요.&#10;예) 우리 지역 고교 상황을 함께 다뤄 주세요."></textarea>
             <small class="field-note">요청사항은 <b>담당자가 확인한 뒤 연락드립니다.</b></small>
           </label>
@@ -113,6 +115,7 @@
                 <div class="pr-head" id="prHead"></div>
                 <div class="pr-cards" id="pricing"></div>
               </div>
+              <p class="travel"><b>맞춤 설명회</b> 이 학원만을 위해 새로 준비하는 설명회는 담당자가 내용을 확인한 뒤 금액을 따로 안내드립니다.</p>
               <p class="travel"><b>지방 출장비 <span id="travelFee"></span></b> 지방 출장 및 지방에서 이동하는 강연자의 경우 출장비가 추가되며, 일정 확정 후 청구됩니다.</p>
             </div>
 
@@ -290,9 +293,9 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261028e"></script>
-  <script src="sample-data.js?v=20261028e"></script>
+  <script src="config.js?v=20261029a"></script>
+  <script src="sample-data.js?v=20261029a"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="app.js?v=20261028e"></script>
+  <script src="app.js?v=20261029a"></script>
 </body>
 </html>

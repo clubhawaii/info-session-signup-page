@@ -27,6 +27,9 @@ var OVERLAP_HOURS = 3;
 var PAY_HOURS = 24;
 // ▼ 진행일까지 최소 남아야 하는 날 수 (config.js의 MIN_DAYS와 같게)
 var MIN_DAYS = 14;
+// ▼ 맞춤 설명회 — 소장님 설명회 대신 이 이름으로 들어오면 준비 기간이 더 길고 요청사항이 필수 (config.js의 CUSTOM_NAME·CUSTOM_MIN_DAYS와 같게). 금액은 담당자가 정함
+var CUSTOM_NAME = '우리 학원 맞춤 설명회';
+var CUSTOM_MIN_DAYS = 21;
 
 /*
  * 알림톡 발송 설정 (솔라피 기준) — 스크립트 편집기 ⚙ 프로젝트 설정 → 스크립트 속성
@@ -372,8 +375,10 @@ function validate_(d) {
   var names = d.picks.map(function (p) { return String(p && p.coach || '').trim(); });
   if (names.some(function (n, k) { return !n || names.indexOf(n) !== k; })) return '소장님 선택을 확인해 주세요.';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !/^\d{2}:\d{2}$/.test(d.time)) return '희망 날짜와 시작 시간을 확인해 주세요.';
-  var min = today_(); min.setDate(min.getDate() + MIN_DAYS);
-  if (parseDate_(d.date) < min) return '진행일 최소 2주 전까지만 신청할 수 있습니다.';
+  var custom = d.picks.some(function (p) { return String(p && p.product || '').trim() === CUSTOM_NAME; });
+  var min = today_(); min.setDate(min.getDate() + (custom ? CUSTOM_MIN_DAYS : MIN_DAYS));
+  if (parseDate_(d.date) < min) return custom ? '맞춤 설명회는 진행일 최소 ' + (CUSTOM_MIN_DAYS / 7) + '주 전까지만 신청할 수 있습니다.' : '진행일 최소 2주 전까지만 신청할 수 있습니다.';
+  if (custom && !String(d.request || '').trim()) return '맞춤 설명회는 원하시는 내용을 요청사항에 적어 주세요.';
   for (var k = 0; k < names.length; k++) {
     if (clash_(names[k], d.date, d.time)) return names[k] + ' 소장님은 그 시간 앞뒤로 이미 확정된 일정이 있습니다. 시간을 바꾸거나 다른 소장님을 골라 주세요.';
   }

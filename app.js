@@ -63,7 +63,12 @@
   function krDue(d) { return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + DOW[d.getDay()] + ") " + krTime(hhmm(d)); }
   function mins(t) { var p = String(t).split(":"); return +p[0] * 60 + +p[1]; }
   function daysFromToday(s) { return Math.round((parse(s) - today()) / 864e5); }
-  var MIN_DATE = addDays(today(), C.MIN_DAYS || 14);
+  // 맞춤 설명회를 하나라도 고르면 준비 기간 때문에 더 늦은 날짜부터
+  var CUSTOM = C.CUSTOM_NAME || "우리 학원 맞춤 설명회";
+  var CUSTOM_DAYS = C.CUSTOM_MIN_DAYS || 21;
+  function hasCustom() { return S.picked.some(function (n) { return S.product[n] === CUSTOM; }); }
+  function minDays() { return hasCustom() ? CUSTOM_DAYS : (C.MIN_DAYS || 14); }
+  function minDate() { return addDays(today(), minDays()); }
 
   /* ---------- 가격 ---------- */
   function man(n) { return n % 10000 === 0 ? (n / 10000).toLocaleString("ko-KR") : (n / 10000).toFixed(1); }
@@ -117,7 +122,7 @@
     S.picked = S.picked.filter(findCoach);
     Object.keys(S.product).forEach(function (n) {
       var c = findCoach(n);
-      if (!c || S.picked.indexOf(n) < 0 || !c.topics.some(function (t) { return t.name === S.product[n]; })) delete S.product[n];
+      if (!c || S.picked.indexOf(n) < 0 || (S.product[n] !== CUSTOM && !c.topics.some(function (t) { return t.name === S.product[n]; }))) delete S.product[n];
     });
   }
 
@@ -279,14 +284,21 @@
       "<b>" + esc(t.name) + "</b>" + (t.intro ? '<span class="pd-intro">' + esc(t.intro) + "</span>" : "") +
       (meta.length ? '<span class="tc-meta">' + meta.map(esc).join("<i></i>") + "</span>" : "") + "</span></button>";
   }
+  function customCard(c) {
+    var on = S.product[c.name] === CUSTOM;
+    return '<button type="button" class="product custom' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-pc="' + esc(c.name) + '" data-pt="' + esc(CUSTOM) + '">' +
+      '<span class="radio"></span><span class="pd-body"><span class="tc-cat">맞춤 · 금액 별도 안내</span><b>' + esc(CUSTOM) + "</b>" +
+      '<span class="pd-intro">지역·학교·학원 상황에 맞춰 이 학원만을 위해 새로 준비해요.</span>' +
+      '<span class="tc-meta">진행일 ' + (CUSTOM_DAYS / 7) + "주 전까지 신청</span></span></button>";
+  }
   function renderProducts() {
     $("products").innerHTML = S.picked.map(function (n) {
       var c = findCoach(n);
       if (!c) return "";
       return '<div class="pgroup"><div class="pg-head">' + avatar(c, "sm") + "<div><b>" + esc(n) + " 소장님</b><span>" +
         (S.product[n] ? "골랐어요" : c.topics.length ? "설명회 하나를 골라 주세요" : "") + '</span></div><button type="button" class="link" data-more="' + esc(n) + '">자세히 보기</button></div>' +
-        (c.topics.length ? '<div class="products" role="radiogroup">' + c.topics.map(function (t) { return productCard(c, t); }).join("") + "</div>"
-          : '<p class="muted pd-none">설명회를 준비 중인 소장님입니다. 원하시는 내용을 다음 단계 요청사항에 적어 주세요.</p>') + "</div>";
+        (c.topics.length ? "" : '<p class="muted pd-none">설명회를 준비 중인 소장님입니다. 맞춤 설명회를 고르시거나, 원하시는 내용을 다음 단계 요청사항에 적어 주세요.</p>') +
+        '<div class="products" role="radiogroup">' + c.topics.map(function (t) { return productCard(c, t); }).join("") + customCard(c) + "</div></div>";
     }).join("");
   }
   function productsDone() {
@@ -307,7 +319,7 @@
       // 고른 소장님 모두가 그날 하루 전체 일정이 있으면 막음
       var full = S.picked.length > 0 && S.picked.every(function (n) { return dayOff(n, s); });
       var cls = "day" + (s === t ? " today" : "") + (s === S.date ? " pick cur" : "") + (full ? " blocked" : "");
-      html += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (dt < MIN_DATE || full ? " disabled" : "") + ">" + d + "</button>";
+      html += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (dt < minDate() || full ? " disabled" : "") + ">" + d + "</button>";
     }
     $("calDays").innerHTML = html;
     $("prevMonth").disabled = m <= new Date(today().getFullYear(), today().getMonth(), 1);
@@ -338,11 +350,15 @@
         ' <button type="button" class="link" data-unpick="' + esc(n) + '">이 소장님 빼기</button></p>';
     }).join("") + (bad.length ? '<p class="muted">시작 시간을 바꾸거나 소장님을 빼 주세요. (확정된 일정 앞뒤 ' + (OVERLAP / 60) + "시간은 겹치는 것으로 봅니다)</p>" : "");
     $("soonNotice").hidden = !(S.date && daysFromToday(S.date) < (C.WARN_DAYS || 21));
+    var cu = hasCustom();
+    $("reqTag").textContent = cu ? "맞춤 설명회 필수" : "선택";
+    $("reqTag").classList.toggle("must", cu);
+    $("customReq").hidden = !cu;
     renderSummary();
   }
 
   function pickDate(s) {
-    if (parse(s) < MIN_DATE) { $("calMsg").textContent = "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
+    if (parse(s) < minDate()) { $("calMsg").textContent = hasCustom() ? "맞춤 설명회는 준비 기간이 필요해 진행일 최소 " + (CUSTOM_DAYS / 7) + "주 전까지만 신청할 수 있습니다." : "진행일 최소 2주 전까지만 신청할 수 있습니다."; return; }
     S.date = s;
     var off = S.picked.filter(function (n) { return dayOff(n, s); });
     $("calMsg").textContent = off.length ? off.join(", ") + " 소장님은 이날 일정이 있어요." : "";
@@ -354,7 +370,8 @@
     S.time = h && m ? h + ":" + m : "";
     renderWhen();
   }
-  function whenDone() { return !!(S.date && S.time) && !clashed().length && S.picked.length > 0; }
+  function needRequest() { return hasCustom() && !$("request").value.trim(); }
+  function whenDone() { return !!(S.date && S.time) && !clashed().length && S.picked.length > 0 && !needRequest(); }
 
   /* ---------- 신청 내역 / 하단 바 ---------- */
   function memberVal() { return ($("form").elements.member || {}).value; }
@@ -362,6 +379,11 @@
   function priceText() {
     var k = kindOf(S.kind), m = memberVal();
     if (!k || !S.picked.length) return "0원";
+    if (S.picked.every(function (n) { return S.product[n] === CUSTOM; })) return "맞춤 설명회 금액 별도 안내";
+    if (hasCustom()) return basePrice(k, m) + " (맞춤 설명회는 별도 안내)";
+    return basePrice(k, m);
+  }
+  function basePrice(k, m) {
     if (m === "비회원") return priceOf(k.nonmember);
     if (m === "회원") return priceOf(k.member);
     return "회원 " + priceOf(k.member) + " · 비회원 " + priceOf(k.nonmember);   // 회원 여부는 4단계에서 고름
@@ -387,7 +409,7 @@
     }
     if (S.step === 3) {
       return { ok: whenDone(), label: "다음", txt: "<b>" + (S.date ? esc(krDate(S.date)) : "희망 날짜") + "</b>" +
-        (!S.date ? "날짜를 골라 주세요" : !S.time ? "시작 시간을 골라 주세요" : clashed().length ? "일정이 겹치는 소장님이 있어요" : esc(krTime(S.time)) + " 시작") };
+        (!S.date ? "날짜를 골라 주세요" : !S.time ? "시작 시간을 골라 주세요" : clashed().length ? "일정이 겹치는 소장님이 있어요" : needRequest() ? "맞춤 설명회 내용을 요청사항에 적어 주세요" : esc(krTime(S.time)) + " 시작") };
     }
     var left4 = formErrors().length;
     return { ok: !S.sending && !left4, soft: true, label: S.sending ? "신청 중…" : "신청하기",
@@ -445,7 +467,7 @@
     if (step === 1) renderCoaches();
     if (step === 2) renderProducts();
     if (step === 3) {
-      if (!S.month) S.month = new Date(MIN_DATE.getFullYear(), MIN_DATE.getMonth(), 1);
+      if (!S.month) { var md = minDate(); S.month = new Date(md.getFullYear(), md.getMonth(), 1); }
       renderWhen();
     }
     renderSummary();
@@ -662,6 +684,10 @@
       var b = e.target.closest("[data-pc]");
       if (!b) return;
       S.product[b.dataset.pc] = b.dataset.pt;
+      if (S.date && parse(S.date) < minDate()) {
+        S.date = ""; S.time = "";
+        toast("맞춤 설명회는 " + (CUSTOM_DAYS / 7) + "주 뒤 날짜부터 고를 수 있어 날짜를 다시 골라 주세요.");
+      }
       renderProducts();
       renderSummary();
     });
@@ -681,7 +707,7 @@
       togglePick(findCoach(b.dataset.unpick));
       renderWhen();
     });
-    $("request").addEventListener("input", save);
+    $("request").addEventListener("input", function () { renderSummary(); });
 
     // 4단계
     $("memberSeg").addEventListener("click", function (e) {
@@ -771,7 +797,7 @@
     if (!d || !Array.isArray(d.picked)) return 1;
     S.picked = d.picked.map(String);
     S.product = d.product && typeof d.product === "object" ? d.product : {};
-    S.date = /^\d{4}-\d{2}-\d{2}$/.test(d.date) && parse(d.date) >= MIN_DATE ? d.date : "";
+    S.date = /^\d{4}-\d{2}-\d{2}$/.test(d.date) && parse(d.date) >= minDate() ? d.date : "";
     S.time = /^\d{2}:\d{2}$/.test(d.time) ? d.time : "";
     $("request").value = d.request || "";
     var form = $("form"), f = d.form || {};
