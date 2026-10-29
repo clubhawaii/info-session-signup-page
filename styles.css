@@ -618,9 +618,9 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .custom-note p { margin: 0; color: var(--ink-60); }
 .custom-note b { color: var(--ink); }
 .cn-tag { flex: none; padding: 2px 8px; border-radius: 4px; background: #e8a400; color: #fff; font-size: 12px; font-weight: 700; margin-top: 1px; }
-.product.custom { border-style: dashed; border-color: #e8a400; background: #fffbf0; }
+.product.custom { border-style: dashed; border-color: #e8a400; background: #fff; }
 .product.custom .tc-cat { color: #b07c00; }
-.product.custom.on { border-style: solid; border-color: #e8a400; box-shadow: 0 0 0 1px #e8a400 inset; background: #fff6e0; }
+.product.custom.on { border-style: solid; border-color: #e8a400; box-shadow: 0 0 0 1px #e8a400 inset; background: #fff; }
 .product.custom.on .radio { border-color: #e8a400; }
 .req-field em.must { color: #b07c00; font-weight: 700; }
 .custom-req { display: block; margin: 6px 0 8px; font-size: 13px; }
