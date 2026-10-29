@@ -59,7 +59,7 @@
   (function () {
     "use strict";
     var C = window.APP_CONFIG || {};
-    var DEMO = !C.APPS_SCRIPT_URL || /[?&]demob/.test(location.search);   // ?demo = 예시 요청으로 미리보기(저장 안 됨)
+    var DEMO = !C.APPS_SCRIPT_URL || /[?&]demo\b/.test(location.search);   // ?demo = 예시 요청으로 미리보기(저장 안 됨)
     var HOURS = C.RESPONSE_HOURS || 24;
     var HQ = C.HQ_CONTACT || "010-2939-7909";
     var TOKEN = new URLSearchParams(location.search).get("t") || "";
