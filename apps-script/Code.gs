@@ -2,8 +2,8 @@
  * 강연자 설명회 신청 페이지 — 구글시트 연동 스크립트
  * 흐름: 원장님 신청(소장님 최대 MAX_PICKS명 + 소장님별 설명회 하나 + 날짜 하나·시작 시간 + 요청사항)
  *       → 고른 소장님께 각각 출강 요청 알림톡(RESPONSE_HOURS 안에 응답, 마감 REMIND_HOURS 전 독촉 한 번) + 원장님 접수 알림 + 본사 알림
- *       → 소장님이 coach.html에서 「가능 / 시간 조율 필요 / 불가」 (기한 안에 답이 없으면 「응답 없음(불가)」)
- *       → 가능·시간 조율 응답은 그때마다 본사에 알림, 모두 답하거나 기한이 지나면 본사에 응답 마감 알림
+ *       → 소장님이 coach.html에서 「가능 / 불가」 (기한 안에 답이 없으면 「응답 없음(불가)」)
+ *       → 가능 응답은 그때마다 본사에 알림, 모두 답하거나 기한이 지나면 본사에 응답 마감 알림
  *       → 본사 담당자가 소장님·원장님과 직접 조율 → 시트에 확정 내용·금액을 넣고 메뉴 「확정·결제 안내 보내기」
  *         (원장님께 확정·결제 안내, 확정 소장님께 확정 안내, 나머지 소장님께 다른 소장님으로 진행 안내)
  *       → 결제완료 → 진행완료
@@ -99,7 +99,7 @@ var TEMPLATES = {
   COACH_REQUEST:
     '[클럽하와이] 설명회 출강 요청\n\n#{소장님}님, 설명회 출강 요청이 들어왔습니다.\n\n' +
     '■ 설명회: #{설명회}\n■ 일정: #{일정}\n■ 학원: #{학원명}\n■ 장소: #{장소}\n■ 대상: #{대상} · 예상 인원 #{인원}\n■ 요청사항: #{요청사항}\n\n' +
-    '아래 링크에서 「가능 / 시간 조율 필요 / 불가」 중 하나를 골라 주세요.\n▶ #{링크}\n\n' +
+    '아래 링크에서 「가능 / 불가」 중 하나를 골라 주세요.\n▶ #{링크}\n\n' +
     '※ #{응답기한}까지 응답해 주세요. (밤·주말 포함 ' + RESPONSE_HOURS + '시간) 기한 안에 응답이 없으면 「불가」로 처리됩니다.\n' +
     '※ 한 번 보낸 응답은 바꿀 수 없어요. 바꾸셔야 하면 본사 담당자에게 연락 주세요.',
   COACH_REMIND:
@@ -377,21 +377,21 @@ function validate_(d) {
   return '';
 }
 
-/** 소장님 응답: choice = 'ok'(가능) / 'adjust'(시간 조율 필요) / 'decline'(불가) */
+/** 소장님 응답: choice = 'ok'(가능) / 'decline'(불가) — 시간 조율 선택지는 없앰(2026-10-29) */
 function respond_(d) {
   var a = findAns_(d.t);
   if (!a) return { ok: false, error: '요청을 찾을 수 없습니다.' };
   if (String(a.get('응답')) !== ANS.WAIT) return { ok: false, error: '이미 응답하신 요청입니다. (' + a.get('응답') + ')' };
   if (new Date(a.get('응답 기한')) < new Date()) return { ok: false, error: '응답 기한이 지났습니다.' };
-  var map = { ok: ANS.OK, adjust: ANS.ADJ, decline: ANS.NO }, ans = map[d.choice];
+  var map = { ok: ANS.OK, decline: ANS.NO }, ans = map[d.choice];
   if (!ans) return { ok: false, error: '응답을 골라 주세요.' };
   var memo = safe_(String(d.memo || '').slice(0, 500));
   var coach = String(a.get('소장님')).trim(), id = String(a.get('신청번호'));
   if (ans === ANS.OK && clash_(coach, dateStr_(a.get('희망일')), timeStr_(a.get('시작 시간')), id)) {
-    return { ok: false, error: '이 시간 앞뒤로 이미 확정된 설명회가 있습니다. 「시간 조율 필요」로 가능한 일자·시간을 알려 주세요.' };
+    return { ok: false, error: '이 시간 앞뒤로 이미 확정된 설명회가 있어 「가능」으로 보낼 수 없습니다. 「불가」로 답하시거나 본사 담당자에게 연락해 주세요.' };
   }
   setAns_(a, { '응답': ans, '응답 일시': new Date(), '소장님 메모': memo });
-  // 가능·시간 조율 응답은 바로 본사에 — 담당자가 최대한 빨리 원장님과 연결
+  // 가능 응답은 바로 본사에 — 담당자가 최대한 빨리 원장님과 연결
   var app = findApp_(id);
   if (app && ans !== ANS.NO) {
     var v = coachVars_(vars_(app.get), coach, String(a.get('설명회') || ''), '');
