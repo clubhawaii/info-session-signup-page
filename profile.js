@@ -4,7 +4,7 @@
   "use strict";
 
   var C = window.APP_CONFIG || {};
-  var DEMO = !C.APPS_SCRIPT_URL || /[?&]demo/.test(location.search);   // ?demo = 예시 강연자로 미리보기(저장 안 됨)
+  var DEMO = !C.APPS_SCRIPT_URL || /[?&]demob/.test(location.search);   // ?demo = 예시 강연자로 미리보기(저장 안 됨)
   var MAX_PHOTOS = C.MAX_PHOTOS || 5, SLOGAN_MAX = C.SLOGAN_MAX || 50;
   var AGREES = ["agreePrivacy", "agreePublish", "agreePriority"];
   var ETC = "기타";
