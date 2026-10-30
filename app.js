@@ -148,9 +148,9 @@
   function renderPerk() {
     var save = DURS.map(function (d) { return d.nonmember - d.member; });
     $("perk").innerHTML =
-      '<div class="perk-top"><strong class="perk-mark">CLUBHAWAII<br>MEMBERSHIP</strong><span class="perk-chip" aria-hidden="true"></span></div>' +
+      '<div class="perk-top"><strong class="perk-mark">CLUB HAWAII<br>MEMBERSHIP</strong><span class="perk-chip" aria-hidden="true"></span></div>' +
       '<span class="perk-tag">MEMBER EXCLUSIVE PRICE</span>' +
-      '<p><em>클럽하와이 회원 학원</em>은 설명회 1회 <em>' + rangeText(save) + " 할인</em>된 <br>회원 특별가로 신청하실 수 있습니다.</p>";
+      '<p><em>클럽하와이 회원 학원</em>은 설명회 1회 <em>' + rangeText(save) + " 할인</em>된 회원 특별가로 신청하실 수 있습니다.</p>";
   }
   function renderPriceTable() {
     var dur = fv("duration"), m = memberVal();
