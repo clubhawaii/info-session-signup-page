@@ -147,8 +147,10 @@
   /* ---------- 회원 혜택 · 금액표 (4단계) ---------- */
   function renderPerk() {
     var save = DURS.map(function (d) { return d.nonmember - d.member; });
-    $("perk").innerHTML = '<span class="perk-tag">회원 혜택</span><p>클럽하와이 회원 학원은 설명회 1회 <em>' +
-      rangeText(save) + " 할인</em>된 금액으로 신청하실 수 있습니다.</p>";
+    $("perk").innerHTML =
+      '<div class="perk-top"><strong class="perk-mark">CLUBHAWAII<br>MEMBERSHIP</strong><span class="perk-chip" aria-hidden="true"></span></div>' +
+      '<span class="perk-tag">MEMBER EXCLUSIVE PRICE</span>' +
+      '<p><em>클럽하와이 회원 학원</em>은 설명회 1회 <em>' + rangeText(save) + " 할인</em>된 <br>회원 특별가로 신청하실 수 있습니다.</p>";
   }
   function renderPriceTable() {
     var dur = fv("duration"), m = memberVal();
