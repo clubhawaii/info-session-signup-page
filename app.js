@@ -145,11 +145,10 @@
   function clashed() { return S.picked.filter(function (n) { return clashOf(n, S.date, S.time); }); }
 
   /* ---------- 회원 혜택 · 금액표 (4단계) ---------- */
-  var ICON_GEM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg>';
   function renderPerk() {
     var save = DURS.map(function (d) { return d.nonmember - d.member; });
-    $("perk").innerHTML = '<span class="perk-ico">' + ICON_GEM + '</span><p><b>클럽하와이 회원 특별가</b>회원 학원은 설명회 1회 <em>' +
-      rangeText(save) + " 할인</em></p>";
+    $("perk").innerHTML = '<span class="perk-tag">회원 혜택</span><p>클럽하와이 회원 학원은 설명회 1회 <em>' +
+      rangeText(save) + " 할인</em>된 금액으로 신청하실 수 있습니다.</p>";
   }
   function renderPriceTable() {
     var dur = fv("duration"), m = memberVal();

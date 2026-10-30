@@ -583,17 +583,15 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .custom-req[hidden] { display: none; }
 
 /* 4단계 — 회원 혜택 한 줄 */
-.perk { display: flex; gap: 12px; align-items: center; margin-top: 16px; padding: 14px 16px; border-radius: var(--r); background: var(--blue); color: #fff; }
-.perk p { margin: 0; font-size: 14px; line-height: 1.5; }
-.perk b { display: block; font-size: 16px; font-weight: 800; }
-.perk em { font-style: normal; font-weight: 800; }
-.perk-ico { flex: none; width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, .18); display: grid; place-items: center; }
-.perk-ico svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linejoin: round; }
+.perk { display: flex; gap: 10px; align-items: center; margin-top: 16px; padding: 12px 16px; border-radius: var(--r); background: var(--blue-08); color: var(--ink); }
+.perk p { margin: 0; font-size: 14px; line-height: 1.55; }
+.perk em { font-style: normal; font-weight: 700; color: var(--blue); }
+.perk-tag { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 600; }
 
 /* 4단계 — 강연 시간 · 회원 여부 · 금액표 */
 .price-box { display: grid; gap: 18px; margin-top: 18px; padding: 20px; border: 1px solid var(--line); border-radius: var(--r); }
 .choice-field .mcard { padding: 14px 16px; }
-.vat-line { margin: 2px 0 0; font-size: 13px; color: var(--ink); }
+.vat-line { margin: -8px 0 0; font-size: 13px; color: var(--ink); }
 .vat-line b { display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 4px; background: var(--ink); color: #fff; font-size: 12px; }
 .price-box .price-table { border: 1px solid var(--line); border-radius: var(--r-sm); border-collapse: separate; border-spacing: 0; overflow: hidden; }
 .price-box .price-table th, .price-box .price-table td { text-align: center; }
