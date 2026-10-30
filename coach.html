@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>설명회 출강 요청</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261029f">
+  <link rel="stylesheet" href="styles.css?v=20261030a">
   <style>
     .cw { max-width: 560px; margin: 0 auto; padding: 28px 20px 140px; }
     .cw h1 { font-size: 23px; font-weight: 800; }
@@ -52,8 +52,8 @@
   <div class="cbar" id="cbar" hidden><button type="button" class="btn primary" id="send" disabled>응답을 골라 주세요</button></div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script src="config.js?v=20261029f"></script>
-  <script src="sample-data.js?v=20261029f"></script>
+  <script src="config.js?v=20261030a"></script>
+  <script src="sample-data.js?v=20261030a"></script>
   <script>
   // 소장님 응답 — 알림톡 링크(?t=토큰)로 들어와 「가능 / 불가」 중 하나를 고름
   (function () {
@@ -98,7 +98,7 @@
         "<h1>" + esc(r.coach) + "님, 설명회 출강 요청이 왔어요</h1>" +
         '<div class="due"><b>' + esc(krDue(new Date(r.deadline))) + "까지</b> 응답해 주세요. (밤·주말 포함 " + HOURS + "시간)<br>기한 안에 응답이 없으면 <b>「불가」로 처리</b>됩니다.</div>" +
         '<div class="notyet" style="margin-top:14px"><b>일정을 먼저 여쭤보는 단계예요.</b>원장님이 최대 세 분께 함께 여쭤보고, 가능하신 분 중 한 분과 확정해요.</div>' +
-        '<div class="when"><small>희망 일정</small><b>' + esc(krDate(r.date)) + " " + esc(krTime(r.time)) + ' 시작</b><div class="prod">' + esc(r.product || "설명회 — 요청사항으로 상의") + "</div></div>" +
+        '<div class="when"><small>희망 일정</small><b>' + esc(krDate(r.date)) + " " + esc(krTime(r.time)) + ' 시작' + (r.duration ? " · 강연 " + esc(r.duration) : "") + '</b><div class="prod">' + esc(r.product || "설명회 — 요청사항으로 상의") + "</div></div>" +
         // 같은 날 다른 일정 — 시작 시간 앞뒤로 겹치면 빨갛게 (판단은 소장님이)
         (others.length ? '<div class="others' + (clash ? " clash" : "") + '"><p>같은 날 소장님의 다른 일정</p><ul>' + others.map(function (o) {
           return "<li" + (o.clash ? ' class="hit"' : "") + ">" + esc(o.time ? krTime(o.time) : "하루 종일") + " · " + esc(o.state) + (o.academy ? " · " + esc(o.academy) : "") + (o.clash ? " — 시간이 겹쳐요" : "") + "</li>";

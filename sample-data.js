@@ -116,6 +116,7 @@
       request: "고입 준비 위주로 부탁드립니다.",
       date: plus(25),
       time: "19:00",
+      duration: "90분 ~ 120분",
       deadline: new Date(Date.now() + 20 * 3600 * 1000).toISOString(),
       answer: "응답 대기",
       others: [{ time: "14:00", state: "확정", clash: false }]

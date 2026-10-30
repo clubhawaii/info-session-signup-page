@@ -19,3 +19,8 @@ local-data.js
 
 # 내부 산출물 (정리 PDF·예시 엑셀 등)
 outputs/
+
+# 통화 녹음 등 음성 파일은 올리지 않음
+*.m4a
+*.mp3
+*.wav

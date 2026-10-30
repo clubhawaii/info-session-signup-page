@@ -55,7 +55,7 @@ var ANS = { WAIT: '응답 대기', OK: '가능', ADJ: '시간 조율 필요', NO
 
 var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원장님 성함', '연락처', '학원 주소', '진행 장소', '회원 여부', '설명회 대상', '예상 참석 인원',
   '희망일', '시작 시간', '요청사항', '요청사항 확인', '신청 소장님', '응답 기한', '응답 현황', '응답 마감 일시',
-  '확정 강연자', '확정 설명회', '확정일', '확정 시간', '금액', '출장비', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
+  '확정 강연자', '확정 설명회', '확정일', '확정 시간', '금액', '강연 시간', '결제 기한', '100% 환불 마감', '70% 환불 마감', '50% 환불 마감',
   '결제 안내 문구', '확정 안내 일시', '담당자', '메모', '결제 기한 알림'];
 // 소장님 응답 — 신청 한 건에 고른 소장님 수만큼 줄이 생김
 var ANS_HEADERS = ['신청번호', '소장님', '설명회', '희망일', '시작 시간', '학원명', '요청 일시', '응답 기한', '응답', '응답 일시', '소장님 메모', '독촉 알림', '응답 토큰'];
@@ -272,7 +272,7 @@ function getRequest_(token) {
       id: String(g('신청번호')), coach: coach, product: String(a.get('설명회') || ''),
       academy: String(g('학원명')), venue: String(g('진행 장소') || g('학원 주소')), target: String(g('설명회 대상')),
       attendees: String(g('예상 참석 인원') || ''), request: String(g('요청사항') || ''),
-      date: ds, time: tm, deadline: new Date(a.get('응답 기한')).toISOString(),
+      date: ds, time: tm, duration: String(g('강연 시간') || ''), deadline: new Date(a.get('응답 기한')).toISOString(),
       answer: String(a.get('응답')), memo: String(a.get('소장님 메모') || ''),
       others: sameDay_(coach, ds, tm, String(g('신청번호')))
     }
@@ -339,7 +339,7 @@ function apply_(d) {
   set('신청번호', id); set('신청일시', now); set('상태', ST.ASKING);
   set('학원명', safe_(d.academy)); set('원장님 성함', safe_(d.director)); set('연락처', "'" + d.phone);
   set('학원 주소', safe_(d.address)); set('진행 장소', safe_(d.venue || d.address)); set('회원 여부', d.member); set('설명회 대상', safe_(d.target));
-  set('예상 참석 인원', safe_(d.attendees)); set('희망일', d.date); set('시작 시간', d.time);
+  set('예상 참석 인원', safe_(d.attendees)); set('희망일', d.date); set('시작 시간', d.time); set('강연 시간', safe_(d.duration));
   set('요청사항', safe_(d.request)); set('요청사항 확인', d.request ? false : '');
   set('신청 소장님', picks.map(function (p) { return p.coach + ' — ' + (p.product || '요청사항으로 상의'); }).join('\n'));
   set('응답 기한', due);
@@ -373,7 +373,7 @@ function apply_(d) {
 
 function validate_(d) {
   if (!d) return '신청 내용이 비어 있습니다.';
-  var req = ['academy', 'director', 'phone', 'address', 'member', 'target'];
+  var req = ['academy', 'director', 'phone', 'address', 'member', 'target', 'duration'];
   for (var i = 0; i < req.length; i++) if (!String(d[req[i]] || '').trim()) return '필수 항목이 비어 있습니다.';
   if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(d.phone)) return '휴대폰 번호를 확인해 주세요.';
   if (!Array.isArray(d.picks) || !d.picks.length) return '소장님을 골라 주세요.';
@@ -607,7 +607,7 @@ function onEditInstalled(e) {
   var sh = e.range.getSheet();
   if (sh.getName() !== SH.APPS || e.range.getRow() < 2 || e.range.getNumRows() > 1 || e.range.getNumColumns() > 1) return;
   var c = e.range.getColumn(), row = e.range.getRow();
-  if (['상태', '확정 강연자', '확정일', '확정 시간', '금액', '출장비'].map(col_).indexOf(c) < 0) return;
+  if (['상태', '확정 강연자', '확정일', '확정 시간', '금액'].map(col_).indexOf(c) < 0) return;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -663,11 +663,10 @@ function fillPayment_(sh, row) {
   if (!(date instanceof Date)) { cells.forEach(function (r) { r.clearContent(); }); return; }
   var d100 = shift_(date, -15), d70 = shift_(date, -8), d50 = shift_(date, -4), dNo = shift_(date, -3);
   cells[0].setValue(d100); cells[1].setValue(d70); cells[2].setValue(d50);
-  var fee = num_(g('금액')), trip = num_(g('출장비'));
+  var fee = num_(g('금액'));
   if (!fee) { cells[3].setValue('(금액을 입력하면 문구가 만들어집니다)'); return; }
-  var total = fee + trip;
   var msg = '[클럽하와이] ' + g('확정 강연자') + ' 소장님 설명회 일정이 ' + krDate_(date) + (g('확정 시간') ? ' ' + krTime_(timeStr_(g('확정 시간'))) : '') + '로 확정되었습니다. ' +
-    '결제 금액은 ' + total.toLocaleString('ko-KR') + '원(VAT 별도' + (trip ? ', 출장비 ' + trip.toLocaleString('ko-KR') + '원 포함' : '') + ')입니다. ' +
+    '결제 금액은 ' + fee.toLocaleString('ko-KR') + '원(VAT 별도)입니다. ' +
     '취소 시 ' + krMD_(d100) + '까지 100%, ' + krMD_(d70) + '까지 70%, ' + krMD_(d50) + '까지 50% 환불되며, ' + krMD_(dNo) + '부터는 환불되지 않습니다.';
   cells[3].setValue(msg);
 }
@@ -699,7 +698,7 @@ function vars_(g) {
     '연락처': String(g('연락처')).replace(/^'/, ''), '회원': String(g('회원 여부')),
     '장소': String(g('진행 장소') || g('학원 주소')), '대상': String(g('설명회 대상')),
     '인원': g('예상 참석 인원') ? g('예상 참석 인원') + '명' : '미정', '요청사항': String(g('요청사항') || '없음'),
-    '일정': ds ? krDate_(parseDate_(ds)) + ' ' + krTime_(timeStr_(g('시작 시간'))) + ' 시작' : '-',
+    '일정': ds ? krDate_(parseDate_(ds)) + ' ' + krTime_(timeStr_(g('시작 시간'))) + ' 시작' + (g('강연 시간') ? ' · 강연 ' + g('강연 시간') : '') : '-',
     '소장님목록': String(g('신청 소장님')).split('\n').map(function (x) { return x.split(' — ')[0]; }).join(', '),
     '소장님설명회': String(g('신청 소장님')),
     '응답기한': when(g('응답 기한')),
@@ -723,9 +722,9 @@ function coachVars_(v, coach, product, token) {
 }
 
 function payText_(g) {
-  var fee = num_(g('금액')), trip = num_(g('출장비'));
+  var fee = num_(g('금액'));
   if (!fee) return '';
-  return (fee + trip).toLocaleString('ko-KR') + '원 (VAT 별도' + (trip ? ', 출장비 ' + trip.toLocaleString('ko-KR') + '원 포함' : '') + ')';
+  return fee.toLocaleString('ko-KR') + '원 (VAT 별도)';
 }
 function refundText_(date) {
   return krMD_(shift_(date, -15)) + '까지 100%, ' + krMD_(shift_(date, -8)) + '까지 70%, ' + krMD_(shift_(date, -4)) + '까지 50% 환불, ' +

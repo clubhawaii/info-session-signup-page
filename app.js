@@ -72,11 +72,16 @@
 
   /* ---------- 가격 ---------- */
   function man(n) { return n % 10000 === 0 ? (n / 10000).toLocaleString("ko-KR") : (n / 10000).toFixed(1); }
-  function priceOf(range) {
-    if (!range) return "확정 필요";
-    return range[0] === range[1] ? man(range[0]) + "만원" : man(range[0]) + "~" + man(range[1]) + "만원";
-  }
   function kindOf(id) { return (C.KINDS || []).filter(function (k) { return k.id === id; })[0]; }
+  var DURS = C.DURATIONS || [];
+  function durOf(id) { return DURS.filter(function (d) { return d.id === id; })[0]; }
+  // 금액 목록 → "60만원" 또는 "60~90만원"
+  function rangeText(vals) {
+    vals = vals.filter(Boolean);
+    if (!vals.length) return "별도 안내";
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    return lo === hi ? man(lo) + "만원" : man(lo) + "~" + man(hi) + "만원";
+  }
 
   /* ---------- 공통 UI ---------- */
   var toastTimer;
@@ -139,29 +144,22 @@
   function dayOff(name, date) { return S.blocked.some(function (b) { return b.coach === name && b.date === date && !b.time; }); }
   function clashed() { return S.picked.filter(function (n) { return clashOf(n, S.date, S.time); }); }
 
-  /* ---------- 가격 비교 (4단계) ---------- */
-  function fixed(range) { return range && range[0] === range[1] ? range[0] : 0; }
-  var ICON_USER = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+  /* ---------- 회원 혜택 · 금액표 (4단계) ---------- */
   var ICON_GEM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg>';
-  function renderPricing() {
-    var k = kindOf(S.kind) || (C.KINDS || [])[0];
-    if (!k) return;
-    var mem = fixed(k.member), non = fixed(k.nonmember), save = mem && non > mem ? non - mem : 0;
-    $("prHead").innerHTML =
-      '<h3 class="pr-title">클럽하와이 회원이면<br><em>더 저렴하게</em></h3>' +
-      '<p class="pr-sub">오직 클럽하와이 회원 학원만 받을 수 있는 특별가</p>';
-    $("pricing").innerHTML =
-      '<div class="pr-card">' +
-        '<span class="pr-ico">' + ICON_USER + '</span><span class="pr-name">비회원</span>' +
-        '<div class="pr-amount"><span class="pr-price">' + (k.nonmember ? priceOf(k.nonmember) : "별도 안내") + '</span><span class="pr-unit">VAT 별도</span></div>' +
-      "</div>" +
-      '<div class="pr-card best"><span class="pr-badge">회원 전용</span>' +
-        '<span class="pr-ico">' + ICON_GEM + '</span><span class="pr-name">클럽하와이 회원</span>' +
-        '<div class="pr-amount">' + (save ? '<s class="pr-was">' + priceOf(k.nonmember) + "</s>" : "") +
-          '<span class="pr-price">' + priceOf(k.member) + '</span><span class="pr-unit">VAT 별도</span></div>' +
-        (save ? '<div class="pr-strip"><b>' + man(save) + "만원</b> 할인</div>" : (k.note ? '<div class="pr-strip">' + esc(k.note) + "</div>" : "")) +
-      "</div>";
-    $("travelFee").textContent = man(C.TRAVEL_FEE || 0) + "만원";
+  function renderPerk() {
+    var save = DURS.map(function (d) { return d.nonmember - d.member; });
+    $("perk").innerHTML = '<span class="perk-ico">' + ICON_GEM + '</span><p><b>클럽하와이 회원 특별가</b>회원 학원은 설명회 1회 <em>' +
+      rangeText(save) + " 할인</em></p>";
+  }
+  function renderPriceTable() {
+    var dur = fv("duration"), m = memberVal();
+    function cell(d, key, label) {
+      return "<td" + (d.id === dur && m === label ? ' class="on"' : "") + ">" + man(d[key]) + "만원</td>";
+    }
+    $("priceTable").innerHTML = "<thead><tr><th>강연 시간</th><th>회원</th><th>비회원</th></tr></thead><tbody>" +
+      DURS.map(function (d) {
+        return "<tr" + (d.id === dur ? ' class="on"' : "") + "><th>" + esc(d.label) + "</th>" + cell(d, "member", "회원") + cell(d, "nonmember", "비회원") + "</tr>";
+      }).join("") + "</tbody>";
   }
 
   /* ---------- 1단계: 소장님 ---------- */
@@ -377,16 +375,18 @@
   function memberVal() { return ($("form").elements.member || {}).value; }
 
   function priceText() {
-    var k = kindOf(S.kind), m = memberVal();
-    if (!k || !S.picked.length) return "0원";
+    if (!S.picked.length) return "0원";
     if (S.picked.every(function (n) { return S.product[n] === CUSTOM; })) return "맞춤 설명회 금액 별도 안내";
-    if (hasCustom()) return basePrice(k, m) + " (맞춤 설명회는 별도 안내)";
-    return basePrice(k, m);
+    if (hasCustom()) return basePrice() + " (맞춤 설명회는 별도 안내)";
+    return basePrice();
   }
-  function basePrice(k, m) {
-    if (m === "비회원") return priceOf(k.nonmember);
-    if (m === "회원") return priceOf(k.member);
-    return "회원 " + priceOf(k.member) + " · 비회원 " + priceOf(k.nonmember);   // 회원 여부는 4단계에서 고름
+  // 강연 시간·회원 여부(4단계)를 고른 만큼 좁혀서 보여 줌
+  function basePrice() {
+    var m = memberVal(), d = durOf(fv("duration")), ds = d ? [d] : DURS;
+    var mem = rangeText(ds.map(function (x) { return x.member; })), non = rangeText(ds.map(function (x) { return x.nonmember; }));
+    if (m === "회원") return mem;
+    if (m === "비회원") return non;
+    return "회원 " + mem + " · 비회원 " + non;
   }
 
   function summaryHtml() {
@@ -413,7 +413,7 @@
     }
     var left4 = formErrors().length;
     return { ok: !S.sending && !left4, soft: true, label: S.sending ? "신청 중…" : "신청하기",
-      txt: left4 ? "<b>필수 항목 " + left4 + "개 남음</b>모두 입력하면 신청할 수 있어요" : "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em> · 지방 출장비 별도' };
+      txt: left4 ? "<b>필수 항목 " + left4 + "개 남음</b>모두 입력하면 신청할 수 있어요" : "<b>예상 " + esc(priceText()) + '</b><em class="vat">VAT 별도</em>' };
   }
 
   function renderSummary() {
@@ -438,14 +438,16 @@
     if (S.step === 4) renderMember();
   }
 
-  /* ---------- 4단계: 회원 여부 (가격 비교 카드) ---------- */
+  /* ---------- 4단계: 강연 시간 · 회원 여부 (금액은 아래 표로) ---------- */
   function renderMember() {
-    var k = kindOf(S.kind) || (C.KINDS || [])[0], m = memberVal();
+    var m = memberVal(), dur = fv("duration");
+    $("durSeg").innerHTML = DURS.map(function (d) {
+      return '<button type="button" class="mcard' + (dur === d.id ? " on" : "") + '" data-dur="' + esc(d.id) + '"><span class="radio"></span><span class="mc-body"><b>' + esc(d.label) + "</b></span></button>";
+    }).join("");
     $("memberSeg").innerHTML =
-      '<button type="button" class="mcard' + (m === "회원" ? " on" : "") + '" data-v="회원"><span class="radio"></span><span class="mc-body"><b>클럽하와이 회원</b><span class="mc-tag">회원가</span></span><strong>' + priceOf(k.member) + "</strong></button>" +
-      '<button type="button" class="mcard' + (m === "비회원" ? " on" : "") + '" data-v="비회원"><span class="radio"></span><span class="mc-body"><b>비회원</b><span class="mc-tag gray">비회원가</span></span><strong>' + priceOf(k.nonmember) + "</strong></button>" +
-      '<p class="mc-note">설명회 1회 기준 · VAT 별도<br>회원 여부는 담당자 연락 때 확인합니다.</p>';
-    renderPricing();
+      '<button type="button" class="mcard' + (m === "회원" ? " on" : "") + '" data-v="회원"><span class="radio"></span><span class="mc-body"><b>클럽하와이 회원</b><span class="mc-tag">회원가</span></span></button>' +
+      '<button type="button" class="mcard' + (m === "비회원" ? " on" : "") + '" data-v="비회원"><span class="radio"></span><span class="mc-body"><b>비회원</b><span class="mc-tag gray">비회원가</span></span></button>';
+    renderPriceTable();
   }
 
   /* ---------- 단계 이동 ---------- */
@@ -464,6 +466,7 @@
     $("side").hidden = finished;
     $("bar").hidden = finished;
     $("pageHead").hidden = finished;
+    $("headIntro").hidden = step !== 1;   // 제목·맞춤 설명회 안내는 첫 단계에서만 (이후 단계는 단계 표시만)
     if (step === 1) renderCoaches();
     if (step === 2) renderProducts();
     if (step === 3) {
@@ -505,6 +508,7 @@
   function formErrors() {
     var form = $("form"), out = [];
     function bad(name, msg) { out.push({ name: name, msg: msg }); }
+    if (!fv("duration")) bad("duration", "강연 시간을 골라 주세요.");
     if (!fv("member")) bad("member", "회원 여부를 골라 주세요.");
     if (!fv("academy")) bad("academy", "학원명을 입력해 주세요.");
     if (!fv("director")) bad("director", "원장님 성함을 입력해 주세요.");
@@ -517,7 +521,7 @@
       if (!fv("vaddr1")) bad("vaddr1", "설명회 진행 장소를 입력하거나 「학원 주소와 같아요」를 체크해 주세요.");
       else if (!fv("vaddr2")) bad("vaddr2", "상세 주소나 장소 이름을 입력해 주세요.");
     }
-    ["agreePrivacy", "agreeThird", "agreePolicy"].forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
+    ["agreePrivacy", "agreeThird", "agreeShoot", "agreePhoto", "agreePolicy"].forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
     return out;
   }
   // 한 칸만 다시 검사해서 틀렸으면 빨갛게 (칸을 벗어날 때)
@@ -546,7 +550,7 @@
     var address = v("addr1") + " " + v("addr2") + (v("zip") ? " (" + v("zip") + ")" : "");
     return {
       academy: v("academy"), director: v("director"), phone: v("phone"),
-      member: v("member"), target: v("target"),
+      member: v("member"), target: v("target"), duration: (durOf(v("duration")) || {}).label || "",
       address: address,
       venue: form.elements.venueSame.checked ? address + " (학원)" : v("vaddr1") + " " + v("vaddr2") + (v("vzip") ? " (" + v("vzip") + ")" : ""),
       attendees: v("attendees"), request: $("request").value.trim(),
@@ -583,7 +587,7 @@
     $("doneSum").innerHTML =
       "<dt>신청번호</dt><dd>" + esc(res.id) + "</dd>" +
       "<dt>학원</dt><dd>" + esc(b.academy) + " · " + esc(b.director) + " 원장님</dd>" +
-      "<dt>희망 일정</dt><dd>" + esc(krDate(b.date)) + " " + esc(krTime(b.time)) + " 시작</dd>" +
+      "<dt>희망 일정</dt><dd>" + esc(krDate(b.date)) + " " + esc(krTime(b.time)) + " 시작 · 강연 " + esc(b.duration) + "</dd>" +
       '<dt>소장님 · 설명회</dt><dd><ul class="done-picks">' + b.picks.map(function (p) {
         return "<li><b>" + esc(p.coach) + "</b><span>" + esc(p.product || "요청사항으로 상의") + "</span></li>";
       }).join("") + "</ul></dd>" +
@@ -710,6 +714,14 @@
     $("request").addEventListener("input", function () { renderSummary(); });
 
     // 4단계
+    $("durSeg").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-dur]");
+      if (!b) return;
+      var input = $("form").elements.duration;
+      input.value = b.dataset.dur;
+      clearErr(input);
+      renderSummary();
+    });
     $("memberSeg").addEventListener("click", function (e) {
       var b = e.target.closest("[data-v]");
       if (!b) return;
@@ -779,7 +791,7 @@
 
   /* ---------- 입력 내용 보관 (같은 탭에서 새로고침해도 이어서) ---------- */
   var SAVE_KEY = "seminar-signup-v3";
-  var KEEP = ["member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2"];
+  var KEEP = ["duration", "member", "academy", "director", "phone", "attendees", "target", "zip", "addr1", "addr2", "vzip", "vaddr1", "vaddr2"];
   function save() {
     if (S.finished) return;
     try {
@@ -817,6 +829,7 @@
     each(document.querySelectorAll(".max-picks"), function (el) { el.textContent = MAX_PICKS; });
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
     renderTargets();
+    renderPerk();
     fillTimeSelects();
     if (C.CONTACT_URL) {
       each(document.querySelectorAll("[data-contact]"), function (a) { a.href = C.CONTACT_URL; });
