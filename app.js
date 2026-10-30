@@ -155,7 +155,7 @@
   function renderPriceTable() {
     var dur = fv("duration"), m = memberVal();
     function cell(d, key, label) {
-      return "<td" + (d.id === dur && m === label ? ' class="on"' : "") + ">" + man(d[key]) + "만원</td>";
+      return "<td" + (d.id === dur && m === label ? ' class="on"' : "") + ">" + man(d[key]) + "만원~</td>";
     }
     $("priceTable").innerHTML = "<thead><tr><th>강연 시간</th><th>회원</th><th>비회원</th></tr></thead><tbody>" +
       DURS.map(function (d) {
@@ -385,6 +385,8 @@
   function basePrice() {
     var m = memberVal(), d = durOf(fv("duration")), ds = d ? [d] : DURS;
     var mem = rangeText(ds.map(function (x) { return x.member; })), non = rangeText(ds.map(function (x) { return x.nonmember; }));
+    if (mem.indexOf("~") < 0) mem += "~";   // VAT 별도 금액이라 "60만원~"처럼 물결을 붙임
+    if (non.indexOf("~") < 0) non += "~";
     if (m === "회원") return mem;
     if (m === "비회원") return non;
     return "회원 " + mem + " · 비회원 " + non;
