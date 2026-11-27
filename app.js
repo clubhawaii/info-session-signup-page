@@ -1,5 +1,5 @@
 // 설명회 신청 — 강연자 찾기(상품 → 학년 → 고민·키워드 → 강력 추천순 → 담기, 최대 MAX_PICKS명) → 「구매하러 가기」
-//   → 강연자별 설명회 하나 → 날짜 하나·시작 시간·요청사항 → 신청 정보 → 완료
+//   (담을 때 설명회까지 함께 정함 — 자세히 보기에서 바꿈) → 날짜 하나·시작 시간·요청사항 → 신청 정보 → 완료
 // 신청하면 담은 강연자께 일정이 되는지 먼저 확인하고, 가능한 강연자와 조율한 뒤 본사 담당자가 원장님께 직접 연락함
 (function () {
   "use strict";
@@ -330,7 +330,7 @@
     if (!n) head = '<div class="rh"><h3>아직 이 ' + (S.ptype === "biz" ? "대상" : "학년") + ' 설명회를 하는 강연자가 없어요</h3><span>원하시는 내용을 <a class="inline-link" data-contact href="' + esc(C.CONTACT_URL || "#") + '" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널</a>로 알려 주시면 맞는 강연자를 찾아 드릴게요.</span></div>';
     else if (REC.mode === "match") head = '<div class="rh"><h3>입력하신 주제에 가장 강한 강연자입니다</h3><span>' + n + "명</span></div>";
     else if (REC.mode === "all") head = '<div class="rh"><h3>' + esc(S.grades.join(", ")) + " 설명회 강연자</h3><span>고민·키워드를 입력하면 그 주제에 가장 강한 강연자를 먼저 보여 드려요</span></div>";
-    else head = '<div class="no-match-box"><b>딱 맞는 주제가 없나요?</b><p>강연자에게 이 주제로 가능한지 먼저 여쭙겠습니다. 가장 가까운 강연자 ' + n + "명이에요. 담아서 신청하시면 원하시는 주제를 요청사항에 함께 적어 드려요.</p></div>";
+    else head = '<div class="no-match-box"><b>딱 맞는 주제가 없나요?</b><p>강연자에게 이 주제로 가능한지 먼저 여쭙겠습니다. 가장 가까운 강연자 ' + n + "명이에요. 담으시면 <b>「우리 학원 맞춤 설명회」</b>로 담기고, 원하시는 주제는 요청사항에 함께 적어 드려요.</p></div>";
     $("resultHead").innerHTML = head;
     var top = C.TOP_BADGE || 3;
     $("coachList").innerHTML = REC.items.map(function (x, i) { return recCard(x, REC.mode === "match" && i < top, REC.Q); }).join("");
@@ -340,7 +340,7 @@
     $("pairHint").innerHTML = more.length ? '<p><b>비슷한 강연자도 함께 여쭤볼까요?</b> 여러 분께 함께 여쭤보면 일정이 맞는 분을 찾기 쉬워요. (최대 ' + MAX_PICKS + "명)</p><div>" +
       more.map(function (x) { return '<button type="button" class="pick-btn" data-pick="' + esc(x.c.name) + '">+ ' + esc(x.c.name) + "</button>"; }).join("") + "</div>" : "";
     $("noMatch").hidden = false;
-    $("noMatch").innerHTML = '<span class="cn-tag">맞춤</span><p>원하는 주제가 없으면 담은 강연자에게 <b>「우리 학원 맞춤 설명회」</b>도 요청할 수 있어요. (다음 단계에서 선택 · 금액 별도 안내 · 진행일 3주 전까지)</p>';
+    $("noMatch").innerHTML = '<span class="cn-tag">맞춤</span><p>원하는 주제가 없으면 담은 강연자에게 <b>「우리 학원 맞춤 설명회」</b>도 요청할 수 있어요. (강연자 「자세히 보기」에서 선택 · 금액 별도 안내 · 진행일 3주 전까지)</p>';
   }
 
   function togglePick(c) {
@@ -349,15 +349,12 @@
     if (i >= 0) { S.picked.splice(i, 1); delete S.product[c.name]; }
     else if (S.picked.length >= MAX_PICKS) { toast("강연자는 최대 " + MAX_PICKS + "명까지 담을 수 있어요. 다른 분을 담으시려면 먼저 한 분을 빼 주세요."); return; }
     else {
-      S.picked.push(c.name);
-      var best = bestTopic(c, interpret(S.q));
-      if (best) S.product[c.name] = best.name;   // 검색어와 가장 맞는 설명회를 미리 골라 둠
-      else if (c.topics.length === 1) S.product[c.name] = c.topics[0].name;   // 설명회가 하나뿐이면 미리 골라 둠
+      var auto = autoTopic(c);
+      if (auto) { pickTopic(c, auto); return; }   // 설명회까지 함께 담음
+      S.picked.push(c.name);   // 설명회를 준비 중인 강연자 — 요청사항으로 상의
       toast(c.name + " 강연자를 담았어요. (" + S.picked.length + "/" + MAX_PICKS + ")");
     }
-    renderCoaches();
-    renderSummary();
-    if ($("coachModal").open && $("detailCta")) $("detailCta").innerHTML = detailCta(c);
+    refreshPicks(c);
   }
   // 상품을 바꾸면 학년·담은 강연자를 비움 (상품마다 설명회가 다름)
   function setPtype(id) {
@@ -383,19 +380,57 @@
   }
   function ul(items) { return '<ul class="dots ink">' + items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>"; }
   function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "https://" + u; }
-  function topicCard(t) {
+  // 설명회 카드 — 1단계 상세에서는 「이 설명회로 담기」 버튼이 붙음 (담을 때 설명회까지 정함, 따로 고르는 단계 없음)
+  function topicCard(c, t) {
     var meta = [list(t.targets).join(", "), list(t.seasons).join(", ")].filter(Boolean);
-    return '<div class="tcard"><div class="tc-cat">' + esc([t.area, list(t.cats || t.cat).join(", ")].filter(Boolean).join(" · ")) + "</div>" +
+    return '<div class="tcard' + (topicOn(c, t.name) ? " on" : "") + '"><div class="tc-cat">' + esc([t.area, list(t.cats || t.cat).join(", ")].filter(Boolean).join(" · ")) + "</div>" +
       '<div class="tc-name">' + esc(t.name) + "</div>" +
       (t.intro ? '<p class="tc-intro">' + esc(t.intro) + "</p>" : "") +
       (lines(t.points).length ? ul(lines(t.points)) : "") +
-      (meta.length ? '<div class="tc-meta">' + meta.map(esc).join("<i></i>") + "</div>" : "") + "</div>";
+      (meta.length ? '<div class="tc-meta">' + meta.map(esc).join("<i></i>") + "</div>" : "") + topicBtn(c, t.name) + "</div>";
+  }
+  function customTopicCard(c) {
+    return '<div class="tcard custom' + (topicOn(c, CUSTOM) ? " on" : "") + '"><div class="tc-cat">맞춤 · 금액 별도 안내</div><div class="tc-name">' + esc(CUSTOM) + "</div>" +
+      '<p class="tc-intro">지역·학교·학원 상황에 맞춰 이 학원만을 위해 새로 준비해요. 진행일 ' + (CUSTOM_DAYS / 7) + "주 전까지 신청 · 원하시는 내용은 요청사항에 적어 주세요.</p>" + topicBtn(c, CUSTOM) + "</div>";
+  }
+  function topicOn(c, name) { return S.picked.indexOf(c.name) >= 0 && S.product[c.name] === name; }
+  function topicBtn(c, name) {
+    if (S.step !== 1) return "";
+    return topicOn(c, name)
+      ? '<button type="button" class="pick-btn on tc-pick" disabled>✓ 담긴 설명회</button>'
+      : '<button type="button" class="pick-btn tc-pick" data-tc="' + esc(c.name) + '" data-tt="' + esc(name) + '">' + (S.picked.indexOf(c.name) >= 0 ? "이 설명회로 바꾸기" : "+ 이 설명회로 담기") + "</button>";
+  }
+  function detailTopics(c) {
+    return (c.topics.length ? c.topics.map(function (t) { return topicCard(c, t); }).join("") : '<p class="muted">준비 중입니다.</p>') +
+      (S.step === 1 ? customTopicCard(c) : "");
+  }
+  // 설명회를 골라 담기 (이미 담은 강연자면 설명회만 바꿈)
+  function pickTopic(c, name) {
+    if (!c) return;
+    if (S.picked.indexOf(c.name) < 0) {
+      if (S.picked.length >= MAX_PICKS) { toast("강연자는 최대 " + MAX_PICKS + "명까지 담을 수 있어요. 다른 분을 담으시려면 먼저 한 분을 빼 주세요."); return; }
+      S.picked.push(c.name);
+    }
+    S.product[c.name] = name;
+    if (S.date && parse(S.date) < minDate()) {
+      S.date = ""; S.time = "";
+      toast("맞춤 설명회는 " + (CUSTOM_DAYS / 7) + "주 뒤 날짜부터 고를 수 있어 날짜를 다시 골라 주세요.");
+    } else toast(c.name + " · " + name + " 담았어요. (" + S.picked.length + "/" + MAX_PICKS + ")");
+    refreshPicks(c);
+  }
+  function refreshPicks(c) {
+    renderCoaches();
+    renderSummary();
+    if ($("coachModal").open && $("detailCta")) {
+      $("detailCta").innerHTML = detailCta(c);
+      $("detailTopics").innerHTML = detailTopics(c);
+    }
   }
   function openDetail(c) {
     if (!c) return;
     var intro = c.history.length ? "<h4>경력</h4>" + ul(c.history) : "";
     if (!intro) intro = '<p class="muted">준비 중입니다.</p>';
-    var topics = c.topics.length ? c.topics.map(topicCard).join("") : '<p class="muted">준비 중입니다.</p>';
+    var topics = '<div id="detailTopics">' + detailTopics(c) + "</div>";
     // 유튜브 링크는 바로 재생, 나머지 링크는 버튼으로
     var vids = c.links.filter(function (l) { return youtubeId(l.url); }).slice(0, 2);
     var others = c.links.filter(function (l) { return vids.indexOf(l) < 0; });
@@ -426,39 +461,18 @@
   }
   function detailCta(c) {
     var on = S.picked.indexOf(c.name) >= 0;
-    return on
-      ? '<button type="button" class="btn ghost" data-pick="' + esc(c.name) + '">✓ 담았어요 · 빼기</button>'
-      : '<button type="button" class="btn primary" data-pick="' + esc(c.name) + '">이 강연자에게 설명회 받기 · 담기</button>';
+    if (on) return '<div class="cta-picked"><span>담긴 설명회 <b>' + esc(S.product[c.name] || "요청사항으로 상의") + '</b></span><button type="button" class="btn ghost sm" data-pick="' + esc(c.name) + '">빼기</button></div>';
+    var auto = autoTopic(c);
+    return '<button type="button" class="btn primary" data-pick="' + esc(c.name) + '">담기' + (auto ? " · " + esc(auto) : "") + "</button>" +
+      (c.topics.length > 1 ? '<p class="cta-note">다른 설명회를 원하시면 위 설명회에서 「이 설명회로 담기」를 눌러 주세요.</p>' : "");
+  }
+  // 담기만 눌렀을 때 함께 담길 설명회 — 맞는 강연자가 없던 검색이면 맞춤 설명회, 아니면 검색어와 가장 맞는 것 → 첫 설명회
+  function autoTopic(c) {
+    if (S.mode === "none" && S.q.trim()) return CUSTOM;
+    var best = bestTopic(c, interpret(S.q));
+    return best ? best.name : c.topics.length ? c.topics[0].name : "";
   }
 
-  /* ---------- 2단계: 소장님별 설명회 ---------- */
-  function productCard(c, t) {
-    var on = S.product[c.name] === t.name;
-    var meta = [list(t.targets).join(", "), list(t.seasons).join(", ")].filter(Boolean);
-    var cats = list(t.cats || t.cat);
-    return '<button type="button" class="product' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-pc="' + esc(c.name) + '" data-pt="' + esc(t.name) + '">' +
-      '<span class="radio"></span><span class="pd-body">' +
-      (cats.length ? '<span class="tc-cat">' + esc(cats.join(" · ")) + "</span>" : "") +
-      "<b>" + esc(t.name) + "</b>" + (t.intro ? '<span class="pd-intro">' + esc(t.intro) + "</span>" : "") +
-      (meta.length ? '<span class="tc-meta">' + meta.map(esc).join("<i></i>") + "</span>" : "") + "</span></button>";
-  }
-  function customCard(c) {
-    var on = S.product[c.name] === CUSTOM;
-    return '<button type="button" class="product custom' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-pc="' + esc(c.name) + '" data-pt="' + esc(CUSTOM) + '">' +
-      '<span class="radio"></span><span class="pd-body"><span class="tc-cat">맞춤 · 금액 별도 안내</span><b>' + esc(CUSTOM) + "</b>" +
-      '<span class="pd-intro">지역·학교·학원 상황에 맞춰 이 학원만을 위해 새로 준비해요.</span>' +
-      '<span class="tc-meta">진행일 ' + (CUSTOM_DAYS / 7) + "주 전까지 신청</span></span></button>";
-  }
-  function renderProducts() {
-    $("products").innerHTML = S.picked.map(function (n) {
-      var c = findCoach(n);
-      if (!c) return "";
-      return '<div class="pgroup"><div class="pg-head">' + avatar(c, "sm") + "<div><b>" + esc(n) + " 소장님</b><span>" +
-        (S.product[n] ? "골랐어요" : c.topics.length ? "설명회 하나를 골라 주세요" : "") + '</span></div><button type="button" class="link" data-more="' + esc(n) + '">자세히 보기</button></div>' +
-        (c.topics.length ? "" : '<p class="muted pd-none">설명회를 준비 중인 소장님입니다. 맞춤 설명회를 고르시거나, 원하시는 내용을 다음 단계 요청사항에 적어 주세요.</p>') +
-        '<div class="products" role="radiogroup">' + c.topics.map(function (t) { return productCard(c, t); }).join("") + customCard(c) + "</div></div>";
-    }).join("");
-  }
   function productsDone() {
     return S.picked.length > 0 && S.picked.every(function (n) { var c = findCoach(n); return S.product[n] || (c && !c.topics.length); });
   }
@@ -557,7 +571,7 @@
       (S.picked.length ? '<ul class="sum-picks">' + S.picked.map(function (n) {
         var c = findCoach(n), p = S.product[n] || (c && !c.topics.length ? "요청사항으로 상의" : S.step >= 2 ? "설명회 미선택" : "");
         return '<li><b>' + esc(n) + "</b>" + (p ? '<span class="' + (S.product[n] || !c || !c.topics.length ? "" : "none") + '">' + esc(p) + "</span>" : "") +
-          (one ? '<button type="button" class="sum-x" data-pick="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">×</button>' : "") + "</li>";
+          (one ? '<button type="button" class="link sum-change" data-more="' + esc(n) + '">설명회 바꾸기</button><button type="button" class="sum-x" data-pick="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">×</button>' : "") + "</li>";
       }).join("") + "</ul>" : '<p class="sum-kind"><span class="none">마음에 드는 강연자를 담아 주세요</span></p>');
     var when = '<h4>희망 일정</h4><p class="sum-kind">' + (S.date ? esc(krDate(S.date)) + (S.time ? "<span>" + esc(krTime(S.time)) + " 시작</span>" : "") : '<span class="none">미선택</span>') + "</p>";
     return { picks: picks, when: when };
@@ -567,10 +581,6 @@
     if (S.step === 1) {
       var n = S.picked.length;
       return { ok: n > 0, label: "구매하러 가기" + (n ? " (" + n + ")" : ""), txt: "<b>담은 강연자 " + n + "/" + MAX_PICKS + "</b>" + (n ? "여러 분께 함께 여쭤보면 일정 맞추기가 쉬워요" : "마음에 드는 강연자를 담아 주세요") };
-    }
-    if (S.step === 2) {
-      var left = S.picked.filter(function (x) { var c = findCoach(x); return !S.product[x] && c && c.topics.length; }).length;
-      return { ok: productsDone(), label: "다음", txt: "<b>설명회</b>" + (left ? left + "명의 소장님 설명회를 골라 주세요" : "모두 골랐어요") };
     }
     if (S.step === 3) {
       return { ok: whenDone(), label: "다음", txt: "<b>" + (S.date ? esc(krDate(S.date)) : "희망 날짜") + "</b>" +
@@ -616,12 +626,13 @@
   }
 
   /* ---------- 단계 이동 ---------- */
+  // 단계 번호: 1 강연자 찾기 · 3 날짜·시간 · 4 신청 정보 · 5 완료 (예전 2단계 「설명회 고르기」는 1단계 담기에 합침)
   function go(step) {
-    if (step >= 2 && !S.picked.length) step = 1;
-    else if (step >= 3 && !productsDone()) step = 2;
+    if (step === 2) step = S.step >= 3 ? 1 : 3;
+    if (step >= 3 && (!S.picked.length || !productsDone())) step = 1;
     else if (step >= 4 && !whenDone()) step = 3;
     S.step = step;
-    ["step1", "step2", "step3", "step4", "done"].forEach(function (id, i) { $(id).hidden = i + 1 !== step; });
+    ["step1", "step3", "step4", "done"].forEach(function (id) { $(id).hidden = id !== (step === 5 ? "done" : "step" + step); });
     each($("steps").children, function (li) {
       var n = +li.dataset.step;
       li.classList.toggle("on", n === step);
@@ -633,7 +644,6 @@
     $("pageHead").hidden = finished;
     $("headIntro").hidden = step !== 1;   // 제목·맞춤 설명회 안내는 첫 단계에서만 (이후 단계는 단계 표시만)
     if (step === 1) renderCoaches();
-    if (step === 2) renderProducts();
     if (step === 3) {
       if (!S.month) { var md = minDate(); S.month = new Date(md.getFullYear(), md.getMonth(), 1); }
       renderWhen();
@@ -870,19 +880,6 @@
       each($("coachDetail").querySelectorAll("[data-tab]"), function (b) { b.classList.toggle("on", b.dataset.tab === k); });
     }
 
-    // 2단계
-    $("products").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-pc]");
-      if (!b) return;
-      S.product[b.dataset.pc] = b.dataset.pt;
-      if (S.date && parse(S.date) < minDate()) {
-        S.date = ""; S.time = "";
-        toast("맞춤 설명회는 " + (CUSTOM_DAYS / 7) + "주 뒤 날짜부터 고를 수 있어 날짜를 다시 골라 주세요.");
-      }
-      renderProducts();
-      renderSummary();
-    });
-
     // 3단계
     $("calDays").addEventListener("click", function (e) {
       var d = e.target.closest("[data-d]");
@@ -954,6 +951,8 @@
 
     // 공통
     document.addEventListener("click", function (e) {
+      var tc = e.target.closest("[data-tc]");
+      if (tc) { pickTopic(findCoach(tc.dataset.tc), tc.dataset.tt); return; }
       var pk = e.target.closest("[data-pick]");
       if (pk) { togglePick(findCoach(pk.dataset.pick)); return; }
       var more = e.target.closest("[data-more]");

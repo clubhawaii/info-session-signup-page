@@ -703,3 +703,15 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .grade-chips .chip { height: 38px; padding: 0 14px; }
   .modal-cta { bottom: -24px; margin: 12px -20px -24px; padding: 12px 20px 16px; }
 }
+
+/* ── 2026-11-27 설명회 고르기 단계를 담기에 합침 ── */
+.tcard.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; background: var(--blue-08); }
+.tcard.custom { border-style: dashed; border-color: #f2d48a; }
+.tcard.custom.on { border-style: solid; border-color: var(--blue); }
+.tc-pick { display: block; margin-top: 12px; margin-left: auto; }
+.tc-pick:disabled { cursor: default; }
+.cta-picked { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--ink-60); }
+.cta-picked b { color: var(--blue); }
+.cta-picked .btn { flex: none; }
+.cta-note { margin: 8px 0 0; font-size: 12px; color: var(--ink-40); text-align: center; }
+.sum-change { justify-self: start; margin-top: 2px; font-size: 12px; }
