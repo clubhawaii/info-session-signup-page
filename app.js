@@ -272,9 +272,10 @@
   function renderFind() {
     $("ptypeSeg").innerHTML = (C.PRODUCTS || []).map(function (p) {
       var on = p.id === S.ptype;
-      return '<button type="button" class="mcard' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-ptype="' + esc(p.id) + '">' +
-        '<span class="radio"></span><span class="mc-body"><b>' + esc(p.name) + '</b><span class="mc-desc">' + esc(p.desc || "") + "</span></span></button>";
+      return '<button type="button" class="lp-tab' + (on ? " on" : "") + '" role="tab" aria-selected="' + on + '" data-ptype="' + esc(p.id) + '">' + esc(p.name) + "</button>";
     }).join("");
+    $("ptypeDesc").textContent = ((C.PRODUCTS || []).filter(function (p) { return p.id === S.ptype; })[0] || {}).desc || "";
+    renderQuick();
     $("gradeTitle").innerHTML = (S.ptype === "biz" ? "교육 대상을 골라 주세요" : "설명회를 들을 학년을 골라 주세요") + " <em>필수 · 여러 개 선택</em>";
     $("gradeChips").innerHTML = gradeList().map(function (g) {
       var on = S.grades.indexOf(g) >= 0;
@@ -287,9 +288,92 @@
     if ($("q").value !== S.q) $("q").value = S.q;
   }
 
+  /* ---------- 랜딩 (히어로 바로가기 · 안내 창 · 메뉴 이동) ---------- */
+  // 두 겹 아이콘: f = 연한 면, s = 파란 선 (32×32)
+  var ICONS = {
+    school: ["M5 14h22v13H5z", "M3 14 16 6l13 8M5 14v13h22V14M3 27h26M10 27v-6h4v6M18 27v-6h4v6"],
+    medal: ["M16 13a7.5 7.5 0 1 0 0 15 7.5 7.5 0 1 0 0-15z", "M11 3l3.5 10M21 3l-3.5 10M16 13a7.5 7.5 0 1 0 0 15 7.5 7.5 0 1 0 0-15zM16 17l1.3 2.6 2.8.4-2 2 .5 2.8-2.6-1.4-2.6 1.4.5-2.8-2-2 2.8-.4z"],
+    snow: ["M16 5a11 11 0 1 0 0 22 11 11 0 1 0 0-22z", "M16 4v24M5.6 10l20.8 12M5.6 22l20.8-12M12.5 6.5 16 9l3.5-2.5M12.5 25.5 16 23l3.5 2.5"],
+    book: ["M4 7.5c4-1.5 8-1.5 12 1.5v17c-4-3-8-3-12-1.5z", "M4 7.5c4-1.5 8-1.5 12 1.5 4-3 8-3 12-1.5v17c-4-1.5-8-1.5-12 1.5-4-3-8-3-12-1.5zM16 9v17"],
+    doc: ["M8 4h12l4 4v18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", "M24 13V8l-4-4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h7M10 11h8M10 16h6M10 21h3M25 16l3 3-8 8h-3v-3z"],
+    check: ["M8 4h16a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z", "M8 4h16a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM10 11l2 2 3.5-3.5M10 19l2 2 3.5-3.5M19 12h4M19 20h4"],
+    cap: ["M16 7 3 13l13 6 13-6z", "M16 7 3 13l13 6 13-6zM9 16.5V23c4 3 10 3 14 0v-6.5M29 13v7"],
+    rocket: ["M16 3c5 4 6.5 10 4 17h-8c-2.5-7-1-13 4-17z", "M16 3c5 4 6.5 10 4 17h-8c-2.5-7-1-13 4-17zM12 20l-4 3.5.5-6M20 20l4 3.5-.5-6M14 25h4M16 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4z"],
+    clock: ["M16 5a11 11 0 1 0 0 22 11 11 0 1 0 0-22z", "M16 5a11 11 0 1 0 0 22 11 11 0 1 0 0-22zM16 10v6l4 3"],
+    headset: ["M4 18h6v8H6a2 2 0 0 1-2-2zM28 18h-6v8h4a2 2 0 0 0 2-2z", "M4 22v-5a12 12 0 0 1 24 0v5M4 18h6v8H6a2 2 0 0 1-2-2zM28 18h-6v8h4a2 2 0 0 0 2-2z"],
+    chat: ["M4 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-8l-5 4v-4H7a3 3 0 0 1-3-3z", "M4 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-8l-5 4v-4H7a3 3 0 0 1-3-3zM22 10h3a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-1v4l-5-4h-4a3 3 0 0 1-3-3v-1"],
+    mega: ["M6 12h5l12-6v20l-12-6H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2z", "M6 12h5l12-6v20l-12-6H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2zM11 20l2 7h3l-1-7M27 13v6"],
+    phone: ["M11 3h10a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z", "M11 3h10a3 3 0 0 1 3 3v20a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM14 25h4M16 9l1.3 3 3 1.3-3 1.3-1.3 3-1.3-3-3-1.3 3-1.3z"],
+    board: ["M5 5h22v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z", "M3 5h26M5 5v15a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5M16 22v4M11 29l5-3 5 3M10 17l4-4 3 3 5-5"],
+    star: ["M16 4l3.5 7.2 7.9 1.1-5.7 5.6 1.4 7.9L16 22l-7.1 3.8 1.4-7.9-5.7-5.6 7.9-1.1z", "M16 4l3.5 7.2 7.9 1.1-5.7 5.6 1.4 7.9L16 22l-7.1 3.8 1.4-7.9-5.7-5.6 7.9-1.1z"],
+    won: ["M16 5a11 11 0 1 0 0 22 11 11 0 1 0 0-22z", "M16 5a11 11 0 1 0 0 22 11 11 0 1 0 0-22zM10 11l2.5 10L16 13l3.5 8L22 11M9.5 15.5h13"],
+    shield: ["M16 3l10 4v8c0 7-4.5 11-10 14C10.5 26 6 22 6 15V7z", "M16 3l10 4v8c0 7-4.5 11-10 14C10.5 26 6 22 6 15V7zM11.5 16l3 3 6-6"],
+    camera: ["M6 9h4l2-3h8l2 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V12a3 3 0 0 1 3-3z", "M6 9h4l2-3h8l2 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V12a3 3 0 0 1 3-3zM16 13a5 5 0 1 0 0 10 5 5 0 1 0 0-10z"],
+    faq: ["M4 7a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H12l-6 5v-5H7a3 3 0 0 1-3-3z", "M4 7a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H12l-6 5v-5H7a3 3 0 0 1-3-3zM13 10a3 3 0 1 1 4.2 2.8c-.7.3-1.2.9-1.2 1.7M16 18v.01"],
+    search: ["M14 5a9 9 0 1 0 0 18 9 9 0 1 0 0-18z", "M14 5a9 9 0 1 0 0 18 9 9 0 1 0 0-18zM21 21l6 6"]
+  };
+  ICONS.flow = ICONS.check;
+  // 바로가기 키워드 → 아이콘 (없으면 돋보기)
+  var KW_ICON = { "고교 분석": "school", "특목·자사": "medal", "겨울방학": "snow", "공부법": "book", "세특": "doc", "수행평가": "check",
+    "2028 대입": "cap", "예비고1": "rocket", "학습습관": "clock", "상담·CS": "headset", "학부모 커뮤니케이션": "chat",
+    "마케팅·홍보": "mega", "AI·미니앱 활용": "phone", "설명회 기획·운영": "board", "리더십": "star" };
+  function icon(name) {
+    var d = ICONS[name] || ICONS.search;
+    return '<svg viewBox="0 0 32 32" aria-hidden="true"><path class="f" d="' + d[0] + '"/><path class="s" d="' + d[1] + '"/></svg>';
+  }
+  function renderQuick() {
+    $("quickMenu").innerHTML = ((window.KEYWORD_CHIPS || {})[S.ptype] || []).map(function (k) {
+      var on = norm(S.q) === norm(k);
+      return '<button type="button" class="qk' + (on ? " on" : "") + '" data-kw="' + esc(k) + '"><span class="qi">' + icon(KW_ICON[k]) + "</span>" + esc(k) + "</button>";
+    }).join("");
+  }
+  // 검색어를 넣고 신청 화면(학년 칸)으로 내려감
+  function searchFor(q) {
+    S.q = q;
+    $("heroQ").value = q;
+    renderFind();
+    renderCoaches();
+    renderSummary();
+    jumpTo("find");
+    if (q && !S.grades.length) toast((S.ptype === "biz" ? "교육 대상" : "학년") + "을 골라 주시면 강연자를 추천해 드려요.");
+  }
+  // 메뉴·버튼으로 섹션 이동 (다른 단계에 있으면 첫 단계로 돌아가서)
+  function jumpTo(id) {
+    var back = S.step !== 1 && S.step !== 5;
+    if (back) go(1);
+    setTimeout(function () {
+      var el = $(id);
+      if (!el || el.offsetParent === null) return;
+      var top = el.getBoundingClientRect().top + window.pageYOffset - document.querySelector(".top").offsetHeight;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }, back ? 120 : 0);
+  }
+  // 안내 창 (진행 순서 · 가격 · 맞춤 설명회 · 촬영·게시)
+  function openInfo(key) {
+    var custom = (C.KINDS || []).filter(function (k) { return k.id === "custom"; })[0] || {};
+    var html = {
+      flow: "<h3>진행 순서</h3><p class=\"sub\">신청만으로 일정이 확정되지는 않아요.</p><ol class=\"flow info-flow\">" +
+        "<li class=\"on\"><b>강연자 찾기 · 신청</b><span>원하는 설명회를 검색해 강연자를 담고, 날짜·시간을 골라 신청해요</span></li>" +
+        "<li><b>소장님 일정 확인</b><span>고르신 소장님께 일정이 되는지 먼저 확인해요</span></li>" +
+        "<li><b>담당자 연락 · 조율</b><span>소장님이 가능하다고 답하면 담당자가 조율한 뒤 연락드려요</span></li>" +
+        "<li><b>확정 · 결제 안내</b><span>확정 일정과 금액을 알림톡으로 보내 드려요</span></li>" +
+        "<li><b>설명회 진행</b></li></ol>",
+      price: "<h3>가격 안내</h3><p class=\"sub\">설명회 1회 기준, 모두 VAT 별도예요.</p><table class=\"policy info-price\"><tr><th>강연 시간</th><th>회원</th><th>비회원</th></tr>" +
+        DURS.map(function (d) { return "<tr><th>" + esc(d.label) + "</th><td><b>" + man(d.member) + "만원~</b></td><td>" + man(d.nonmember) + "만원~</td></tr>"; }).join("") +
+        "</table><ul class=\"dots\"><li>회원은 클럽하와이 회원 기준이며, 담당자 연락 때 확인합니다.</li><li><b>" + esc(custom.name || "맞춤 설명회") + "</b>는 담당자가 내용을 확인한 뒤 금액을 따로 안내드려요.</li></ul>",
+      custom: "<h3>" + esc(custom.name || "맞춤 설명회") + "</h3><p class=\"sub\">" + esc(custom.desc || "") + "</p><ul class=\"dots\">" +
+        "<li>원하시는 주제, 대상(학년·학교), 우리 지역·학원의 특징을 요청사항에 적어 주세요.</li>" +
+        "<li>" + esc(custom.note || "") + "</li><li>준비 기간이 필요해 진행일 3주 뒤 날짜부터 고를 수 있어요.</li></ul>",
+      shoot: "<h3>촬영·게시 안내</h3>" + [].map.call(document.querySelectorAll("#step4 .rule-box"), function (b) { return '<div class="rule-box">' + b.innerHTML + "</div>"; }).join("")
+    }[key];
+    if (!html) return;
+    $("infoModalBody").innerHTML = html;
+    $("infoModal").showModal();
+  }
+
   function renderHero() {
     var n = S.coaches.length;
-    $("heroCrowd").innerHTML = S.coaches.slice(0, 8).map(function (c) { return avatar(c); }).join("") + (n > 8 ? '<div class="avatar more">+' + (n - 8) + "</div>" : "");
+    $("heroCrowd").innerHTML = S.coaches.slice(0, 6).map(function (c) { return avatar(c); }).join("") + (n > 6 ? '<div class="avatar more">+' + (n - 6) + "</div>" : "");
     $("heroCount").innerHTML = n ? "설명회로 검증된 <b>강연자 " + n + "명</b>이 기다리고 있어요" : "";
   }
 
@@ -658,6 +742,7 @@
     if (step >= 3 && (!S.picked.length || !productsDone())) step = 1;
     else if (step >= 4 && !whenDone()) step = 3;
     S.step = step;
+    document.body.dataset.step = step;
     ["step1", "step3", "step4", "done"].forEach(function (id) { $(id).hidden = id !== (step === 5 ? "done" : "step" + step); });
     each($("steps").children, function (li) {
       var n = +li.dataset.step;
@@ -860,6 +945,15 @@
       renderCoaches();
       renderSummary();
     });
+    // 히어로 검색 카드 · 아이콘 바로가기 → 검색어를 넣고 신청 화면으로
+    $("heroSearch").addEventListener("submit", function (e) {
+      e.preventDefault();
+      searchFor($("heroQ").value.trim());
+    });
+    $("quickMenu").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-kw]");
+      if (b) searchFor(b.dataset.kw);
+    });
     $("kwChips").addEventListener("click", function (e) {
       var b = e.target.closest("[data-kw]");
       if (!b) return;
@@ -991,6 +1085,11 @@
       if (nb && nb.classList.contains("is-off")) { check(); return; }
       if (nb) next();
       if (e.target.closest("[data-prev]")) prev();
+      var sc = e.target.closest("[data-scroll]");
+      if (sc) { e.preventDefault(); jumpTo(sc.dataset.scroll); return; }
+      var inf = e.target.closest("[data-info]");
+      if (inf) { openInfo(inf.dataset.info); return; }
+      if (e.target.closest("[data-top]")) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
       var o = e.target.closest("[data-open]");
       if (o) $(o.dataset.open + "Modal").showModal();
       if (e.target.closest("[data-close]")) e.target.closest("dialog").close();
@@ -1052,6 +1151,8 @@
     each(document.querySelectorAll(".resp-h"), function (el) { el.textContent = HOURS; });
     each(document.querySelectorAll(".max-picks"), function (el) { el.textContent = MAX_PICKS; });
     $("policyModalBody").innerHTML = $("policyInline").innerHTML;
+    each(document.querySelectorAll("[data-icon]"), function (el) { el.innerHTML = icon(el.dataset.icon); });
+    $("faqPrice").textContent = DURS.map(function (d) { return d.label + " 회원 " + man(d.member) + "만원~ · 비회원 " + man(d.nonmember) + "만원~"; }).join(", ") + ".";
     renderTargets();
     renderPerk();
     fillTimeSelects();

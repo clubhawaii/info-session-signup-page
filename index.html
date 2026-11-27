@@ -6,28 +6,83 @@
   <title>학원 설명회 연사 초청 신청 | 클럽하와이</title>
   <meta name="description" content="학원 설명회 연사 초청 강연 신청 — 학부모·학생 대상 입시·학습 설명회에 클럽하와이 전문 연사를 초청하세요.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261127d">
+  <link rel="stylesheet" href="styles.css?v=20261127e">
 </head>
-<body>
+<body data-step="1">
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="profile.html">소장님 입력 페이지</a></div>
 
   <header class="top">
     <div class="top-in">
       <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>연사 초청 신청</span></a>
+      <nav class="gnb" aria-label="주요 메뉴">
+        <a href="#find" data-scroll="find">강연자 찾기</a>
+        <button type="button" data-info="flow">진행 순서</button>
+        <button type="button" data-info="price">가격 안내</button>
+        <a href="#faq" data-scroll="faq" class="lp-only">자주 묻는 질문</a>
+      </nav>
       <a class="top-link" data-contact id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="head" id="pageHead">
-      <!-- 히어로: 화려한 연출은 여기에서만, 아래 신청 화면은 깔끔하게 -->
-      <div class="hero" id="headIntro">
-        <span class="hero-eyebrow">원장님, 이번 설명회는 다르게 가요</span>
+  <!-- 히어로 (첫 단계에서만): 왼쪽 큰 제목 · 가운데 일러스트 · 오른쪽 검색 카드 · 아래 아이콘 바로가기 -->
+  <section class="lp-hero lp-only" id="headIntro">
+    <div class="lp-in">
+      <div class="lp-copy">
+        <span class="lp-eyebrow">원장님, 이번 설명회는 다르게 가요</span>
         <h1>학부모가 먼저 줄 서는 설명회,<br>연사부터 다릅니다</h1>
         <p>우리 학원 고민만 적어 주세요. 딱 맞는 강연자를 바로 찾아 드려요.</p>
+        <a class="btn-line" href="#find" data-scroll="find">강연자 둘러보기</a>
+      </div>
+      <div class="lp-visual" aria-hidden="true">
+        <svg viewBox="0 0 260 230">
+          <defs>
+            <linearGradient id="gMic" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d98ff"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
+            <linearGradient id="gStand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d6ff0"/><stop offset="1" stop-color="#1d4fd0"/></linearGradient>
+          </defs>
+          <ellipse cx="135" cy="212" rx="105" ry="12" fill="rgba(37,99,235,.14)"/>
+          <g transform="rotate(-9 95 105)">
+            <rect x="18" y="38" width="160" height="118" rx="16" fill="#fff"/>
+            <rect x="18" y="38" width="160" height="118" rx="16" fill="none" stroke="rgba(37,99,235,.18)" stroke-width="2"/>
+            <rect x="36" y="58" width="64" height="11" rx="5.5" fill="#2563eb"/>
+            <rect x="36" y="78" width="110" height="8" rx="4" fill="rgba(37,99,235,.18)"/>
+            <rect x="36" y="92" width="86" height="8" rx="4" fill="rgba(37,99,235,.18)"/>
+            <rect x="38" y="122" width="14" height="20" rx="3" fill="rgba(37,99,235,.35)"/>
+            <rect x="58" y="112" width="14" height="30" rx="3" fill="rgba(37,99,235,.55)"/>
+            <rect x="78" y="104" width="14" height="38" rx="3" fill="#2563eb"/>
+          </g>
+          <g transform="translate(168 64)">
+            <rect x="0" y="0" width="46" height="74" rx="23" fill="url(#gMic)"/>
+            <path d="M10 18h26M8 30h30M8 42h30M10 54h26" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M-10 44a33 33 0 0 0 66 0" fill="none" stroke="url(#gStand)" stroke-width="7" stroke-linecap="round"/>
+            <rect x="19.5" y="77" width="7" height="56" rx="3.5" fill="#1d4fd0"/>
+            <rect x="-2" y="131" width="50" height="10" rx="5" fill="#1d4fd0"/>
+          </g>
+          <path d="M226 30l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#2563eb"/>
+          <path d="M150 22l2 4.5 4.5 2-4.5 2-2 4.5-2-4.5-4.5-2 4.5-2z" fill="rgba(37,99,235,.45)"/>
+          <circle cx="246" cy="96" r="5" fill="rgba(37,99,235,.3)"/>
+        </svg>
+      </div>
+      <form class="lp-card" id="heroSearch" role="search">
+        <p class="lp-card-kicker">설명회 준비 중이신가요?</p>
+        <strong class="lp-card-title">원하는 설명회를<br>검색해 보세요!</strong>
         <div class="hero-crowd" id="heroCrowd" aria-hidden="true"></div>
         <p class="hero-count" id="heroCount"></p>
-      </div>
+        <label class="lp-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="heroQ" type="search" placeholder="예) 중학생 학습 습관" autocomplete="off" enterkeyhint="search" aria-label="원하는 설명회 검색">
+        </label>
+        <button type="submit" class="btn primary">강연자 찾기 ›</button>
+      </form>
+    </div>
+    <div class="lp-quick" id="quickMenu"></div>
+  </section>
+
+  <!-- 신청 화면 (회색 띠 위 흰 카드) -->
+  <main class="band" id="find">
+  <div class="wrap">
+    <div class="head" id="pageHead">
+      <div class="lp-tabs lp-only" id="ptypeSeg" role="tablist" aria-label="설명회 종류"></div>
+      <p class="lp-tabs-desc lp-only" id="ptypeDesc"></p>
 
       <ol class="steps" id="steps">
         <li data-step="1"><b>1</b><span>강연자 찾기</span></li>
@@ -41,10 +96,6 @@
 
         <!-- 1. 강연자 찾기: 상품 → 학년(필수) → 고민·키워드 → 강력 추천순 강연자 → 담기(최대 3명) -->
         <section class="panel" id="step1">
-          <div class="find">
-            <h3 class="find-h">어떤 설명회가 필요하세요?</h3>
-            <div class="ptype" id="ptypeSeg" role="radiogroup"></div>
-          </div>
           <div class="find">
             <h3 class="find-h" id="gradeTitle">설명회를 들을 학년을 골라 주세요 <em>필수 · 여러 개 선택</em></h3>
             <div class="chips wrap-chips grade-chips" id="gradeChips"></div>
@@ -279,7 +330,54 @@
         </div>
       </aside>
     </div>
+  </div>
   </main>
+
+  <!-- 자주 묻는 질문 + 안내 타일 (첫 단계에서만) -->
+  <section class="lp-faq lp-only" id="faq">
+    <h2 class="lp-h">궁금증을<br>해결해 드릴게요</h2>
+    <div class="faq-grid">
+      <div class="faq-list">
+        <details class="faq-item"><summary><span class="n">1</span>신청하면 바로 일정이 확정되나요?</summary>
+          <p>아니요. 고르신 소장님께 일정이 되는지 먼저 확인하고, 가능하다고 답하면 담당자가 조율한 뒤 연락드려요. 날짜·시간이 확정되면 확정 내용과 결제 안내를 알림톡으로 보내 드립니다.</p></details>
+        <details class="faq-item"><summary><span class="n">2</span>언제까지 신청해야 하나요?</summary>
+          <p>진행일 <b>2주 전까지</b> 신청할 수 있어요. 학부모 모집을 위해 3~4주 전 신청을 권해요. 우리 학원 맞춤 설명회는 준비 기간이 필요해 3주 뒤 날짜부터 고를 수 있어요.</p></details>
+        <details class="faq-item"><summary><span class="n">3</span>비용은 얼마인가요?</summary>
+          <p>강연 시간과 클럽하와이 회원 여부로 정해져요. <span id="faqPrice"></span> (VAT 별도, 설명회 1회 기준) 맞춤 설명회는 담당자가 내용을 확인한 뒤 금액을 따로 안내드려요.</p></details>
+        <details class="faq-item"><summary><span class="n">4</span>원하는 주제의 강연자가 없으면요?</summary>
+          <p>「우리 학원 맞춤 설명회」로 신청해 주세요. 원하시는 주제와 대상, 우리 지역·학원의 특징을 요청사항에 적어 주시면 담당자가 확인한 뒤 연락드려요.</p></details>
+        <details class="faq-item"><summary><span class="n">5</span>취소·환불은 어떻게 되나요?</summary>
+          <p>결제 전에는 언제든 비용 없이 취소할 수 있어요. 결제 후에는 진행일 기준으로 환불 비율이 정해져요. <button type="button" class="link" data-open="policy">취소·환불 규정 보기</button></p></details>
+        <details class="faq-item"><summary><span class="n">6</span>설명회를 촬영해도 되나요?</summary>
+          <p>영상 촬영(녹화·라이브 방송)은 할 수 없어요. 맘카페·블로그·SNS에 사진이나 내용을 올리실 때는 이즈유의 사전 확인을 받은 뒤 올려 주세요.</p></details>
+      </div>
+      <div class="faq-tiles">
+        <a class="tile" data-contact href="#" target="_blank" rel="noopener"><span class="qi" data-icon="chat"></span>카카오톡 문의</a>
+        <button type="button" class="tile" data-info="flow"><span class="qi" data-icon="flow"></span>진행 순서</button>
+        <button type="button" class="tile" data-info="price"><span class="qi" data-icon="won"></span>가격 안내</button>
+        <button type="button" class="tile" data-open="policy"><span class="qi" data-icon="shield"></span>취소·환불 규정</button>
+        <button type="button" class="tile" data-info="custom"><span class="qi" data-icon="doc"></span>맞춤 설명회</button>
+        <button type="button" class="tile" data-info="shoot"><span class="qi" data-icon="camera"></span>촬영·게시 안내</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 소개 배너 -->
+  <section class="lp-about lp-only">
+    <div class="lp-about-in">
+      <span class="lp-about-kicker">About CLUB HAWAII</span>
+      <h2>클럽하와이는 원장님의 설명회가<br>학부모의 신뢰로 이어지도록 함께합니다.</h2>
+      <a data-contact href="#" target="_blank" rel="noopener">카카오톡 클럽하와이cs 채널 바로가기 <span class="arr">›</span></a>
+    </div>
+  </section>
+
+  <!-- 오른쪽 빠른 메뉴 (넓은 화면) -->
+  <nav class="rail" aria-label="빠른 메뉴">
+    <a href="#faq" data-scroll="faq" class="lp-only"><span class="qi" data-icon="faq"></span>FAQ</a>
+    <a data-contact href="#" target="_blank" rel="noopener"><span class="qi" data-icon="headset"></span>문의</a>
+    <button type="button" data-info="price"><span class="qi" data-icon="won"></span>가격</button>
+    <button type="button" data-top><span class="rail-top">↑</span>TOP</button>
+  </nav>
 
   <!-- 모바일 하단 바 -->
   <div class="bar" id="bar">
@@ -291,9 +389,18 @@
   </div>
 
   <footer class="foot">
-    <button type="button" class="link" data-open="policy">취소·환불 규정</button>
-    <span>·</span>
-    <a class="foot-contact" data-contact id="contactFoot" target="_blank" rel="noopener">문의: 카카오톡 <b>클럽하와이cs</b> 채널</a>
+    <div class="foot-links">
+      <div class="foot-in">
+        <button type="button" class="link" data-open="policy">취소·환불 규정</button>
+        <button type="button" class="link" data-info="flow">진행 순서</button>
+        <button type="button" class="link" data-info="price">가격 안내</button>
+        <a class="foot-contact" data-contact id="contactFoot" target="_blank" rel="noopener">카카오톡 문의</a>
+      </div>
+    </div>
+    <div class="foot-in foot-info">
+      <p class="foot-cs"><b>문의</b>카카오톡 클럽하와이cs 채널 <small>신청 후 날짜·인원 변경과 취소도 이 채널에서 도와드려요</small></p>
+      <p class="foot-copy">© CLUB HAWAII. 학원 설명회 연사 초청 신청</p>
+    </div>
   </footer>
 
   <!-- 강연자 자세히 보기 -->
@@ -313,6 +420,14 @@
     </div>
   </dialog>
 
+  <!-- 안내 (진행 순서·가격·맞춤 설명회·촬영 안내) — 내용은 app.js가 채움 -->
+  <dialog class="modal" id="infoModal">
+    <div class="modal-box">
+      <button type="button" class="close" data-close aria-label="닫기">×</button>
+      <div class="modal-body" id="infoModalBody"></div>
+    </div>
+  </dialog>
+
   <!-- 주소 검색 (다음 우편번호 서비스) -->
   <dialog class="modal" id="postModal">
     <div class="modal-box">
@@ -327,10 +442,10 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261127d"></script>
-  <script src="keywords.js?v=20261127d"></script>
-  <script src="sample-data.js?v=20261127d"></script>
+  <script src="config.js?v=20261127e"></script>
+  <script src="keywords.js?v=20261127e"></script>
+  <script src="sample-data.js?v=20261127e"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="app.js?v=20261127d"></script>
+  <script src="app.js?v=20261127e"></script>
 </body>
 </html>
