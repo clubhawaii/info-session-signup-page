@@ -1066,6 +1066,27 @@
       renderSummary();
     });
     // 자주 묻는 질문 — 하나를 열면 열려 있던 다른 질문은 닫힘
+    // 단계 표시 누르기 — 뒤로는 언제든, 앞으로는 앞 단계를 다 채웠을 때만
+    function stepJump(li) {
+      if (!li || S.step === 5) return;
+      var t = +li.dataset.step;
+      if (t === S.step) return;
+      if (t >= 3 && (!S.picked.length || !productsDone())) {
+        if (S.step !== 1) go(1);
+        toast("먼저 강연자를 선택해 주세요.");
+        return;
+      }
+      if (t === 4 && !whenDone()) {
+        if (S.step !== 3) go(3);
+        toast(needRequest() ? "맞춤 설명회는 요청사항을 먼저 적어 주세요." : clashed().length ? "다른 시작 시간을 골라 주세요." : "희망 날짜와 시작 시간을 먼저 골라 주세요.");
+        return;
+      }
+      go(t);
+    }
+    $("steps").addEventListener("click", function (e) { stepJump(e.target.closest("[data-step]")); });
+    $("steps").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stepJump(e.target.closest("[data-step]")); }
+    });
     $("faqList").addEventListener("toggle", function (e) {
       if (!e.target.open) return;
       each($("faqList").querySelectorAll("details[open]"), function (dl) { if (dl !== e.target) dl.open = false; });

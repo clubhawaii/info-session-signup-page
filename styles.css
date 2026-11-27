@@ -928,3 +928,8 @@ body:not([data-step="1"]) .band .wrap { padding-top: 32px; }
   .my-page .foot-info { padding-bottom: 36px; }
 }
 .my-page .foot-info { padding-bottom: 36px; }
+
+/* 단계 표시 — 누르면 그 단계로 */
+.steps li[data-step] { cursor: pointer; border-radius: 999px; padding: 2px 6px 2px 2px; transition: background .15s; }
+.steps li[data-step]:hover { background: var(--blue-08); }
+.steps li[data-step]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
