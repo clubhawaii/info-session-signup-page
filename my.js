@@ -56,8 +56,8 @@
       [confirmed ? "확정 일정" : "희망 일정", esc(krDate(confirmed ? it.cdate : it.date) + " " + krTime(confirmed ? it.ctime : it.time) + " 시작") + (it.duration ? " · 강연 " + esc(it.duration) : "")],
       ["강연자 · 설명회", confirmed ? "<b>" + esc(it.coach) + "</b> " + esc(it.product) : esc(it.picks).replace(/\n/g, "<br>")]
     ];
-    if (it.price) rows.push(["금액", "<b>" + esc(money(it.price)) + "</b> (VAT 별도)" + (it.travel ? " · 출장비 포함 안내" : "")]);
-    else if (it.travel) rows.push(["출장비", "담당자가 금액을 함께 안내드려요"]);
+    if (it.price) rows.push(["금액", "<b>" + esc(money(it.price)) + "</b> (VAT 별도)" + (it.travel ? " · 출장비 포함" : "")]);
+    else if (it.travel) rows.push(["출장비", esc(String(it.travel).split(" — ")[0] === "있음" ? "10만원" : String(it.travel).split(" — ")[0]) + " (VAT 별도)"]);
     if (it.payDue && it.step === 3) rows.push(["결제 기한", esc(it.payDue)]);
     rows.push(["신청일", esc(it.created)]);
     return '<article class="panel my-card">' +

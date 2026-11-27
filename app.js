@@ -366,7 +366,7 @@
         "<li><b>설명회 진행</b></li></ol>",
       price: "<h3>가격 안내</h3><p class=\"sub\">설명회 1회 기준, 모두 VAT 별도예요.</p><table class=\"policy info-price\"><tr><th>강연 시간</th><th>회원</th><th>비회원</th></tr>" +
         DURS.map(function (d) { return "<tr><th>" + esc(d.label) + "</th><td><b>" + man(d.member) + "만원</b></td><td>" + man(d.nonmember) + "만원</td></tr>"; }).join("") +
-        "</table><ul class=\"dots\"><li>회원은 클럽하와이 회원 기준이며, 담당자 연락 때 확인합니다.</li><li><b>" + esc(custom.name || "맞춤 설명회") + "</b>는 담당자가 내용을 확인한 뒤 금액을 따로 안내드려요.</li></ul>",
+        "</table><ul class=\"dots\"><li>회원은 클럽하와이 회원 기준이며, 담당자 연락 때 확인합니다.</li><li><b>" + esc(custom.name || "맞춤 설명회") + "</b>는 담당자가 내용을 확인한 뒤 금액을 따로 안내드려요.</li><li>강연자 이동 시간이 2시간 이상이면 <b>출장비 " + man(TRAVEL_FEE) + "만원</b>이 더해져요.</li></ul>",
       custom: "<h3>" + esc(custom.name || "맞춤 설명회") + "</h3><p class=\"sub\">" + esc(custom.desc || "") + "</p><ul class=\"dots\">" +
         "<li>원하시는 주제, 대상(학년·학교), 우리 지역·학원의 특징을 요청사항에 적어 주세요.</li>" +
         "<li>" + esc(custom.note || "") + "</li><li>준비 기간이 필요해 진행일 3주 뒤 날짜부터 고를 수 있어요.</li></ul>",
@@ -659,14 +659,15 @@
 
   function priceText() {
     if (!S.picked.length) return "0원";
-    if (S.picked.every(function (n) { return S.product[n] === CUSTOM; })) return "맞춤 설명회 금액 별도 안내";
+    if (S.picked.every(function (n) { return S.product[n] === CUSTOM; })) return "맞춤 설명회 금액 별도 안내" + (travelFee() ? " + 출장비 " + man(TRAVEL_FEE) + "만원" : "");
     if (hasCustom()) return basePrice() + " (맞춤 설명회는 별도 안내)";
     return basePrice();
   }
   // 강연 시간·회원 여부(4단계)를 고른 만큼 좁혀서 보여 줌
   function basePrice() {
     var m = memberVal(), d = durOf(fv("duration")), ds = d ? [d] : DURS;
-    var mem = rangeText(ds.map(function (x) { return x.member; })), non = rangeText(ds.map(function (x) { return x.nonmember; }));
+    var fee = travelFee();   // 출장비가 있으면 예상 금액에 더함
+    var mem = rangeText(ds.map(function (x) { return x.member + fee; })), non = rangeText(ds.map(function (x) { return x.nonmember + fee; }));
     if (m === "회원") return mem;
     if (m === "비회원") return non;
     return "회원 " + mem + " · 비회원 " + non;
@@ -717,11 +718,13 @@
     });
     return hit;
   }
+  var TRAVEL_FEE = C.TRAVEL_FEE || 0;
+  function travelFee() { return travelInfo() ? TRAVEL_FEE : 0; }
   function renderTravel() {
     var t = travelInfo();
     $("travelNote").hidden = !t;
-    if (t) $("travelNote").innerHTML = "<b>출장비 안내</b>" + esc(t.coach) + " 소장님이 설명회 장소까지 약 " + Math.round(t.hours) + "시간 이동하셔서 <b>출장비</b>가 더해져요. 금액은 담당자가 함께 안내드려요.";
-    $("sumPriceNote").innerHTML = '<em class="vat">VAT 별도</em>' + (t ? " · 출장비 별도 안내" : "");
+    if (t) $("travelNote").innerHTML = "<b>출장비 " + man(TRAVEL_FEE) + "만원</b>" + esc(t.coach) + " 소장님이 설명회 장소까지 약 " + Math.round(t.hours) + "시간 이동하셔서 출장비 <b>" + man(TRAVEL_FEE) + "만원</b>이 더해져요. (예상 금액에 포함 · VAT 별도)";
+    $("sumPriceNote").innerHTML = '<em class="vat">VAT 별도</em>' + (t ? " · 출장비 " + man(TRAVEL_FEE) + "만원 포함" : "");
   }
 
   function renderSummary() {
@@ -875,7 +878,7 @@
       date: S.date, time: S.time,
       picks: S.picked.map(function (n) { return { coach: n, product: S.product[n] || "" }; }),
       kind: kindOf(S.kind).name,
-      travel: (function (t) { return t ? "있음 — " + t.coach + " 소장님(" + t.region + ") → 설명회 장소 예상 이동 약 " + t.hours.toFixed(1) + "시간" : ""; })(travelInfo())
+      travel: (function (t) { return t ? man(TRAVEL_FEE) + "만원 — " + t.coach + " 소장님(" + t.region + ") → 설명회 장소 예상 이동 약 " + t.hours.toFixed(1) + "시간" : ""; })(travelInfo())
     };
   }
 
@@ -911,7 +914,7 @@
         return "<li><b>" + esc(p.coach) + "</b><span>" + esc(p.product || "요청사항으로 상의") + "</span></li>";
       }).join("") + "</ul></dd>" +
       (b.request ? "<dt>요청사항</dt><dd>" + esc(b.request) + '<small class="muted">담당자가 확인한 뒤 연락드립니다.</small></dd>' : "") +
-      (b.travel ? "<dt>출장비</dt><dd>담당자가 금액을 함께 안내드려요</dd>" : "");
+      (b.travel ? "<dt>출장비</dt><dd>" + man(TRAVEL_FEE) + "만원 (VAT 별도)</dd>" : "");
     go(5);
   }
 
