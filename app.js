@@ -290,7 +290,7 @@
   function renderHero() {
     var n = S.coaches.length;
     $("heroCrowd").innerHTML = S.coaches.slice(0, 8).map(function (c) { return avatar(c); }).join("") + (n > 8 ? '<div class="avatar more">+' + (n - 8) + "</div>" : "");
-    $("heroCount").innerHTML = n ? "<b>강연자 " + n + "명</b>이 함께합니다" : "";
+    $("heroCount").innerHTML = n ? "설명회로 검증된 <b>강연자 " + n + "명</b>이 기다리고 있어요" : "";
   }
 
   function recCard(x, badge, Q) {
