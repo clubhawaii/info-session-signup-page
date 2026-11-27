@@ -4,6 +4,8 @@ window.APP_CONFIG = {
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyoK44w11pyb62hncmIlBYnHc0kPVTwujfFCy8hUd623u2XGL5r4Z4rDJIlyNwbXRS9/exec",
   // 원장님 신청 페이지를 실제로 열었는지. false면 신청 페이지만 시험 모드(예시 데이터, 저장 안 됨) — 소장님 입력·응답 페이지는 위 주소로 실제 저장
   SIGNUP_OPEN: false,
+  // 시험 모드에서도 시트의 실제 강연자·설명회를 보여 줄지 (true = 실제 강연자로 미리보기, 신청은 여전히 저장 안 됨)
+  PREVIEW_REAL_DATA: true,
 
   // 카카오톡 「클럽하와이cs」 채널 주소 (예: https://pf.kakao.com/_xxxxx). 비워 두면 문구만 보이고 버튼은 숨겨집니다.
   CONTACT_URL: "https://pf.kakao.com/_xdrlwX",

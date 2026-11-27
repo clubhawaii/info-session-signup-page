@@ -101,11 +101,16 @@
   }
 
   /* ---------- 데이터 ---------- */
+  // 시험 모드라도 PREVIEW_REAL_DATA면 시트의 실제 강연자를 불러옴 (읽기만 — 신청은 저장하지 않음). 못 불러오면 예시 데이터
+  var REAL = !!(C.APPS_SCRIPT_URL && (!DEMO || C.PREVIEW_REAL_DATA));
   function load() {
-    if (DEMO) return Promise.resolve(window.LOCAL_DATA || window.SAMPLE_DATA);
+    if (!REAL) return Promise.resolve(window.LOCAL_DATA || window.SAMPLE_DATA);
     return fetch(C.APPS_SCRIPT_URL).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) throw new Error(d.error);
       return d;
+    }).catch(function (e) {
+      if (DEMO) return window.LOCAL_DATA || window.SAMPLE_DATA;
+      throw e;
     });
   }
   function useData(d) {
@@ -373,7 +378,7 @@
   }
 
   function renderHero() {
-    var n = S.coaches.length;
+    var n = S.coaches.filter(function (c) { return c.edu.length || c.biz.length; }).length;   // 설명회를 등록한 강연자만
     $("heroCount").innerHTML = n ? "설명회로 검증된 <b>강연자 " + n + "명</b>이 기다리고 있어요" : "";
   }
 
@@ -1201,6 +1206,7 @@
   /* ---------- 시작 ---------- */
   function init() {
     $("demoBar").hidden = !DEMO;
+    if (DEMO && REAL) $("demoText").textContent = "미리보기 — 실제 강연자 정보로 보여 드려요. 신청은 아직 저장되지 않습니다.";
     each(document.querySelectorAll(".retention"), function (el) { el.textContent = C.PRIVACY_RETENTION || ""; });
     each(document.querySelectorAll(".resp-h"), function (el) { el.textContent = HOURS; });
     each(document.querySelectorAll(".max-picks"), function (el) { el.textContent = MAX_PICKS; });

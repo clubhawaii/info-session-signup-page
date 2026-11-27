@@ -246,6 +246,7 @@ function onOpen() {
     .addItem('선택한 신청에 소장님 추가 요청', 'menuAddCoach')
     .addSeparator()
     .addItem('선택한 프로필 제출을 강연자 정보에 반영', 'menuApplyProfile')
+    .addItem('확인 대기 프로필 모두 반영', 'menuApplyAllWaiting')
     .addToUi();
 }
 
@@ -1172,6 +1173,34 @@ function menuApplyProfile() {
   sh.getRange(row, head.indexOf('상태') + 1).setValue(SUBMIT_ST.DONE);
   sh.getRange(row, head.indexOf('반영일시') + 1).setValue(new Date());
   ss.toast(name + ' 소장님 정보를 반영했습니다. 신청 페이지에 바로 보입니다.');
+}
+
+/** 메뉴: 「프로필 제출」의 확인 대기 제출을 한 번에 반영 — 소장님마다 가장 나중에 제출한 줄만 (위 메뉴를 한 명씩 누른 것과 같음) */
+function menuApplyAllWaiting() {
+  var ui = SpreadsheetApp.getUi(), ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(SH.SUBMIT);
+  var n = sh.getLastRow();
+  if (n < 2) { ui.alert('반영할 제출이 없습니다.'); return; }
+  var head = sh.getRange(1, 1, 1, SUBMIT_HEADERS.length).getValues()[0];
+  var rows = sh.getRange(2, 1, n - 1, SUBMIT_HEADERS.length).getValues();
+  function col(h) { return head.indexOf(h); }
+  var latest = {};
+  rows.forEach(function (r, i) { var name = String(r[col('강연자')]).trim(); if (name) latest[name] = i; });
+  var targets = Object.keys(latest).filter(function (name) { return rows[latest[name]][col('상태')] === SUBMIT_ST.WAIT; });
+  if (!targets.length) { ui.alert('확인 대기 중인 제출이 없습니다.'); return; }
+  if (ui.alert('확인 대기 ' + targets.length + '명(' + targets.join(', ') + ')의 제출 내용을 강연자 정보와 설명회에 반영할까요?\n(각 소장님의 설명회는 제출 내용으로 모두 바뀝니다)', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  var done = [], fail = [];
+  targets.forEach(function (name) {
+    var i = latest[name];
+    try {
+      applyProfile_(name, JSON.parse(rows[i][col('데이터')]));
+      sh.getRange(i + 2, col('상태') + 1).setValue(SUBMIT_ST.DONE);
+      sh.getRange(i + 2, col('반영일시') + 1).setValue(new Date());
+      done.push(name);
+    } catch (e) {
+      fail.push(name + ' (' + e.message + ')');
+    }
+  });
+  ui.alert('반영 완료 ' + done.length + '명' + (fail.length ? '\n반영하지 못한 분: ' + fail.join(', ') : '') + '\n신청 페이지에 바로 보입니다.');
 }
 
 function applyProfile_(name, d) {
