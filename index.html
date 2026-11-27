@@ -6,7 +6,7 @@
   <title>학원 설명회 연사 초청 신청 | 클럽하와이</title>
   <meta name="description" content="학원 설명회 연사 초청 강연 신청 — 학부모·학생 대상 입시·학습 설명회에 클럽하와이 전문 연사를 초청하세요.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="styles.css?v=20261127e">
+  <link rel="stylesheet" href="styles.css?v=20261127f">
 </head>
 <body data-step="1">
   <div class="demo-bar" id="demoBar" hidden>시험 모드 — 예시 데이터이며 신청은 저장되지 않습니다. <a href="coach.html">소장님 응답 화면</a> · <a href="profile.html">소장님 입력 페이지</a></div>
@@ -14,13 +14,6 @@
   <header class="top">
     <div class="top-in">
       <a class="brand" href="./"><img class="brand-logo" src="logo.png" alt="클럽하와이" width="123" height="36"><span>연사 초청 신청</span></a>
-      <nav class="gnb" aria-label="주요 메뉴">
-        <a href="#find" data-scroll="find">강연자 찾기</a>
-        <button type="button" data-info="flow">진행 순서</button>
-        <button type="button" data-info="price">가격 안내</button>
-        <a href="#faq" data-scroll="faq" class="lp-only">자주 묻는 질문</a>
-      </nav>
-      <a class="top-link" data-contact id="contactTop" href="#" target="_blank" rel="noopener" hidden>카카오톡 문의</a>
     </div>
   </header>
 
@@ -65,13 +58,13 @@
       <form class="lp-card" id="heroSearch" role="search">
         <p class="lp-card-kicker">설명회 준비 중이신가요?</p>
         <strong class="lp-card-title">원하는 설명회를<br>검색해 보세요!</strong>
-        <div class="hero-crowd" id="heroCrowd" aria-hidden="true"></div>
         <p class="hero-count" id="heroCount"></p>
         <label class="lp-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="heroQ" type="search" placeholder="예) 중학생 학습 습관" autocomplete="off" enterkeyhint="search" aria-label="원하는 설명회 검색">
         </label>
         <button type="submit" class="btn primary">강연자 찾기 ›</button>
+        <a class="lp-my" href="my.html">이미 신청하셨나요? <b>내 신청 내역 보기 ›</b></a>
       </form>
     </div>
     <div class="lp-quick" id="quickMenu"></div>
@@ -179,8 +172,11 @@
               <!-- 강연 시간 × 회원 여부 금액표 — 고른 칸이 파랗게 -->
               <table class="price-table" id="priceTable"></table>
               <p class="vat-line"><b>VAT 별도</b> 위 금액은 모두 부가세(VAT) 별도, 설명회 1회 기준입니다.</p>
+              <!-- 출장비 — 설명회 장소와 강연자 출발 지역이 멀면(이동 약 2시간 이상) 보임 -->
+              <p class="travel-note" id="travelNote" hidden></p>
               <ul class="dots price-notes">
                 <li>회원 여부는 담당자 연락 때 확인합니다.</li>
+                <li>강연자 이동 거리가 먼 경우 <b>출장비</b>가 더해지며, 담당자가 함께 안내드려요.</li>
                 <li><b>우리 학원 맞춤 설명회</b>는 담당자가 내용을 확인한 뒤 금액을 따로 안내드립니다.</li>
               </ul>
             </div>
@@ -303,6 +299,7 @@
             <li><b>확정 · 결제 안내</b><span>확정 일정과 금액을 알림톡으로 보내 드려요</span></li>
             <li><b>설명회 진행</b></li>
           </ol>
+          <a class="btn outline" href="my.html">내 신청 내역 보기</a>
         </section>
       </div>
 
@@ -321,7 +318,7 @@
             <button type="button" class="btn ghost" data-prev>이전</button>
             <button type="button" class="btn primary" data-next disabled>다음</button>
           </div>
-          <p class="sum-note" id="sumNote">신청만으로 일정이 확정되지는 않습니다.</p>
+          <p class="sum-note" id="sumNote">강연자 일정을 확인한 뒤 담당자가 바로 연락드려요.</p>
         </div>
         <div class="card help" id="helpCard" hidden>
           <strong>도움이 필요하신가요?</strong>
@@ -337,27 +334,23 @@
   <section class="lp-faq lp-only" id="faq">
     <h2 class="lp-h">궁금증을<br>해결해 드릴게요</h2>
     <div class="faq-grid">
-      <div class="faq-list">
-        <details class="faq-item"><summary><span class="n">1</span>신청하면 바로 일정이 확정되나요?</summary>
-          <p>아니요. 고르신 소장님께 일정이 되는지 먼저 확인하고, 가능하다고 답하면 담당자가 조율한 뒤 연락드려요. 날짜·시간이 확정되면 확정 내용과 결제 안내를 알림톡으로 보내 드립니다.</p></details>
-        <details class="faq-item"><summary><span class="n">2</span>언제까지 신청해야 하나요?</summary>
-          <p>진행일 <b>2주 전까지</b> 신청할 수 있어요. 학부모 모집을 위해 3~4주 전 신청을 권해요. 우리 학원 맞춤 설명회는 준비 기간이 필요해 3주 뒤 날짜부터 고를 수 있어요.</p></details>
-        <details class="faq-item"><summary><span class="n">3</span>비용은 얼마인가요?</summary>
-          <p>강연 시간과 클럽하와이 회원 여부로 정해져요. <span id="faqPrice"></span> (VAT 별도, 설명회 1회 기준) 맞춤 설명회는 담당자가 내용을 확인한 뒤 금액을 따로 안내드려요.</p></details>
-        <details class="faq-item"><summary><span class="n">4</span>원하는 주제의 강연자가 없으면요?</summary>
-          <p>「우리 학원 맞춤 설명회」로 신청해 주세요. 원하시는 주제와 대상, 우리 지역·학원의 특징을 요청사항에 적어 주시면 담당자가 확인한 뒤 연락드려요.</p></details>
-        <details class="faq-item"><summary><span class="n">5</span>취소·환불은 어떻게 되나요?</summary>
-          <p>결제 전에는 언제든 비용 없이 취소할 수 있어요. 결제 후에는 진행일 기준으로 환불 비율이 정해져요. <button type="button" class="link" data-open="policy">취소·환불 규정 보기</button></p></details>
-        <details class="faq-item"><summary><span class="n">6</span>설명회를 촬영해도 되나요?</summary>
-          <p>영상 촬영(녹화·라이브 방송)은 할 수 없어요. 맘카페·블로그·SNS에 사진이나 내용을 올리실 때는 이즈유의 사전 확인을 받은 뒤 올려 주세요.</p></details>
+      <!-- 질문은 한 번에 하나만 열림 (app.js). 오른쪽 타일과 겹치지 않는 질문만 -->
+      <div class="faq-list" id="faqList">
+        <details class="faq-item"><summary><span class="n">1</span>언제까지 신청하면 되나요?</summary>
+          <p>진행일 <b>2주 전까지</b> 신청하시면 돼요. 학부모님 모집까지 생각하면 3~4주 전에 신청하시는 걸 추천해요. 우리 학원 맞춤 설명회는 준비 기간을 위해 3주 뒤 날짜부터 고를 수 있어요.</p></details>
+        <details class="faq-item"><summary><span class="n">2</span>비용은 얼마인가요?</summary>
+          <p>강연 시간과 클럽하와이 회원 여부로 정해져요. <span id="faqPrice"></span> (VAT 별도, 설명회 1회 기준) 강연자 이동 거리가 먼 경우 출장비가 더해지며, 담당자가 함께 안내드려요.</p></details>
+        <details class="faq-item"><summary><span class="n">3</span>원하는 주제로 설명회를 요청할 수 있나요?</summary>
+          <p>네, 「우리 학원 맞춤 설명회」로 신청해 주세요. 원하시는 주제와 대상, 우리 지역·학원의 특징을 요청사항에 적어 주시면 담당자가 확인한 뒤 금액과 함께 연락드려요.</p></details>
+        <details class="faq-item"><summary><span class="n">4</span>일정을 바꾸거나 취소하고 싶어요.</summary>
+          <p>결제 전에는 언제든 비용 없이 취소할 수 있어요. 일정 변경과 취소는 카카오톡 클럽하와이cs 채널로 말씀해 주세요. <button type="button" class="link" data-open="policy">취소·환불 규정 보기</button></p></details>
+        <details class="faq-item"><summary><span class="n">5</span>설명회 사진을 학원 SNS에 올려도 되나요?</summary>
+          <p>네, 올리실 사진과 내용을 이즈유에 먼저 보내 주시면 확인 후 바로 올리실 수 있어요. 강연자의 초상권과 강의 자료를 함께 지키기 위한 절차예요.</p></details>
       </div>
       <div class="faq-tiles">
         <a class="tile" data-contact href="#" target="_blank" rel="noopener"><span class="qi" data-icon="chat"></span>카카오톡 문의</a>
         <button type="button" class="tile" data-info="flow"><span class="qi" data-icon="flow"></span>진행 순서</button>
-        <button type="button" class="tile" data-info="price"><span class="qi" data-icon="won"></span>가격 안내</button>
-        <button type="button" class="tile" data-open="policy"><span class="qi" data-icon="shield"></span>취소·환불 규정</button>
-        <button type="button" class="tile" data-info="custom"><span class="qi" data-icon="doc"></span>맞춤 설명회</button>
-        <button type="button" class="tile" data-info="shoot"><span class="qi" data-icon="camera"></span>촬영·게시 안내</button>
+        <a class="tile" href="my.html"><span class="qi" data-icon="search"></span>내 신청 내역</a>
       </div>
     </div>
   </section>
@@ -442,10 +435,11 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="config.js?v=20261127e"></script>
-  <script src="keywords.js?v=20261127e"></script>
-  <script src="sample-data.js?v=20261127e"></script>
+  <script src="config.js?v=20261127f"></script>
+  <script src="keywords.js?v=20261127f"></script>
+  <script src="travel.js?v=20261127f"></script>
+  <script src="sample-data.js?v=20261127f"></script>
   <script src="local-data.js" onerror="this.remove()"></script>
-  <script src="app.js?v=20261127e"></script>
+  <script src="app.js?v=20261127f"></script>
 </body>
 </html>

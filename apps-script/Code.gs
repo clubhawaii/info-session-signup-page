@@ -65,9 +65,10 @@ var ANS_HEADERS = ['신청번호', '소장님', '설명회', '희망일', '시�
 //   대상 학년·주력 학년: 초등 저 / 초등 고 / 중등 / 고1 / 고2 / 고3 (기업·기관은 강사·직원 / 원장 / 기업·기관·단체)
 //   주력 키워드 5개(+5점) · 일반 키워드 25개(+2점) · 학교 태그(+3점) · 주력 제목(카드 제목) · 제목 후보(참고용, 내보내지 않음)
 //   소장 확인이 「아니오」면 신청 페이지에 안 보임 (비어 있으면 보임)
+//   출발 지역: 「경기 용인」처럼 시·도 + 시·군 (두 곳이면 쉼표). 설명회 장소까지 이동이 약 2시간 이상이면 신청 화면에 출장비 안내 (travel.js)
 var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '관련 링크',
   '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모',
-  '대상 학년', '주력 학년', '주력 키워드', '일반 키워드', '학교 태그', '주력 제목', '제목 후보', '소장 확인'];
+  '대상 학년', '주력 학년', '주력 키워드', '일반 키워드', '학교 태그', '주력 제목', '제목 후보', '소장 확인', '출발 지역'];
 // 설명회(= 소장님 상품) — 소장님 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
 var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '설명회 이름', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
@@ -266,6 +267,7 @@ function doGet(e) {
       c.grades = commas_(r['대상 학년']); c.mainGrade = String(r['주력 학년'] || '').trim();
       c.core = commas_(r['주력 키워드']); c.keywords = commas_(r['일반 키워드']); c.schools = commas_(r['학교 태그']);
       c.mainTitle = String(r['주력 제목'] || '').trim();
+      c.region = String(r['출발 지역'] || '').trim();   // 시·군까지만 (상세 주소는 적지 않음)
       c.links = c.links.filter(function (l) { return !linkProblem_(l, LINK_TYPES); });   // 기준 밖 링크는 원장님 화면에 안 보임
       return c;
     });
@@ -334,6 +336,7 @@ function doPost(e) {
     if (d.action === 'profileUpload') return json_(profileUpload_(d));
     if (d.action === 'profileSubmit') return json_(profileSubmit_(d));
     if (d.action === 'respond') return json_(respond_(d));
+    if (d.action === 'myApps') return json_(myApps_(d));
     return json_(apply_(d));
   } catch (err) {
     console.error(err);
@@ -382,11 +385,54 @@ function apply_(d) {
     if (!phone) { failed.push(p.coach); log_('COACH_REQUEST', p.coach, '', '미발송(연락처 없음)', ''); return; }
     notify_('COACH_REQUEST', p.coach, phone, coachVars_(v, p.coach, p.product, token));
   });
+  if (d.travel) sh.getRange(r, headerCol_(sh, '출장비')).setValue(safe_(d.travel));   // 출장비 대상이면 「출장비」 칸에 (칸이 없으면 맨 오른쪽에 만듦)
   if (failed.length) v['소장님설명회'] += '\n※ 연락처가 없어 요청을 못 보낸 소장님: ' + failed.join(', ');
   notify_('DIRECTOR_RECEIVED', String(d.director), d.phone, v);
   notifyHQ_('HQ_NEW', v);
   if (failed.length) refreshApp_(id);   // 모두 답한 상태가 됐으면 마감 알림을 바로 보냄
   return { ok: true, id: id };
+}
+
+// 머리글 이름으로 칸 번호 찾기 — 없으면 맨 오른쪽에 새 칸을 만듦 (APP_HEADERS 순서와 상관없는 추가 칸용)
+function headerCol_(sh, name, noCreate) {
+  var last = Math.max(sh.getLastColumn(), 1);
+  var i = sh.getRange(1, 1, 1, last).getValues()[0].map(function (h) { return String(h).trim(); }).indexOf(name);
+  if (i >= 0) return i + 1;
+  if (noCreate) return 0;
+  sh.getRange(1, last + 1).setValue(name).setFontWeight('bold').setBackground('#111111').setFontColor('#ffffff');
+  return last + 1;
+}
+
+/** 원장님 「내 신청 내역」 — 휴대폰 번호와 원장님 성함이 모두 같은 신청만, 원장님께 보여 줄 칸만 돌려줍니다. */
+var MY_STATUS = {};
+MY_STATUS[ST.ASKING] = '소장님 일정 확인 중'; MY_STATUS[ST.RESULT] = '담당자 조율 중'; MY_STATUS[ST.NONE] = '담당자 조율 중';
+MY_STATUS[ST.CONFIRMED] = '일정 확정'; MY_STATUS[ST.PAY] = '결제 안내'; MY_STATUS[ST.PAID] = '결제 완료';
+MY_STATUS[ST.DONE] = '진행 완료'; MY_STATUS[ST.CANCEL] = '신청 취소';
+function myApps_(d) {
+  var phone = String(d.phone || '').replace(/\D/g, ''), name = String(d.director || '').replace(/\s/g, '');
+  if (!/^01[016789]\d{7,8}$/.test(phone) || !name) return { ok: false, error: '휴대폰 번호와 원장님 성함을 확인해 주세요.' };
+  var sh = SpreadsheetApp.getActive().getSheetByName(SH.APPS), n = sh.getLastRow();
+  if (n < 2) return { ok: true, items: [] };
+  var tc = headerCol_(sh, '출장비', true), width = Math.max(APP_HEADERS.length, tc);
+  function at(v, f) { return v instanceof Date ? Utilities.formatDate(v, TZ, f) : String(v || '').trim(); }
+  var items = sh.getRange(2, 1, n - 1, width).getValues().filter(function (r) {
+    var g = rowGetter_(r);
+    return String(g('연락처')).replace(/\D/g, '') === phone && String(g('원장님 성함')).replace(/\s/g, '') === name;
+  }).map(function (r) {
+    var g = rowGetter_(r), st = String(g('상태')).trim();
+    return {
+      id: String(g('신청번호')), created: at(g('신청일시'), 'yyyy-MM-dd HH:mm'),
+      status: MY_STATUS[st] || st || '접수', step: [ST.ASKING, ST.RESULT, ST.NONE].indexOf(st) >= 0 ? 1 : st === ST.CONFIRMED ? 2 : st === ST.PAY ? 3 : [ST.PAID, ST.DONE].indexOf(st) >= 0 ? 4 : 1,
+      cancel: st === ST.CANCEL,
+      academy: String(g('학원명')), date: dateStr_(g('희망일')), time: timeStr_(g('시작 시간')), duration: String(g('강연 시간') || ''),
+      picks: String(g('신청 소장님') || ''),
+      coach: String(g('확정 강연자') || ''), product: String(g('확정 설명회') || ''),
+      cdate: g('확정일') ? dateStr_(g('확정일')) : '', ctime: g('확정 시간') ? timeStr_(g('확정 시간')) : '',
+      price: String(g('금액') || ''), payDue: at(g('결제 기한'), 'yyyy-MM-dd HH:mm'),
+      travel: tc ? String(r[tc - 1] || '') : ''
+    };
+  }).reverse().slice(0, 20);   // 최근 신청부터
+  return { ok: true, items: items };
 }
 
 function validate_(d) {

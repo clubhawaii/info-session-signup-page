@@ -37,7 +37,7 @@ window.APP_CONFIG = {
 
   // 시작 시간 직접 입력 범위 (시) — 이 사이에서 10분 단위로 고름
   START_HOURS: [8, 21],
-  MINUTE_STEP: 10,
+  MINUTE_STEP: 30,   // 00분 · 30분 두 가지만
 
   // 원장님이 고르는 소장님 수 — 한 명만 (1이면 다른 강연자를 담으면 바뀜). 시트 스크립트(Code.gs)의 MAX_PICKS와 같게
   MAX_PICKS: 1,

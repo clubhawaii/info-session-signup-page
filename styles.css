@@ -878,3 +878,53 @@ body:not([data-step="1"]) .band .wrap { padding-top: 32px; }
   .foot-cs small { display: block; margin: 4px 0 0; }
   .foot { padding-bottom: 0; }
 }
+
+/* ── 2026-11-27 추가: 내 신청 내역 · 출장비 안내 · 검색 카드 링크 ── */
+.lp-my { display: block; margin-top: 14px; text-align: center; font-size: 13px; color: var(--ink-60); text-decoration: none; }
+.lp-my b { color: var(--blue); }
+.lp-my:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.faq-tiles { align-self: stretch; }
+.travel-note { margin: 14px 0 0; padding: 14px 16px; border-radius: var(--r-sm); background: var(--blue-08); font-size: 14px; line-height: 1.6; color: var(--ink); }
+.travel-note > b:first-child { display: block; margin-bottom: 2px; color: var(--blue); }
+.sum-acts { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.done > .btn.outline { margin-top: 4px; }
+
+/* 내 신청 내역 */
+.my-band { min-height: calc(100vh - 160px); }
+.my-wrap { max-width: 720px; }
+.my-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; margin-top: 24px; }
+.my-form .btn { width: auto; padding: 0 24px; }
+.my-list { margin-top: 24px; display: grid; gap: 14px; }
+.my-count { margin: 0; font-size: 15px; color: var(--ink-60); }
+.my-count b { color: var(--ink); }
+.my-card { padding: 26px 28px; }
+.my-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.my-head small { color: var(--ink-40); font-size: 13px; }
+.my-status { display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 14px; font-weight: 800; }
+.my-status.gray { background: var(--ink-25); }
+.my-steps { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 20px 0 6px; padding: 0; }
+.my-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-40); text-align: center; }
+.my-steps li span { position: relative; z-index: 1; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--blue-40); background: #fff; }
+.my-steps li + li::before { content: ""; position: absolute; top: 6px; right: 50%; width: 100%; height: 2px; background: var(--blue-16); }
+.my-steps li.past, .my-steps li.on { color: var(--ink); }
+.my-steps li.past span { background: var(--blue-40); border-color: transparent; }
+.my-steps li.on span { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-16); }
+.my-steps li.on { color: var(--blue); font-weight: 800; }
+.my-steps li.past::before, .my-steps li.on::before { background: var(--blue-40); }
+.my-dl { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px 14px; margin: 18px 0 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; }
+.my-dl dt { color: var(--ink-60); }
+.my-dl dd { margin: 0; font-weight: 600; }
+.my-dl dd b { color: var(--blue); }
+.my-empty { text-align: center; padding: 32px 24px; }
+.my-empty p { margin: 8px 0 0; font-size: 14px; color: var(--ink-60); }
+.my-help { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 28px; font-size: 14px; color: var(--ink-60); }
+.my-help p { flex: 1 1 100%; margin: 0; }
+@media (max-width: 640px) {
+  .my-form { grid-template-columns: minmax(0, 1fr); }
+  .my-form .btn { width: 100%; }
+  .my-card { padding: 20px 18px; }
+  .my-steps li { font-size: 11px; }
+  .my-dl { grid-template-columns: 84px minmax(0, 1fr); }
+  .my-page .foot-info { padding-bottom: 36px; }
+}
+.my-page .foot-info { padding-bottom: 36px; }
