@@ -61,8 +61,13 @@ var APP_HEADERS = ['신청번호', '신청일시', '상태', '학원명', '원�
 var ANS_HEADERS = ['신청번호', '소장님', '설명회', '희망일', '시작 시간', '학원명', '요청 일시', '응답 기한', '응답', '응답 일시', '소장님 메모', '독촉 알림', '응답 토큰'];
 // 강연자 — 줄 단위 칸(경력·관련 링크)은 한 줄에 하나씩. 슬로건은 셀 안 줄바꿈. 관련 링크 한 줄 = 「구분 | 주소」
 // 클럽하와이 직함은 본사가 정하는 줄 — 경력 맨 위에 항상 보이고, 소장님 입력 페이지에서는 고칠 수 없음
+// 「대상 학년」~「소장 확인」은 신청 페이지 검색·추천용 (AI 초안 → 소장님 확인). 쉼표로 구분
+//   대상 학년·주력 학년: 초등 저 / 초등 고 / 중등 / 고1 / 고2 / 고3 (기업·기관은 강사·직원 / 원장 / 기업·기관·단체)
+//   주력 키워드 5개(+5점) · 일반 키워드 25개(+2점) · 학교 태그(+3점) · 주력 제목(카드 제목) · 제목 후보(참고용, 내보내지 않음)
+//   소장 확인이 「아니오」면 신청 페이지에 안 보임 (비어 있으면 보임)
 var COACH_HEADERS = ['이름', '노출', '연락처', '클럽하와이 직함', '슬로건', '경력', '관련 링크',
-  '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모'];
+  '프로필 사진 URL', '현장 사진 URL', '우선 수락 동의', '최근 제출', '본사 메모',
+  '대상 학년', '주력 학년', '주력 키워드', '일반 키워드', '학교 태그', '주력 제목', '제목 후보', '소장 확인'];
 // 설명회(= 소장님 상품) — 소장님 한 명당 여러 줄. 카테고리·대상·적합 시기는 쉼표로 구분, 핵심 내용은 한 줄에 하나씩
 var TOPIC_HEADERS = ['강연자', '순서', '노출', '영역', '카테고리', '설명회 이름', '한 줄 소개', '핵심 내용', '대상', '적합 시기'];
 // 프로필 제출 — 소장님이 profile.html에서 제출한 내용. 본사가 확인 후 메뉴로 반영
@@ -159,7 +164,7 @@ function setupSheets() {
   ss.setSpreadsheetTimeZone(TZ);
   var apps = ensureSheet_(ss, SH.APPS, APP_HEADERS);
   var ans = ensureSheet_(ss, SH.ANS, ANS_HEADERS);
-  ensureSheet_(ss, SH.COACH, COACH_HEADERS);
+  ensureSheet_(ss, SH.COACH, COACH_HEADERS, true);
   ensureSheet_(ss, SH.TOPIC, TOPIC_HEADERS);
   var sub = ensureSheet_(ss, SH.SUBMIT, SUBMIT_HEADERS);
   sub.getRange(2, SUBMIT_HEADERS.indexOf('상태') + 1, sub.getMaxRows() - 1, 1)
@@ -210,12 +215,20 @@ function setupSheets() {
   ss.toast('시트 준비가 끝났습니다. 새로고침하면 위쪽에 「설명회」 메뉴가 생깁니다.');
 }
 
-function ensureSheet_(ss, name, headers) {
+function ensureSheet_(ss, name, headers, addMissing) {
   var sh = ss.getSheetByName(name);
   if (!sh) sh = ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
     sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#111111').setFontColor('#ffffff');
     sh.setFrozenRows(1);
+    return sh;
+  }
+  if (!addMissing) return sh;
+  // 이미 있는 시트에 새로 생긴 머리글은 맨 오른쪽에 덧붙임 (있던 칸·자료는 그대로) — 「강연자」 검색 키워드 칸용
+  var have = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(function (h) { return String(h).trim(); });
+  var add = headers.filter(function (h) { return have.indexOf(h) < 0; });
+  if (add.length) {
+    sh.getRange(1, sh.getLastColumn() + 1, 1, add.length).setValues([add]).setFontWeight('bold').setBackground('#111111').setFontColor('#ffffff');
   }
   return sh;
 }
@@ -244,10 +257,15 @@ function doGet(e) {
     var ss = SpreadsheetApp.getActive();
     var topics = topicsByCoach_(true);
     var coaches = rows_(ss.getSheetByName(SH.COACH)).filter(function (r) {
-      return String(r['노출']).trim().toUpperCase() === 'Y' && r['이름'];
+      return String(r['노출']).trim().toUpperCase() === 'Y' && r['이름'] &&
+        !/^(아니오|아니요|N|NO)$/i.test(String(r['소장 확인'] || '').trim());   // 소장 확인 「아니오」는 노출 보류
     }).map(function (r) {
       var c = coachFromRow_(r, topics);   // 연락처·동의·본사 메모는 내보내지 않는다
       delete c.agreePriority;
+      // 검색·추천용 키워드
+      c.grades = commas_(r['대상 학년']); c.mainGrade = String(r['주력 학년'] || '').trim();
+      c.core = commas_(r['주력 키워드']); c.keywords = commas_(r['일반 키워드']); c.schools = commas_(r['학교 태그']);
+      c.mainTitle = String(r['주력 제목'] || '').trim();
       c.links = c.links.filter(function (l) { return !linkProblem_(l, LINK_TYPES); });   // 기준 밖 링크는 원장님 화면에 안 보임
       return c;
     });

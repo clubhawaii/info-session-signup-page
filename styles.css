@@ -627,3 +627,79 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
   .choice-field .member-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .choice-field .mcard { padding: 12px; gap: 8px; }
 }
+
+/* ── 2026-11-27 개편: 강연자 찾기 (상품 → 학년 → 고민·키워드 → 강력 추천) ── */
+/* 히어로 — 화려한 연출은 여기에서만 */
+.hero { position: relative; overflow: hidden; margin: 0 0 4px; padding: 40px 36px 32px; border-radius: 20px; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 55%), linear-gradient(135deg, #2563eb 0%, #1d4fd0 100%); }
+.hero-eyebrow { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(255, 255, 255, .18); font-size: 13px; font-weight: 700; }
+.hero h1 { margin: 14px 0 10px; font-size: 34px; line-height: 1.3; font-weight: 800; color: #fff; }
+.hero p { margin: 0; font-size: 16px; color: rgba(255, 255, 255, .85); }
+.hero-crowd { display: flex; margin-top: 22px; padding-left: 10px; }
+.hero-crowd .avatar { width: 46px; height: 46px; margin-left: -10px; font-size: 16px; border: 3px solid #2563eb; background: #fff; color: var(--blue); }
+.hero-crowd .avatar.more { background: rgba(255, 255, 255, .18); color: #fff; font-size: 13px; }
+.hero .hero-count { margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, .85); }
+.hero .hero-count b { color: #fff; }
+
+/* 찾기 칸 */
+.find + .find { margin-top: 26px; }
+.find-h { font-size: 18px; font-weight: 800; }
+.find-h em { margin-left: 6px; font-style: normal; font-size: 13px; font-weight: 600; color: var(--blue); }
+.ptype { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.ptype .mcard { cursor: pointer; }
+.mc-desc { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; color: var(--ink-60); }
+.grade-chips { margin-bottom: 0; }
+.grade-chips .chip { height: 40px; padding: 0 18px; font-size: 15px; }
+.find .search { margin-top: 12px; }
+.find .search input { height: 52px; font-size: 16px; }
+.kw-chips { margin: 10px 0 0; gap: 6px; }
+.chip.sm { height: 30px; padding: 0 12px; font-size: 13px; }
+
+/* 추천 결과 */
+.results { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+.need-grade { margin: 0; padding: 26px 16px; text-align: center; border-radius: var(--r); background: var(--blue-08); color: var(--blue); font-weight: 700; }
+.rh { margin-bottom: 14px; }
+.rh h3 { font-size: 18px; font-weight: 800; }
+.rh span { display: block; margin-top: 2px; font-size: 13px; color: var(--ink-60); }
+.no-match-box { margin-bottom: 14px; padding: 16px 18px; border-radius: var(--r); background: var(--blue-08); }
+.no-match-box b { font-size: 17px; font-weight: 800; color: var(--blue); }
+.no-match-box p { margin: 4px 0 0; font-size: 14px; color: var(--ink-60); }
+.coach.rec { cursor: pointer; }
+.coach.rec .coach-info { padding-right: 0; }
+.rec-badge { display: inline-block; margin-bottom: 4px; padding: 2px 8px; border-radius: 4px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; }
+.rec-title { margin: 2px 0 8px; font-size: 14px; font-weight: 700; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tag.gray { background: rgba(17, 17, 17, .05); color: var(--ink-60); }
+.rec-grades { margin-top: 8px; font-size: 12px; color: var(--ink-60); }
+.rec-act { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.rec-act .coach-more { margin: 0; }
+.pick-btn { height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--blue); background: #fff; color: var(--blue); font-size: 14px; font-weight: 700; white-space: nowrap; }
+.pick-btn:hover { background: var(--blue-08); }
+.pick-btn.on { background: var(--blue); color: #fff; }
+.pair-hint { margin-bottom: 14px; padding: 14px 16px; border: 1px dashed var(--blue-40); border-radius: var(--r); }
+.pair-hint p { margin: 0 0 10px; font-size: 14px; color: var(--ink-60); }
+.pair-hint b { color: var(--ink); }
+.pair-hint div { display: flex; flex-wrap: wrap; gap: 8px; }
+.no-match { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; padding: 12px 14px; border-radius: var(--r-sm); background: #fff6e0; border: 1px solid #f2d48a; font-size: 14px; line-height: 1.55; }
+.no-match p { margin: 0; color: var(--ink-60); }
+.no-match b { color: var(--ink); }
+
+/* 장바구니(신청 내역 1단계) — 빼기 버튼 */
+.sum-picks li { position: relative; padding-right: 28px; }
+.sum-x { position: absolute; top: 0; right: 0; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--ink-60); font-size: 14px; line-height: 1; display: grid; place-items: center; padding: 0; }
+.sum-x:hover { border-color: var(--ink-25); color: var(--ink); }
+
+/* 자세히 보기 — 주력 제목 · 담기 버튼 */
+.profile .main-title { margin-top: 10px; font-size: 14px; color: var(--ink-60); }
+.profile .main-title b { color: var(--ink); }
+.profile .rec-grades { margin-top: 4px; }
+.modal-cta { position: sticky; bottom: -28px; z-index: 2; margin: 12px -28px -28px; padding: 14px 28px 20px; background: #fff; border-top: 1px solid var(--line); }
+
+@media (max-width: 640px) {
+  .hero { padding: 28px 20px 24px; border-radius: 16px; }
+  .hero h1 { font-size: 25px; }
+  .hero p { font-size: 15px; }
+  .ptype { grid-template-columns: minmax(0, 1fr); }
+  .find-h { font-size: 17px; }
+  .grade-chips .chip { height: 38px; padding: 0 14px; }
+  .modal-cta { bottom: -24px; margin: 12px -20px -24px; padding: 12px 20px 16px; }
+}
