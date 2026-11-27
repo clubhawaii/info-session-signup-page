@@ -308,7 +308,7 @@
       (kws.length ? '<div class="tags">' + kws.slice(0, 3).map(function (k) { return '<span class="tag' + (x.hit.length ? "" : " gray") + '">' + esc(k) + "</span>"; }).join("") + "</div>" : "") +
       (grades.length ? '<div class="rec-grades">대상 ' + esc(grades.join(" · ")) + "</div>" : "") +
       '<div class="rec-act"><button type="button" class="link coach-more" data-more="' + esc(c.name) + '">자세히 보기</button>' +
-      '<button type="button" class="pick-btn' + (on ? " on" : "") + '" data-pick="' + esc(c.name) + '">' + (on ? "✓ 담았어요" : "+ 담기") + "</button></div>" +
+      '<button type="button" class="pick-btn' + (on ? " on" : "") + '" data-pick="' + esc(c.name) + '">' + (on ? "✓ 담았어요" : addLabel()) + "</button></div>" +
       "</div></div>";
   }
   function uniq(a) { return a.filter(function (x, i) { return x && a.indexOf(x) === i; }); }
@@ -334,8 +334,8 @@
     $("resultHead").innerHTML = head;
     var top = C.TOP_BADGE || 3;
     $("coachList").innerHTML = REC.items.map(function (x, i) { return recCard(x, REC.mode === "match" && i < top, REC.Q); }).join("");
-    // 한 명만 담았으면 비슷한 강연자도 함께 여쭤보도록 권함
-    var more = S.picked.length === 1 ? REC.items.filter(function (x) { return S.picked.indexOf(x.c.name) < 0; }).slice(0, 2) : [];
+    // 여러 명을 담을 수 있을 때(MAX_PICKS > 1) 한 명만 담았으면 비슷한 강연자도 함께 여쭤보도록 권함
+    var more = MAX_PICKS > 1 && S.picked.length === 1 ? REC.items.filter(function (x) { return S.picked.indexOf(x.c.name) < 0; }).slice(0, 2) : [];
     $("pairHint").hidden = !more.length;
     $("pairHint").innerHTML = more.length ? '<p><b>비슷한 강연자도 함께 여쭤볼까요?</b> 여러 분께 함께 여쭤보면 일정이 맞는 분을 찾기 쉬워요. (최대 ' + MAX_PICKS + "명)</p><div>" +
       more.map(function (x) { return '<button type="button" class="pick-btn" data-pick="' + esc(x.c.name) + '">+ ' + esc(x.c.name) + "</button>"; }).join("") + "</div>" : "";
@@ -347,14 +347,32 @@
     if (!c) return;
     var i = S.picked.indexOf(c.name);
     if (i >= 0) { S.picked.splice(i, 1); delete S.product[c.name]; }
-    else if (S.picked.length >= MAX_PICKS) { toast("강연자는 최대 " + MAX_PICKS + "명까지 담을 수 있어요. 다른 분을 담으시려면 먼저 한 분을 빼 주세요."); return; }
     else {
       var auto = autoTopic(c);
       if (auto) { pickTopic(c, auto); return; }   // 설명회까지 함께 담음
+      var was = makeRoom();
+      if (was === false) return;
       S.picked.push(c.name);   // 설명회를 준비 중인 강연자 — 요청사항으로 상의
-      toast(c.name + " 강연자를 담았어요. (" + S.picked.length + "/" + MAX_PICKS + ")");
+      toast(pickedMsg(c.name, "", was));
     }
     refreshPicks(c);
+  }
+  // 담을 자리 만들기 — 한 명만 고르는 구조(MAX_PICKS 1)면 먼저 담은 강연자와 바꿈. 바꾼 강연자 이름 / 자리 없음이면 false
+  // 담기 버튼 글자 — 한 명만 고르는 구조에서 이미 담은 강연자가 있으면 「바꾸기」
+  function addLabel() { return MAX_PICKS === 1 && S.picked.length ? "이 강연자로 바꾸기" : "+ 담기"; }
+  function makeRoom() {
+    if (S.picked.length < MAX_PICKS) return "";
+    if (MAX_PICKS === 1) {
+      var old = S.picked[0];
+      S.picked = [];
+      delete S.product[old];
+      return old;
+    }
+    toast("강연자는 최대 " + MAX_PICKS + "명까지 담을 수 있어요. 다른 분을 담으시려면 먼저 한 분을 빼 주세요.");
+    return false;
+  }
+  function pickedMsg(name, topic, was) {
+    return (was ? was + " 대신 " : "") + name + (topic ? " · " + topic : "") + " 담았어요." + (MAX_PICKS > 1 ? " (" + S.picked.length + "/" + MAX_PICKS + ")" : "");
   }
   // 상품을 바꾸면 학년·담은 강연자를 비움 (상품마다 설명회가 다름)
   function setPtype(id) {
@@ -407,15 +425,17 @@
   // 설명회를 골라 담기 (이미 담은 강연자면 설명회만 바꿈)
   function pickTopic(c, name) {
     if (!c) return;
+    var was = "";
     if (S.picked.indexOf(c.name) < 0) {
-      if (S.picked.length >= MAX_PICKS) { toast("강연자는 최대 " + MAX_PICKS + "명까지 담을 수 있어요. 다른 분을 담으시려면 먼저 한 분을 빼 주세요."); return; }
+      was = makeRoom();
+      if (was === false) return;
       S.picked.push(c.name);
     }
     S.product[c.name] = name;
     if (S.date && parse(S.date) < minDate()) {
       S.date = ""; S.time = "";
       toast("맞춤 설명회는 " + (CUSTOM_DAYS / 7) + "주 뒤 날짜부터 고를 수 있어 날짜를 다시 골라 주세요.");
-    } else toast(c.name + " · " + name + " 담았어요. (" + S.picked.length + "/" + MAX_PICKS + ")");
+    } else toast(pickedMsg(c.name, name, was));
     refreshPicks(c);
   }
   function refreshPicks(c) {
@@ -567,7 +587,8 @@
 
   function summaryHtml() {
     var one = S.step === 1;   // 1단계는 장바구니처럼 — 담은 강연자와 빼기 버튼
-    var picks = (one ? "<h4>담은 강연자 <small>" + S.picked.length + "/" + MAX_PICKS + "</small></h4>" : "<h4>강연자 · 설명회 <small>" + S.picked.length + "명</small></h4>") +
+    var cnt = MAX_PICKS > 1 ? " <small>" + S.picked.length + "/" + MAX_PICKS + "</small>" : "";
+    var picks = (one ? "<h4>담은 강연자" + cnt + "</h4>" : "<h4>강연자 · 설명회</h4>") +
       (S.picked.length ? '<ul class="sum-picks">' + S.picked.map(function (n) {
         var c = findCoach(n), p = S.product[n] || (c && !c.topics.length ? "요청사항으로 상의" : S.step >= 2 ? "설명회 미선택" : "");
         return '<li><b>' + esc(n) + "</b>" + (p ? '<span class="' + (S.product[n] || !c || !c.topics.length ? "" : "none") + '">' + esc(p) + "</span>" : "") +
@@ -580,7 +601,10 @@
   function stepState() {
     if (S.step === 1) {
       var n = S.picked.length;
-      return { ok: n > 0, label: "구매하러 가기" + (n ? " (" + n + ")" : ""), txt: "<b>담은 강연자 " + n + "/" + MAX_PICKS + "</b>" + (n ? "여러 분께 함께 여쭤보면 일정 맞추기가 쉬워요" : "마음에 드는 강연자를 담아 주세요") };
+      var first = S.picked[0];
+      return { ok: n > 0, label: "구매하러 가기" + (n && MAX_PICKS > 1 ? " (" + n + ")" : ""),
+        txt: n ? "<b>" + esc(MAX_PICKS > 1 ? "담은 강연자 " + n + "/" + MAX_PICKS : first) + "</b>" + esc(MAX_PICKS > 1 ? "여러 분께 함께 여쭤보면 일정 맞추기가 쉬워요" : S.product[first] || "요청사항으로 상의")
+          : "<b>담은 강연자 없음</b>마음에 드는 강연자를 담아 주세요" };
     }
     if (S.step === 3) {
       return { ok: whenDone(), label: "다음", txt: "<b>" + (S.date ? esc(krDate(S.date)) : "희망 날짜") + "</b>" +
@@ -595,6 +619,8 @@
     var h = summaryHtml();
     $("sumPicks").innerHTML = h.picks;
     $("sumWhen").innerHTML = h.when;
+    // 예상 금액은 신청 정보 단계에서 회원 여부를 고른 뒤에만 보임
+    $("sumPriceBox").hidden = !(S.step === 4 && memberVal());
     $("sumPrice").textContent = priceText();
     $("mSum").innerHTML = '<div class="sum-block">' + h.picks + '</div><div class="sum-block">' + h.when + "</div>";
 
@@ -682,6 +708,8 @@
     if (m) m.remove();
   }
 
+  var AGREES = ["agreePrivacy", "agreeThird", "agreeShoot", "agreePhoto", "agreePolicy"];
+  function syncAgreeAll() { $("agreeAll").checked = AGREES.every(function (n) { return $("form").elements[n].checked; }); }
   function fv(n) { return String($("form").elements[n].value || "").trim(); }
   // 빠진·틀린 항목 목록 (화면에 표시하지 않고 세기만 함)
   function formErrors() {
@@ -700,7 +728,7 @@
       if (!fv("vaddr1")) bad("vaddr1", "설명회 진행 장소를 입력하거나 「학원 주소와 같아요」를 체크해 주세요.");
       else if (!fv("vaddr2")) bad("vaddr2", "상세 주소나 장소 이름을 입력해 주세요.");
     }
-    ["agreePrivacy", "agreeThird", "agreeShoot", "agreePhoto", "agreePolicy"].forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
+    AGREES.forEach(function (n) { if (!form.elements[n].checked) bad(n, ""); });
     return out;
   }
   // 한 칸만 다시 검사해서 틀렸으면 빨갛게 (칸을 벗어날 때)
@@ -922,7 +950,9 @@
     });
     $("form").addEventListener("change", function (e) {
       if (e.target.name === "venueSame") { $("venueBox").hidden = e.target.checked; ["vaddr1", "vaddr2"].forEach(function (n) { clearErr($("form").elements[n]); }); }
-      if (e.target.type === "checkbox") checkOne(e.target.name);
+      if (e.target.id === "agreeAll") AGREES.forEach(function (n) { $("form").elements[n].checked = e.target.checked; checkOne(n); });
+      else if (e.target.type === "checkbox") checkOne(e.target.name);
+      syncAgreeAll();
       renderSummary();
     });
     // 칸을 벗어날 때 틀렸으면 빨갛게
@@ -1001,7 +1031,7 @@
     S.grades = Array.isArray(d.grades) ? gradeList().filter(function (g) { return d.grades.indexOf(g) >= 0; }) : [];
     S.q = typeof d.q === "string" ? d.q : "";
     S.mode = d.mode || "";
-    S.picked = d.picked.map(String);
+    S.picked = d.picked.map(String).slice(0, MAX_PICKS);
     S.product = d.product && typeof d.product === "object" ? d.product : {};
     S.date = /^\d{4}-\d{2}-\d{2}$/.test(d.date) && parse(d.date) >= minDate() ? d.date : "";
     S.time = /^\d{2}:\d{2}$/.test(d.time) ? d.time : "";

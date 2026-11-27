@@ -715,3 +715,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .cta-picked .btn { flex: none; }
 .cta-note { margin: 8px 0 0; font-size: 12px; color: var(--ink-40); text-align: center; }
 .sum-change { justify-self: start; margin-top: 2px; font-size: 12px; }
+
+/* 전체 동의 — 필수 동의 위에 한 번에 */
+.agree .agree-all { justify-self: stretch; padding: 14px 16px; margin-bottom: 6px; border: 1px solid var(--blue); border-radius: var(--r-sm); background: var(--blue-08); font-weight: 800; font-size: 16px; }
+.agree-all input { width: 22px; height: 22px; }
